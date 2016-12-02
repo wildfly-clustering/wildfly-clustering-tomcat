@@ -34,7 +34,6 @@ public class HotRodMarshaller extends AbstractJBossMarshaller {
 
     public HotRodMarshaller(ClassLoader loader) {
         super();
-        super.baseCfg.setClassExternalizerFactory(null);
         super.baseCfg.setClassResolver(new DefaultContextClassResolver(loader));
         super.baseCfg.setClassTable(new DynamicClassTable(loader));
         super.baseCfg.setObjectTable(new ExternalizerObjectTable(loader));
