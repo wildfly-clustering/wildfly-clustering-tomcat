@@ -97,12 +97,8 @@ public class HotRodManager extends ManagerBase {
     private volatile TomcatManager manager;
     private volatile SessionAttributePersistenceStrategy persistenceStrategy = SessionAttributePersistenceStrategy.COARSE;
 
-    public String getProperty(String name) {
-        return this.properties.getProperty(name);
-    }
-
     public void setProperty(String name, String value) {
-        this.properties.setProperty(name, value);
+        this.properties.setProperty("infinispan.client.hotrod." + name, value);
     }
 
     public void setPersistenceStrategy(SessionAttributePersistenceStrategy strategy) {
