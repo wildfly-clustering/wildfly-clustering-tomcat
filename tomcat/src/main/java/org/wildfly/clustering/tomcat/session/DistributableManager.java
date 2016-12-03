@@ -132,7 +132,6 @@ public class DistributableManager implements TomcatManager {
         try {
             Batcher<Batch> batcher = this.manager.getBatcher();
             // Batch will be closed by Session.close();
-            @SuppressWarnings("resource")
             Batch batch = batcher.createBatch();
             try {
                 Session<LocalSessionContext> session = this.manager.createSession(id);
@@ -149,8 +148,11 @@ public class DistributableManager implements TomcatManager {
                 return result;
             } catch (RuntimeException | Error e) {
                 batch.discard();
-                batch.close();
                 throw e;
+            } finally {
+                if (close) {
+                    batch.close();
+                }
             }
         } finally {
             if (close) {
@@ -160,17 +162,30 @@ public class DistributableManager implements TomcatManager {
     }
 
     @Override
-    public org.apache.catalina.Session findSession(String id) throws IOException {
+    public org.apache.catalina.Session findSession(String sessionId) throws IOException {
+        String id = parseSessionId(sessionId);
         Runnable closeTask = this.getSessionCloseTask();
         boolean close = true;
         try {
-            Session<LocalSessionContext> session = this.manager.findSession(parseSessionId(id));
-            if (session == null) {
-                return null;
+            Batcher<Batch> batcher = this.manager.getBatcher();
+            // Batch will be closed by Session.close();
+            Batch batch = batcher.createBatch();
+            try {
+                Session<LocalSessionContext> session = this.manager.findSession(id);
+                if (session == null) {
+                    return null;
+                }
+                org.apache.catalina.Session result = this.getSession(session, closeTask);
+                close = false;
+                return result;
+            } catch (RuntimeException | Error e) {
+                batch.discard();
+                throw e;
+            } finally {
+                if (close) {
+                    batch.close();
+                }
             }
-            org.apache.catalina.Session result = this.getSession(session, closeTask);
-            close = false;
-            return result;
         } finally {
             if (close) {
                 closeTask.run();

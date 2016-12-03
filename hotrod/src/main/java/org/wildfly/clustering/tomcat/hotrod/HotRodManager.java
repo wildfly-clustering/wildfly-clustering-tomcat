@@ -25,6 +25,7 @@ package org.wildfly.clustering.tomcat.hotrod;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Properties;
 import java.util.function.Function;
 
@@ -237,6 +238,21 @@ public class HotRodManager extends ManagerBase {
     }
 
     @Override
+    public void changeSessionId(Session session) {
+        this.manager.changeSessionId(session);
+    }
+
+    @Override
+    public void changeSessionId(Session session, String newId) {
+        this.manager.changeSessionId(session, newId);
+    }
+
+    @Override
+    public boolean willAttributeDistribute(String name, Object value) {
+        return this.manager.willAttributeDistribute(name, value);
+    }
+
+    @Override
     public void load() throws ClassNotFoundException, IOException {
         // Do nothing
     }
@@ -244,5 +260,92 @@ public class HotRodManager extends ManagerBase {
     @Override
     public void unload() throws IOException {
         // Do nothing
+    }
+
+    @Override
+    public void backgroundProcess() {
+        // Do nothing
+    }
+
+    @Override
+    public void processExpires() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void add(Session session) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Session createEmptySession() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Session[] findSessions() {
+        // This would be super-expensive!!!
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void remove(Session session) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void remove(Session session, boolean update) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String listSessionIds() {
+        // This would be super-expensive
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getSessionAttribute(String sessionId, String key) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public HashMap<String, String> getSession(String sessionId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void expireSession(String sessionId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long getThisAccessedTimestamp(String sessionId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getThisAccessedTime(String sessionId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long getLastAccessedTimestamp(String sessionId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getLastAccessedTime(String sessionId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getCreationTime(String sessionId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long getCreationTimestamp(String sessionId) {
+        throw new UnsupportedOperationException();
     }
 }
