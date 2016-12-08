@@ -139,14 +139,6 @@ public interface TomcatManager extends Manager, Lifecycle {
     }
 
     @Override
-    default void changeSessionId(org.apache.catalina.Session session) {
-    }
-
-    @Override
-    default void changeSessionId(org.apache.catalina.Session session, String newId) {
-    }
-
-    @Override
     default org.apache.catalina.Session createEmptySession() {
         return null;
     }
