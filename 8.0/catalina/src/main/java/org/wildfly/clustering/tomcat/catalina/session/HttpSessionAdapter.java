@@ -23,13 +23,15 @@
 package org.wildfly.clustering.tomcat.catalina.session;
 
 import java.time.Duration;
+import java.util.Enumeration;
 import java.util.stream.Stream;
 
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionBindingListener;
 
-import org.apache.catalina.Context;
+import org.wildfly.clustering.ee.Batch;
+import org.wildfly.clustering.ee.BatchContext;
 import org.wildfly.clustering.web.session.ImmutableHttpSessionAdapter;
 import org.wildfly.clustering.web.session.Session;
 
@@ -40,83 +42,133 @@ import org.wildfly.clustering.web.session.Session;
 public class HttpSessionAdapter extends ImmutableHttpSessionAdapter {
 
     private final Session<?> session;
-    private final Context context;
+    private final TomcatManager manager;
+    private final Batch batch;
     private final Runnable invalidateAction;
 
-    public HttpSessionAdapter(Session<?> session, Context context, Runnable invalidateAction) {
-        super(session, context.getServletContext());
+    public HttpSessionAdapter(Session<?> session, TomcatManager manager, Batch batch, Runnable invalidateAction) {
+        super(session, manager.getContext().getServletContext());
         this.session = session;
-        this.context = context;
+        this.manager = manager;
+        this.batch = batch;
         this.invalidateAction = invalidateAction;
     }
 
     @Override
     public void invalidate() {
         this.invalidateAction.run();
-        this.session.invalidate();
+        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
+            this.session.invalidate();
+            this.batch.close();
+        }
+    }
+
+    @Override
+    public long getCreationTime() {
+        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
+            return super.getCreationTime();
+        }
+    }
+
+    @Override
+    public long getLastAccessedTime() {
+        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
+            return super.getLastAccessedTime();
+        }
+    }
+
+    @Override
+    public int getMaxInactiveInterval() {
+        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
+            return super.getMaxInactiveInterval();
+        }
     }
 
     @Override
     public void setMaxInactiveInterval(int interval) {
-        this.session.getMetaData().setMaxInactiveInterval((interval > 0) ? Duration.ofSeconds(interval) : Duration.ZERO);
+        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
+            this.session.getMetaData().setMaxInactiveInterval((interval > 0) ? Duration.ofSeconds(interval) : Duration.ZERO);
+        }
+    }
+
+    @Override
+    public Object getAttribute(String name) {
+        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
+            return super.getAttribute(name);
+        }
+    }
+
+    @Override
+    public Enumeration<String> getAttributeNames() {
+        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
+            return super.getAttributeNames();
+        }
+    }
+
+    @Override
+    public boolean isNew() {
+        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
+            return super.isNew();
+        }
     }
 
     @Override
     public void setAttribute(String name, Object value) {
-        if (value == null) {
+        if (value != null) {
+            Object old = null;
+            try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
+                old = this.session.getAttributes().setAttribute(name, value);
+            }
+            if (old != value) {
+                this.notifySessionAttributeListeners(name, old, value);
+            }
+        } else {
             this.removeAttribute(name);
-            return;
-        }
-        Object old = this.session.getAttributes().setAttribute(name, value);
-        if (old != value) {
-            if (value instanceof HttpSessionBindingListener) {
-                HttpSessionBindingListener listener = (HttpSessionBindingListener) value;
-                try {
-                    listener.valueBound(new HttpSessionBindingEvent(this, name));
-                } catch (Throwable e) {
-                    this.context.getLogger().warn(e.getMessage(), e);
-                }
-            }
-            if (old instanceof HttpSessionBindingListener) {
-                HttpSessionBindingListener listener = (HttpSessionBindingListener) old;
-                try {
-                    listener.valueUnbound(new HttpSessionBindingEvent(this, name));
-                } catch (Throwable e) {
-                    this.context.getLogger().warn(e.getMessage(), e);
-                }
-            }
-            HttpSessionBindingEvent event = new HttpSessionBindingEvent(this, name, (old != null) ? old : value);
-            Stream.of(this.context.getApplicationEventListeners()).filter(listener -> listener instanceof HttpSessionAttributeListener).map(listener -> (HttpSessionAttributeListener) listener).forEach(listener -> {
-                try {
-                    if (old == null) {
-                        listener.attributeAdded(event);
-                    } else {
-                        listener.attributeReplaced(event);
-                    }
-                } catch (Throwable e) {
-                    this.context.getLogger().warn(e.getMessage(), e);
-                }
-            });
         }
     }
 
     @Override
     public void removeAttribute(String name) {
-        Object value = this.session.getAttributes().removeAttribute(name);
+        Object value = null;
+        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
+            value = this.session.getAttributes().removeAttribute(name);
+        }
 
         if (value != null) {
-            if (value instanceof HttpSessionBindingListener) {
-                HttpSessionBindingListener listener = (HttpSessionBindingListener) value;
-                listener.valueUnbound(new HttpSessionBindingEvent(this, name));
-            }
-            HttpSessionBindingEvent event = new HttpSessionBindingEvent(this, name, value);
-            Stream.of(this.context.getApplicationEventListeners()).filter(listener -> listener instanceof HttpSessionAttributeListener).map(listener -> (HttpSessionAttributeListener) listener).forEach(listener -> {
-                try {
-                    listener.attributeRemoved(event);
-                } catch (Throwable e) {
-                    this.context.getLogger().warn(e.getMessage(), e);
-                }
-            });
+            this.notifySessionAttributeListeners(name, value, null);
         }
+    }
+
+    private void notifySessionAttributeListeners(String name, Object oldValue, Object newValue) {
+        if (oldValue instanceof HttpSessionBindingListener) {
+            HttpSessionBindingListener listener = (HttpSessionBindingListener) oldValue;
+            try {
+                listener.valueUnbound(new HttpSessionBindingEvent(this, name));
+            } catch (Throwable e) {
+                this.manager.getContext().getLogger().warn(e.getMessage(), e);
+            }
+        }
+        if (newValue instanceof HttpSessionBindingListener) {
+            HttpSessionBindingListener listener = (HttpSessionBindingListener) newValue;
+            try {
+                listener.valueBound(new HttpSessionBindingEvent(this, name));
+            } catch (Throwable e) {
+                this.manager.getContext().getLogger().warn(e.getMessage(), e);
+            }
+        }
+        HttpSessionBindingEvent event = new HttpSessionBindingEvent(this, name, (oldValue != null) ? oldValue : newValue);
+        Stream.of(this.manager.getContext().getApplicationEventListeners()).filter(listener -> listener instanceof HttpSessionAttributeListener).map(listener -> (HttpSessionAttributeListener) listener).forEach(listener -> {
+            try {
+                if (oldValue == null) {
+                    listener.attributeAdded(event);
+                } else if (newValue == null) {
+                    listener.attributeRemoved(event);
+                } else {
+                    listener.attributeReplaced(event);
+                }
+            } catch (Throwable e) {
+                this.manager.getContext().getLogger().warn(e.getMessage(), e);
+            }
+        });
     }
 }

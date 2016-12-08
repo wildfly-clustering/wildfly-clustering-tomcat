@@ -28,6 +28,7 @@ import java.io.IOException;
 import org.apache.catalina.Container;
 import org.apache.catalina.Context;
 import org.apache.catalina.Lifecycle;
+import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleListener;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Manager;
@@ -55,6 +56,14 @@ public interface TomcatManager extends Manager, Lifecycle {
     Marshallability getMarshallability();
 
     // We don't care about any of the methods below
+
+    @Override
+    default void init() throws LifecycleException {
+    }
+
+    @Override
+    default void destroy() throws LifecycleException {
+    }
 
     @Override
     default void setContext(Context context) {
@@ -170,11 +179,6 @@ public interface TomcatManager extends Manager, Lifecycle {
 
     @Override
     default void backgroundProcess() {
-    }
-
-    @Override
-    default boolean willAttributeDistribute(String name, Object value) {
-        return false;
     }
 
     @Override

@@ -98,10 +98,6 @@ public class DistributableManager implements TomcatManager {
     }
 
     @Override
-    public void init() throws LifecycleException {
-    }
-
-    @Override
     public void start() throws LifecycleException {
         this.lifecycleStamp.ifPresent(stamp -> this.lifecycleLock.unlock(stamp));
         this.manager.setDefaultMaxInactiveInterval(Duration.ofMinutes(this.context.getSessionTimeout()));
@@ -118,10 +114,6 @@ public class DistributableManager implements TomcatManager {
             }
             this.manager.stop();
         }
-    }
-
-    @Override
-    public void destroy() throws LifecycleException {
     }
 
     @Override
@@ -214,5 +206,10 @@ public class DistributableManager implements TomcatManager {
     @Override
     public Context getContext() {
         return this.context;
+    }
+
+    @Override
+    public boolean willAttributeDistribute(String name, Object value) {
+        return this.marshallability.isMarshallable(value);
     }
 }
