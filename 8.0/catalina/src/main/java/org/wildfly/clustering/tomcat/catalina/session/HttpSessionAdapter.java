@@ -30,6 +30,7 @@ import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionBindingListener;
 
+import org.apache.catalina.session.Constants;
 import org.wildfly.clustering.ee.Batch;
 import org.wildfly.clustering.ee.BatchContext;
 import org.wildfly.clustering.web.session.ImmutableHttpSessionAdapter;
@@ -41,12 +42,12 @@ import org.wildfly.clustering.web.session.Session;
  */
 public class HttpSessionAdapter extends ImmutableHttpSessionAdapter {
 
-    private final Session<?> session;
+    private final Session<LocalSessionContext> session;
     private final TomcatManager manager;
     private final Batch batch;
     private final Runnable invalidateAction;
 
-    public HttpSessionAdapter(Session<?> session, TomcatManager manager, Batch batch, Runnable invalidateAction) {
+    public HttpSessionAdapter(Session<LocalSessionContext> session, TomcatManager manager, Batch batch, Runnable invalidateAction) {
         super(session, manager.getContext().getServletContext());
         this.session = session;
         this.manager = manager;
@@ -55,11 +56,9 @@ public class HttpSessionAdapter extends ImmutableHttpSessionAdapter {
     }
 
     @Override
-    public void invalidate() {
-        this.invalidateAction.run();
+    public boolean isNew() {
         try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            this.session.invalidate();
-            this.batch.close();
+            return super.isNew();
         }
     }
 
@@ -92,7 +91,20 @@ public class HttpSessionAdapter extends ImmutableHttpSessionAdapter {
     }
 
     @Override
+    public void invalidate() {
+        this.invalidateAction.run();
+        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
+            this.session.invalidate();
+            this.batch.close();
+        }
+    }
+
+    @Override
     public Object getAttribute(String name) {
+        if (Constants.excludedAttributeNames.contains(name)) {
+            return this.session.getLocalContext().getNotes().get(name);
+        }
+        this.session.getLocalContext().getNotes().get(name);
         try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
             return super.getAttribute(name);
         }
@@ -106,21 +118,18 @@ public class HttpSessionAdapter extends ImmutableHttpSessionAdapter {
     }
 
     @Override
-    public boolean isNew() {
-        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            return super.isNew();
-        }
-    }
-
-    @Override
     public void setAttribute(String name, Object value) {
         if (value != null) {
-            Object old = null;
-            try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-                old = this.session.getAttributes().setAttribute(name, value);
-            }
-            if (old != value) {
-                this.notifySessionAttributeListeners(name, old, value);
+            if (Constants.excludedAttributeNames.contains(name)) {
+                this.session.getLocalContext().getNotes().put(name, value);
+            } else {
+                Object old = null;
+                try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
+                    old = this.session.getAttributes().setAttribute(name, value);
+                }
+                if (old != value) {
+                    this.notifySessionAttributeListeners(name, old, value);
+                }
             }
         } else {
             this.removeAttribute(name);
@@ -129,13 +138,16 @@ public class HttpSessionAdapter extends ImmutableHttpSessionAdapter {
 
     @Override
     public void removeAttribute(String name) {
-        Object value = null;
-        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            value = this.session.getAttributes().removeAttribute(name);
-        }
-
-        if (value != null) {
-            this.notifySessionAttributeListeners(name, value, null);
+        if (Constants.excludedAttributeNames.contains(name)) {
+            this.session.getLocalContext().getNotes().remove(name);
+        } else {
+            Object value = null;
+            try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
+                value = this.session.getAttributes().removeAttribute(name);
+            }
+            if (value != null) {
+                this.notifySessionAttributeListeners(name, value, null);
+            }
         }
     }
 
