@@ -37,14 +37,14 @@
     <version>1.0.0.Alpha1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>WildFly: Web session clustering: Tomcat integration</name>
+    <name>WildFly distributed session management for Tomcat</name>
 
     <modules>
         <module>8.0</module>
     </modules>
 
     <properties>
-        <org.wildfly.version>11.0.0.Alpha1-SNAPSHOT</org.wildfly.version>
+        <version.org.wildfly>11.0.0.Alpha1-SNAPSHOT</version.org.wildfly>
     </properties>
 
     <dependencyManagement>
@@ -73,6 +73,7 @@
                 <groupId>org.kohsuke.metainf-services</groupId>
                 <artifactId>metainf-services</artifactId>
                 <version>1.7</version>
+                <scope>provided</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

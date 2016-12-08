@@ -35,12 +35,16 @@
     <artifactId>wildfly-clustering-tomcat-8.0</artifactId>
     <packaging>pom</packaging>
 
-    <name>WildFly: Web session clustering: Tomcat 8.0 integration</name>
+    <name>WildFly distributed session management for Tomcat 8.0</name>
 
     <modules>
         <module>catalina</module>
         <module>hotrod</module>
     </modules>
+
+    <properties>
+        <version.org.apache.tomcat>8.0.39</version.org.apache.tomcat>
+    </properties>
 
     <dependencyManagement>
         <dependencies>
@@ -57,7 +61,7 @@
             <dependency>
                 <groupId>org.apache.tomcat</groupId>
                 <artifactId>tomcat-catalina</artifactId>
-                <version>8.0.39</version>
+                <version>${version.org.apache.tomcat}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
