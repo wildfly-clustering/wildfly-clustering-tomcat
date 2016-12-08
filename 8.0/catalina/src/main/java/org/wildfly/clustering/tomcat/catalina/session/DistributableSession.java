@@ -128,7 +128,7 @@ public class DistributableSession implements TomcatSession {
 
     @Override
     public HttpSession getSession() {
-        return new HttpSessionAdapter(this.session, this.manager.getContext(), this.invalidateAction);
+        return new HttpSessionAdapter(this.session, this.manager, this.batch, this.invalidateAction);
     }
 
     @Override
@@ -198,7 +198,7 @@ public class DistributableSession implements TomcatSession {
     public void tellChangedSessionId(String newId, String oldId, boolean notifySessionListeners, boolean notifyContainerListeners) {
         SessionManager<LocalSessionContext, Batch> manager = this.manager.getSessionManager();
         Session<LocalSessionContext> oldSession = this.session;
-        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
+        try (BatchContext context = manager.getBatcher().resumeBatch(this.batch)) {
             Session<LocalSessionContext> newSession = manager.createSession(newId);
             for (String name: this.session.getAttributes().getAttributeNames()) {
                 newSession.getAttributes().setAttribute(name, oldSession.getAttributes().getAttribute(name));
