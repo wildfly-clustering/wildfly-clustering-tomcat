@@ -24,7 +24,6 @@ package org.wildfly.clustering.tomcat.catalina.session;
 
 import java.security.Principal;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
@@ -45,7 +44,7 @@ import org.wildfly.clustering.web.session.SessionManager;
  * Adapts a WildFly distributable Session to Tomcat's Session interface.
  * @author Paul Ferraro
  */
-public class DistributableSession implements org.apache.catalina.Session {
+public class DistributableSession implements TomcatSession {
 
     private final TomcatManager manager;
     private final String internalId;
@@ -82,16 +81,6 @@ public class DistributableSession implements org.apache.catalina.Session {
     }
 
     @Override
-    public long getCreationTimeInternal() {
-        return this.getCreationTime();
-    }
-
-    @Override
-    public void setCreationTime(long time) {
-        // Do nothing
-    }
-
-    @Override
     public String getId() {
         return this.session.getId();
     }
@@ -102,26 +91,6 @@ public class DistributableSession implements org.apache.catalina.Session {
     }
 
     @Override
-    public void setId(String id) {
-        // Do nothing
-    }
-
-    @Override
-    public void setId(String id, boolean notify) {
-        // Do nothing
-    }
-
-    @Override
-    public long getThisAccessedTime() {
-        return this.getLastAccessedTime();
-    }
-
-    @Override
-    public long getThisAccessedTimeInternal() {
-        return this.getThisAccessedTime();
-    }
-
-    @Override
     public long getLastAccessedTime() {
         try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
             return this.session.getMetaData().getLastAccessedTime().toEpochMilli();
@@ -129,28 +98,8 @@ public class DistributableSession implements org.apache.catalina.Session {
     }
 
     @Override
-    public long getLastAccessedTimeInternal() {
-        return this.getLastAccessedTime();
-    }
-
-    @Override
-    public long getIdleTime() {
-        return Instant.now().toEpochMilli() - this.getLastAccessedTime();
-    }
-
-    @Override
-    public long getIdleTimeInternal() {
-        return this.getIdleTime();
-    }
-
-    @Override
     public Manager getManager() {
         return this.manager;
-    }
-
-    @Override
-    public void setManager(Manager manager) {
-        // Do nothing
     }
 
     @Override
@@ -165,11 +114,6 @@ public class DistributableSession implements org.apache.catalina.Session {
         try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
             this.session.getMetaData().setMaxInactiveInterval((interval > 0) ? Duration.ofSeconds(interval) : Duration.ZERO);
         }
-    }
-
-    @Override
-    public void setNew(boolean isNew) {
-        // Ignore
     }
 
     @Override
@@ -188,18 +132,8 @@ public class DistributableSession implements org.apache.catalina.Session {
     }
 
     @Override
-    public void setValid(boolean isValid) {
-        // Ignore
-    }
-
-    @Override
     public boolean isValid() {
         return this.session.isValid();
-    }
-
-    @Override
-    public void access() {
-        // Do nothing
     }
 
     @Override
@@ -243,11 +177,6 @@ public class DistributableSession implements org.apache.catalina.Session {
     @Override
     public Iterator<String> getNoteNames() {
         return this.session.getLocalContext().getNotes().keySet().iterator();
-    }
-
-    @Override
-    public void recycle() {
-        // Do nothing
     }
 
     @Override
