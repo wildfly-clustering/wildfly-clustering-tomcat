@@ -27,52 +27,37 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.jboss</groupId>
-        <artifactId>jboss-parent</artifactId>
-        <version>21</version>
+        <groupId>org.wildfly.clustering</groupId>
+        <artifactId>wildfly-clustering-tomcat</artifactId>
+        <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.wildfly.clustering</groupId>
-    <artifactId>wildfly-clustering-tomcat</artifactId>
-    <version>1.0.0.Alpha1-SNAPSHOT</version>
+    <artifactId>wildfly-clustering-tomcat-8.0</artifactId>
     <packaging>pom</packaging>
 
-    <name>WildFly: Web session clustering: Tomcat integration</name>
+    <name>WildFly: Web session clustering: Tomcat 8.0 integration</name>
 
     <modules>
-        <module>8.0</module>
+        <module>catalina</module>
+        <module>hotrod</module>
     </modules>
-
-    <properties>
-        <org.wildfly.version>11.0.0.Alpha1-SNAPSHOT</org.wildfly.version>
-    </properties>
 
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.wildfly</groupId>
-                <artifactId>wildfly-clustering-web-hotrod</artifactId>
-                <version>${org.wildfly.version}</version>
+                <groupId>org.wildfly.clustering</groupId>
+                <artifactId>wildfly-clustering-tomcat-8.0-catalina</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.wildfly</groupId>
-                <artifactId>wildfly-clustering-web-spi</artifactId>
-                <version>${org.wildfly.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.wildfly</groupId>
-                        <artifactId>wildfly-clustering-common</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.jboss.spec.javax.servlet</groupId>
-                        <artifactId>jboss-servlet-api_3.1_spec</artifactId>
-                    </exclusion>
-                </exclusions>
+                <groupId>org.wildfly.clustering</groupId>
+                <artifactId>wildfly-clustering-tomcat-8.0-hotrod</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.kohsuke.metainf-services</groupId>
-                <artifactId>metainf-services</artifactId>
-                <version>1.7</version>
+                <groupId>org.apache.tomcat</groupId>
+                <artifactId>tomcat-catalina</artifactId>
+                <version>8.0.39</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
