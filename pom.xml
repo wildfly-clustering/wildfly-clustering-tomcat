@@ -63,7 +63,6 @@
                             <version>${project.version}</version>
                         </artifactItem>
                     </artifactItems>
-                    <includeScope>runtime</includeScope>
                 </configuration>
             </plugin>
         </plugins>
