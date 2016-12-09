@@ -25,6 +25,7 @@ package org.wildfly.clustering.tomcat.catalina;
 import java.util.function.Consumer;
 
 import org.apache.catalina.Context;
+import org.wildfly.clustering.tomcat.ContextClassLoaderAction;
 import org.wildfly.clustering.web.session.ImmutableSession;
 import org.wildfly.clustering.web.session.SessionExpirationListener;
 

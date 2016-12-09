@@ -20,7 +20,7 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.wildfly.clustering.tomcat.catalina;
+package org.wildfly.clustering.tomcat;
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;

@@ -20,7 +20,7 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.wildfly.clustering.tomcat.catalina;
+package org.wildfly.clustering.tomcat;
 
 import org.kohsuke.MetaInfServices;
 import org.wildfly.clustering.marshalling.Externalizer;
@@ -28,6 +28,7 @@ import org.wildfly.clustering.web.IdentifierExternalizer;
 import org.wildfly.clustering.web.IdentifierExternalizerProvider;
 
 /**
+ * Informs WildFly clustering how best to serialize Tomcat's session identifier.
  * @author Paul Ferraro
  */
 @MetaInfServices(IdentifierExternalizerProvider.class)
