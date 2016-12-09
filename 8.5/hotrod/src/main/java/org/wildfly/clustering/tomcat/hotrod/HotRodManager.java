@@ -28,6 +28,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import javax.servlet.ServletContext;
 
@@ -38,9 +39,6 @@ import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Session;
 import org.apache.catalina.session.ManagerBase;
 import org.infinispan.client.hotrod.RemoteCacheManager;
-import org.infinispan.client.hotrod.configuration.Configuration;
-import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
-import org.infinispan.client.hotrod.configuration.NearCacheMode;
 import org.infinispan.commons.marshall.jboss.DefaultContextClassResolver;
 import org.jboss.marshalling.MarshallingConfiguration;
 import org.wildfly.clustering.ee.Batch;
@@ -60,7 +58,8 @@ import org.wildfly.clustering.tomcat.catalina.TomcatManager;
 import org.wildfly.clustering.tomcat.catalina.TomcatSessionExpirationListener;
 import org.wildfly.clustering.web.IdentifierFactory;
 import org.wildfly.clustering.web.LocalContextFactory;
-import org.wildfly.clustering.web.hotrod.session.HotRodSessionManager;
+import org.wildfly.clustering.web.hotrod.RemoteCacheManagerConfiguration;
+import org.wildfly.clustering.web.hotrod.RemoteCacheManagerFactory;
 import org.wildfly.clustering.web.hotrod.session.HotRodSessionManagerFactory;
 import org.wildfly.clustering.web.hotrod.session.HotRodSessionManagerFactoryConfiguration;
 import org.wildfly.clustering.web.session.ImmutableSession;
@@ -75,7 +74,7 @@ import org.wildfly.clustering.web.session.SessionManagerFactoryConfiguration.Ses
  * Distributed Manager implementation that configures a HotRod client.
  * @author Paul Ferraro
  */
-public class HotRodManager extends ManagerBase {
+public class HotRodManager extends ManagerBase implements RemoteCacheManagerConfiguration {
 
     enum MarshallingVersion implements Function<ClassLoader, MarshallingConfiguration> {
         VERSION_1() {
@@ -92,11 +91,17 @@ public class HotRodManager extends ManagerBase {
         static final MarshallingVersion CURRENT = VERSION_1;
     }
 
+    private final Supplier<RemoteCacheManager> factory = new RemoteCacheManagerFactory(this);
     private final Properties properties = new Properties();
 
     private volatile RemoteCacheManager container;
     private volatile TomcatManager manager;
     private volatile SessionAttributePersistenceStrategy persistenceStrategy = SessionAttributePersistenceStrategy.COARSE;
+
+    @Override
+    public Properties getProperties() {
+        return this.properties;
+    }
 
     public void setProperty(String name, String value) {
         this.properties.setProperty("infinispan.client.hotrod." + name, value);
@@ -114,15 +119,9 @@ public class HotRodManager extends ManagerBase {
     protected void startInternal() throws LifecycleException {
         super.startInternal();
 
-        Configuration configuration = new ConfigurationBuilder()
-                .withProperties(this.properties)
-                .nearCache().mode(NearCacheMode.INVALIDATED).maxEntries(this.getMaxActiveSessions())
-                .marshaller(new HotRodMarshaller(HotRodSessionManager.class.getClassLoader()))
-                .build();
-
-        RemoteCacheManager container = new RemoteCacheManager(configuration, false);
+        RemoteCacheManager container = this.factory.get();
+        container.start();
         this.container = container;
-        this.container.start();
 
         Context context = this.getContext();
         ClassLoader loader = context.getLoader().getClassLoader();
