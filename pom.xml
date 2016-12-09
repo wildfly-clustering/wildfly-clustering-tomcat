@@ -40,6 +40,7 @@
     <name>WildFly distributed session management for Tomcat</name>
 
     <modules>
+        <module>common</module>
         <module>7.0</module>
         <module>8.0</module>
         <module>8.5</module>
@@ -69,6 +70,11 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.wildfly.clustering</groupId>
+                <artifactId>wildfly-clustering-tomcat-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.wildfly</groupId>
                 <artifactId>wildfly-clustering-web-hotrod</artifactId>
