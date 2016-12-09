@@ -22,6 +22,7 @@
 
 package org.wildfly.clustering.tomcat;
 
+import java.lang.ref.WeakReference;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.function.Consumer;
@@ -32,26 +33,30 @@ import java.util.function.Consumer;
  */
 public class ContextClassLoaderAction implements Consumer<Runnable> {
 
-    private final ClassLoader loader;
+    private interface ClassLoaderContext extends AutoCloseable {
+        @Override
+        void close();
+    }
+
+    private final WeakReference<ClassLoader> loader;
 
     public ContextClassLoaderAction(ClassLoader loader) {
-        this.loader = loader;
+        this.loader = new WeakReference<>(loader);
     }
 
     @Override
     public void accept(Runnable task) {
-        ClassLoader loader = getContextClassLoader();
-        setContextClassLoader(this.loader);
-        try {
+        try (ClassLoaderContext context = getClassLoaderContext(this.loader.get())) {
             task.run();
-        } finally {
-            setContextClassLoader(loader);
         }
     }
 
-    private static ClassLoader getContextClassLoader() {
-        PrivilegedAction<ClassLoader> contextClassLoaderAction = () -> Thread.currentThread().getContextClassLoader();
-        return AccessController.doPrivileged(contextClassLoaderAction);
+    private static ClassLoaderContext getClassLoaderContext(ClassLoader loader) {
+        if (loader == null) return () -> {};
+        PrivilegedAction<ClassLoader> action = () -> Thread.currentThread().getContextClassLoader();
+        ClassLoader existingLoader = AccessController.doPrivileged(action);
+        setContextClassLoader(loader);
+        return () -> setContextClassLoader(existingLoader);
     }
 
     private static void setContextClassLoader(ClassLoader loader) {
