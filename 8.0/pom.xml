@@ -62,6 +62,7 @@
                 <groupId>org.apache.tomcat</groupId>
                 <artifactId>tomcat-catalina</artifactId>
                 <version>${version.org.apache.tomcat}</version>
+                <scope>provided</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
