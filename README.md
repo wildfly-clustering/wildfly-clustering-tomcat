@@ -31,14 +31,16 @@ Define the distributed Manager implementation either within the global `$CATALIN
 
 |Property|Description|
 |:---|:---|
-|persistenceStrategy|Defines the persistence strategy used to persist sessions. "COARSE" will store all attributes of a session in a single cache entry.  "FINE" will store each session attribute in a separate cache entry.  Default is "COARSE".|
+|persistenceStrategy|Defines how a session is mapped to entries in the cache. "COARSE" will store all attributes of a session in a single cache entry.  "FINE" will store each session attribute in a separate cache entry.  Default is "COARSE".|
 |maxActiveSessions|Defines the maximum number of sessions to retain in the L1 cache. Default is limitless.|
 
 #### HotRod properties
 These are configured without their "infinispan.client.hotrod." prefix:
+
 https://github.com/infinispan/infinispan/blob/8.2.x/client/hotrod-client/src/main/java/org/infinispan/client/hotrod/impl/ConfigurationProperties.java
 
 #### Common Manager properties
+
 https://tomcat.apache.org/tomcat-8.5-doc/config/cluster-manager.html#Common_Attributes
 
 #### Example
