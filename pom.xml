@@ -63,6 +63,7 @@
                             <version>${project.version}</version>
                         </artifactItem>
                     </artifactItems>
+                    <includeScope>runtime</includeScope>
                 </configuration>
             </plugin>
         </plugins>
@@ -79,6 +80,12 @@
                 <groupId>org.wildfly</groupId>
                 <artifactId>wildfly-clustering-web-hotrod</artifactId>
                 <version>${version.org.wildfly}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.modules</groupId>
+                        <artifactId>jboss-modules</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.wildfly</groupId>
