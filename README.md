@@ -18,7 +18,7 @@ Once this WildFly branch is built, and the requisite SNAPSHOT artifacts exist in
 
     `$ mvn dependency:copy -DoutputDirectory=$CATALINA_HOME/lib`
 
-1.  Copy rumtime dependencies to Tomcat's lib directory:
+1.  Copy runtime dependencies to Tomcat's lib directory:
 
     `$ mvn dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=$CATALINA_HOME/lib`
 
