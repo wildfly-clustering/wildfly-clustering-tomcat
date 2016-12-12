@@ -3,6 +3,9 @@ Integrates Tomcat with WildFly's distributed web session management
 
 ## Building
 
+This repository currently builds against a topic branch of WildFly master: https://github.com/wildfly-clustering/wildfly/tree/hotrod
+Once this WildFly branch is built, and the requisite SNAPSHOT artifacts exist in your local maven repository, this project can be built using a standard maven build.
+
 `$ mvn clean install`
 
 ## Installation
