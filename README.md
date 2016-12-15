@@ -3,7 +3,7 @@ Integrates Tomcat with WildFly's distributed web session management
 
 ## Building
 
-This repository currently depends on a pre-release version of WildFly, including 2 additional modules that have not yet been released, and thus must first be built.
+This repository currently depends on a pre-release version of WildFly, plus 2 additional pre-release modules, all of which must first be built.
 
 1.	Build WildFly master
 
