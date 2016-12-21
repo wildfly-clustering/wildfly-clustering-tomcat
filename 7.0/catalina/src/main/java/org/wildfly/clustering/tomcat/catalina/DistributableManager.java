@@ -128,7 +128,7 @@ public class DistributableManager implements TomcatManager {
             try {
                 Session<LocalSessionContext> session = this.manager.createSession(id);
                 HttpSessionEvent event = new HttpSessionEvent(new ImmutableHttpSessionAdapter(session, this.context.getServletContext()));
-                Stream.of(this.context.getApplicationEventListeners()).filter(listener -> listener instanceof HttpSessionListener).map(listener -> (HttpSessionListener) listener).forEach(listener -> {
+                Stream.of(this.context.getApplicationLifecycleListeners()).filter(listener -> listener instanceof HttpSessionListener).map(listener -> (HttpSessionListener) listener).forEach(listener -> {
                     try {
                         listener.sessionCreated(event);
                     } catch (Throwable e) {
