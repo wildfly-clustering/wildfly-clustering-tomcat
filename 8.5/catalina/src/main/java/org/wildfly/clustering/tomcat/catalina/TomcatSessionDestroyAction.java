@@ -53,9 +53,12 @@ public class TomcatSessionDestroyAction implements Consumer<ImmutableSession> {
         HttpSessionEvent event = new HttpSessionEvent(httpSession);
         Stream.of(this.context.getApplicationLifecycleListeners()).filter(listener -> listener instanceof HttpSessionListener).map(listener -> (HttpSessionListener) listener).forEach(listener -> {
             try {
+                this.context.fireContainerEvent("beforeSessionDestroyed", listener);
                 listener.sessionDestroyed(event);
             } catch (Throwable e) {
                 this.context.getLogger().warn(e.getMessage(), e);
+            } finally {
+                this.context.fireContainerEvent("afterSessionDestroyed", listener);
             }
         });
         ImmutableSessionAttributes attributes = session.getAttributes();

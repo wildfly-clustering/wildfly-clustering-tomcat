@@ -24,12 +24,14 @@ package org.wildfly.clustering.tomcat.catalina;
 
 import java.time.Duration;
 import java.util.Enumeration;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionBindingListener;
 
+import org.apache.catalina.Context;
 import org.apache.catalina.session.Constants;
 import org.wildfly.clustering.ee.Batch;
 import org.wildfly.clustering.ee.BatchContext;
@@ -41,6 +43,36 @@ import org.wildfly.clustering.web.session.Session;
  * @author Paul Ferraro
  */
 public class HttpSessionAdapter extends ImmutableHttpSessionAdapter {
+
+    enum AttributeEventType implements BiConsumer<Context, HttpSessionBindingEvent> {
+        ADDED("beforeSessionAttributeAdded", "afterSessionAttributeAdded", (listener, event) -> listener.attributeAdded(event)),
+        REMOVED("beforeSessionAttributeRemoved", "afterSessionAttributeRemoved", (listener, event) -> listener.attributeRemoved(event)),
+        REPLACED("beforeSessionAttributeReplaced", "afterSessionAttributeReplaced", (listener, event) -> listener.attributeReplaced(event)),
+        ;
+        private final String beforeEvent;
+        private final String afterEvent;
+        private final BiConsumer<HttpSessionAttributeListener, HttpSessionBindingEvent> trigger;
+
+        AttributeEventType(String beforeEvent, String afterEvent, BiConsumer<HttpSessionAttributeListener, HttpSessionBindingEvent> trigger) {
+            this.beforeEvent = beforeEvent;
+            this.afterEvent = afterEvent;
+            this.trigger = trigger;
+        }
+
+        @Override
+        public void accept(Context context, HttpSessionBindingEvent event) {
+            Stream.of(context.getApplicationEventListeners()).filter(listener -> listener instanceof HttpSessionAttributeListener).map(listener -> (HttpSessionAttributeListener) listener).forEach(listener -> {
+                try {
+                    context.fireContainerEvent(this.beforeEvent, listener);
+                    this.trigger.accept(listener, event);
+                } catch (Throwable e) {
+                    context.getLogger().warn(e.getMessage(), e);
+                } finally {
+                    context.fireContainerEvent(this.afterEvent, listener);
+                }
+            });
+        }
+    }
 
     private final Session<LocalSessionContext> session;
     private final TomcatManager manager;
@@ -169,18 +201,7 @@ public class HttpSessionAdapter extends ImmutableHttpSessionAdapter {
             }
         }
         HttpSessionBindingEvent event = new HttpSessionBindingEvent(this, name, (oldValue != null) ? oldValue : newValue);
-        Stream.of(this.manager.getContext().getApplicationEventListeners()).filter(listener -> listener instanceof HttpSessionAttributeListener).map(listener -> (HttpSessionAttributeListener) listener).forEach(listener -> {
-            try {
-                if (oldValue == null) {
-                    listener.attributeAdded(event);
-                } else if (newValue == null) {
-                    listener.attributeRemoved(event);
-                } else {
-                    listener.attributeReplaced(event);
-                }
-            } catch (Throwable e) {
-                this.manager.getContext().getLogger().warn(e.getMessage(), e);
-            }
-        });
+        AttributeEventType type = (oldValue == null) ? AttributeEventType.ADDED : (newValue == null) ? AttributeEventType.REMOVED : AttributeEventType.REPLACED;
+        type.accept(this.manager.getContext(), event);
     }
 }

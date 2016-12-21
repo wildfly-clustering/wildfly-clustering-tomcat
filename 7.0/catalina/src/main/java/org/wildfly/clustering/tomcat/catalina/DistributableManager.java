@@ -130,9 +130,12 @@ public class DistributableManager implements TomcatManager {
                 HttpSessionEvent event = new HttpSessionEvent(new ImmutableHttpSessionAdapter(session, this.context.getServletContext()));
                 Stream.of(this.context.getApplicationLifecycleListeners()).filter(listener -> listener instanceof HttpSessionListener).map(listener -> (HttpSessionListener) listener).forEach(listener -> {
                     try {
+                        this.context.fireContainerEvent("beforeSessionCreated", listener);
                         listener.sessionCreated(event);
                     } catch (Throwable e) {
                         this.context.getLogger().warn(e.getMessage(), e);
+                    } finally {
+                        this.context.fireContainerEvent("afterSessionCreated", listener);
                     }
                 });
                 org.apache.catalina.Session result = this.getSession(session, closeTask);
