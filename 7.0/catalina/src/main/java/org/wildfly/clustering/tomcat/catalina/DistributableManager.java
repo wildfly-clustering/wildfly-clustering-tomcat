@@ -47,7 +47,7 @@ import org.wildfly.clustering.web.session.SessionManager;
  * Adapts a WildFly distributable SessionManager to Tomcat's Manager interface.
  * @author Paul Ferraro
  */
-public class DistributableManager implements TomcatManager {
+public class DistributableManager implements CatalinaManager {
     private static final char ROUTE_DELIMITER = '.';
 
     private final SessionManager<LocalSessionContext, Batch> manager;
@@ -65,7 +65,7 @@ public class DistributableManager implements TomcatManager {
         this.marshallability = marshallability;
         this.context = context;
         this.route = ((Engine) context.getParent().getParent()).getJvmRoute();
-        this.invalidateAction = new TomcatSessionDestroyAction(context);
+        this.invalidateAction = new CatalinaSessionDestroyAction(context);
 
         this.manager.setDefaultMaxInactiveInterval(Duration.ofMinutes(context.getSessionTimeout()));
     }
@@ -198,7 +198,7 @@ public class DistributableManager implements TomcatManager {
 
     @Override
     public void changeSessionId(org.apache.catalina.Session session) {
-        ((TomcatSession) session).tellChangedSessionId(this.manager.createIdentifier(), session.getId());
+        ((CatalinaSession) session).tellChangedSessionId(this.manager.createIdentifier(), session.getId());
     }
 
     @Override

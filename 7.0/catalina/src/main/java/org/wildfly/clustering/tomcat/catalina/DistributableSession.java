@@ -41,9 +41,9 @@ import org.wildfly.clustering.web.session.SessionManager;
  * Adapts a WildFly distributable Session to Tomcat's Session interface.
  * @author Paul Ferraro
  */
-public class DistributableSession implements TomcatSession {
+public class DistributableSession implements CatalinaSession {
 
-    private final TomcatManager manager;
+    private final CatalinaManager manager;
     private final String internalId;
     private final Batch batch;
     private final Runnable invalidateAction;
@@ -51,7 +51,7 @@ public class DistributableSession implements TomcatSession {
 
     private volatile Session<LocalSessionContext> session;
 
-    public DistributableSession(TomcatManager manager, Session<LocalSessionContext> session, String internalId, Batch batch, Runnable invalidateAction, Runnable closeTask) {
+    public DistributableSession(CatalinaManager manager, Session<LocalSessionContext> session, String internalId, Batch batch, Runnable invalidateAction, Runnable closeTask) {
         this.manager = manager;
         this.session = session;
         this.internalId = internalId;
