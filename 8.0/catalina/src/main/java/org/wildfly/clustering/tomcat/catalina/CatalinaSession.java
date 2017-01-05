@@ -31,7 +31,7 @@ import org.apache.catalina.Session;
  * Provides default implementations of methods that can be derived or outright ignored.
  * @author Paul Ferraro
  */
-public interface TomcatSession extends Session {
+public interface CatalinaSession extends Session {
 
     @Override
     default long getCreationTimeInternal() {
