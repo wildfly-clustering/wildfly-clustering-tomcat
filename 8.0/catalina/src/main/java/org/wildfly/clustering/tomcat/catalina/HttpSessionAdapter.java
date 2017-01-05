@@ -75,11 +75,11 @@ public class HttpSessionAdapter extends ImmutableHttpSessionAdapter {
     }
 
     private final Session<LocalSessionContext> session;
-    private final TomcatManager manager;
+    private final CatalinaManager manager;
     private final Batch batch;
     private final Runnable invalidateAction;
 
-    public HttpSessionAdapter(Session<LocalSessionContext> session, TomcatManager manager, Batch batch, Runnable invalidateAction) {
+    public HttpSessionAdapter(Session<LocalSessionContext> session, CatalinaManager manager, Batch batch, Runnable invalidateAction) {
         super(session, manager.getContext().getServletContext());
         this.session = session;
         this.manager = manager;

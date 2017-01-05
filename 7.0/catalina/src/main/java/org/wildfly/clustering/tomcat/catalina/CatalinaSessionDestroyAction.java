@@ -40,10 +40,10 @@ import org.wildfly.clustering.web.session.ImmutableSessionAttributes;
  * Defines an action to be performed prior to destruction of a session.
  * @author Paul Ferraro
  */
-public class TomcatSessionDestroyAction implements Consumer<ImmutableSession> {
+public class CatalinaSessionDestroyAction implements Consumer<ImmutableSession> {
     private final Context context;
 
-    public TomcatSessionDestroyAction(Context context) {
+    public CatalinaSessionDestroyAction(Context context) {
         this.context = context;
     }
 

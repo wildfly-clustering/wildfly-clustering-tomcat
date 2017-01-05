@@ -54,8 +54,8 @@ import org.wildfly.clustering.tomcat.catalina.DistributableManager;
 import org.wildfly.clustering.tomcat.catalina.IdentifierFactoryAdapter;
 import org.wildfly.clustering.tomcat.catalina.LocalSessionContext;
 import org.wildfly.clustering.tomcat.catalina.LocalSessionContextFactory;
-import org.wildfly.clustering.tomcat.catalina.TomcatManager;
-import org.wildfly.clustering.tomcat.catalina.TomcatSessionExpirationListener;
+import org.wildfly.clustering.tomcat.catalina.CatalinaManager;
+import org.wildfly.clustering.tomcat.catalina.CatalinaSessionExpirationListener;
 import org.wildfly.clustering.web.IdentifierFactory;
 import org.wildfly.clustering.web.LocalContextFactory;
 import org.wildfly.clustering.web.hotrod.RemoteCacheManagerConfiguration;
@@ -95,7 +95,7 @@ public class HotRodManager extends ManagerBase implements RemoteCacheManagerConf
     private final Properties properties = new Properties();
 
     private volatile RemoteCacheManager container;
-    private volatile TomcatManager manager;
+    private volatile CatalinaManager manager;
     private volatile SessionAttributePersistenceStrategy persistenceStrategy = SessionAttributePersistenceStrategy.COARSE;
 
     @Override
@@ -180,7 +180,7 @@ public class HotRodManager extends ManagerBase implements RemoteCacheManagerConf
         SessionManagerFactory<Batch> sessionManagerFactory = new HotRodSessionManagerFactory<>(hotrodSessionManagerFactoryConfig);
 
         ServletContext servletContext = context.getServletContext();
-        SessionExpirationListener expirationListener = new TomcatSessionExpirationListener(context);
+        SessionExpirationListener expirationListener = new CatalinaSessionExpirationListener(context);
         LocalContextFactory<LocalSessionContext> contextFactory = new LocalSessionContextFactory();
         IdentifierFactory<String> identifierFactory = new IdentifierFactoryAdapter(this.getSessionIdGenerator());
 

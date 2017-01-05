@@ -33,13 +33,13 @@ import org.wildfly.clustering.web.session.SessionExpirationListener;
  * Invokes following timeout of a session.
  * @author Paul Ferraro
  */
-public class TomcatSessionExpirationListener implements SessionExpirationListener {
+public class CatalinaSessionExpirationListener implements SessionExpirationListener {
 
     private final Consumer<ImmutableSession> expireAction;
     private final Consumer<Runnable> classLoaderAction;
 
-    public TomcatSessionExpirationListener(Context context) {
-        this.expireAction = new TomcatSessionDestroyAction(context);
+    public CatalinaSessionExpirationListener(Context context) {
+        this.expireAction = new CatalinaSessionDestroyAction(context);
         this.classLoaderAction = new ContextClassLoaderAction(context.getLoader().getClassLoader());
     }
 

@@ -41,7 +41,7 @@ import org.wildfly.clustering.web.session.SessionManager;
  * Enhances Tomcat's Manager interface, providing default implementations for deprecated methods and methods we currently ignore.
  * @author Paul Ferraro
  */
-public interface TomcatManager extends Manager, Lifecycle {
+public interface CatalinaManager extends Manager, Lifecycle {
 
     /**
      * Returns underlying distributable session manager implementation.
