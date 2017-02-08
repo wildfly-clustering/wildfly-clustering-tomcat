@@ -23,7 +23,11 @@
 package org.wildfly.clustering.tomcat.catalina;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
@@ -32,7 +36,7 @@ import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionBindingListener;
 
 import org.apache.catalina.Context;
-import org.apache.catalina.session.Constants;
+import org.apache.catalina.Globals;
 import org.wildfly.clustering.ee.Batch;
 import org.wildfly.clustering.ee.BatchContext;
 import org.wildfly.clustering.web.session.ImmutableHttpSessionAdapter;
@@ -43,6 +47,8 @@ import org.wildfly.clustering.web.session.Session;
  * @author Paul Ferraro
  */
 public class HttpSessionAdapter extends ImmutableHttpSessionAdapter {
+
+    private static final Set<String> EXCLUDED_ATTRIBUTES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(Globals.SUBJECT_ATTR, Globals.GSS_CREDENTIAL_ATTR, org.apache.catalina.valves.CrawlerSessionManagerValve.class.getName())));
 
     enum AttributeEventType implements BiConsumer<Context, HttpSessionBindingEvent> {
         ADDED("beforeSessionAttributeAdded", "afterSessionAttributeAdded", (listener, event) -> listener.attributeAdded(event)),
@@ -133,7 +139,7 @@ public class HttpSessionAdapter extends ImmutableHttpSessionAdapter {
 
     @Override
     public Object getAttribute(String name) {
-        if (Constants.excludedAttributeNames.contains(name)) {
+        if (EXCLUDED_ATTRIBUTES.contains(name)) {
             return this.session.getLocalContext().getNotes().get(name);
         }
         this.session.getLocalContext().getNotes().get(name);
@@ -152,7 +158,7 @@ public class HttpSessionAdapter extends ImmutableHttpSessionAdapter {
     @Override
     public void setAttribute(String name, Object value) {
         if (value != null) {
-            if (Constants.excludedAttributeNames.contains(name)) {
+            if (EXCLUDED_ATTRIBUTES.contains(name)) {
                 this.session.getLocalContext().getNotes().put(name, value);
             } else {
                 Object old = null;
@@ -170,7 +176,7 @@ public class HttpSessionAdapter extends ImmutableHttpSessionAdapter {
 
     @Override
     public void removeAttribute(String name) {
-        if (Constants.excludedAttributeNames.contains(name)) {
+        if (EXCLUDED_ATTRIBUTES.contains(name)) {
             this.session.getLocalContext().getNotes().remove(name);
         } else {
             Object value = null;
