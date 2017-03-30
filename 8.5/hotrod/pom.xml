@@ -35,7 +35,7 @@
     <artifactId>wildfly-clustering-tomcat-8.5-hotrod</artifactId>
     <packaging>jar</packaging>
 
-    <name>WildFly distributed session management for Tomcat 8.5: HotRod integration</name>
+    <name>Distributed session management for Tomcat 8.5: HotRod integration</name>
 
     <dependencies>
         <dependency>

@@ -35,7 +35,7 @@
     <artifactId>wildfly-clustering-tomcat-8.5</artifactId>
     <packaging>pom</packaging>
 
-    <name>WildFly: Web session clustering: Tomcat 8.5 integration</name>
+    <name>Distributed session management for Tomcat 8.5</name>
 
     <modules>
         <module>catalina</module>
