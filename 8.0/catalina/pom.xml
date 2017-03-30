@@ -35,7 +35,7 @@
     <artifactId>wildfly-clustering-tomcat-8.0-catalina</artifactId>
     <packaging>jar</packaging>
 
-    <name>WildFly distributed session management for Tomcat 8.0: Catalina integration</name>
+    <name>Distributed session management for Tomcat 8.0: Catalina integration</name>
 
     <dependencies>
         <dependency>
