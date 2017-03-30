@@ -3,33 +3,7 @@ Integrates Tomcat with WildFly's distributed web session management
 
 ## Building
 
-This repository currently depends on a pre-release version of WildFly, plus 2 additional pre-release modules, all of which must first be built.
-
-1.	Build WildFly master
-
-	https://github.com/wildfly/wildfly
-
-		$ git clone git@github.com:wildfly/wildfly.git
-		$ cd wildfly
-		$ mvn clean install
-
-1.	Built HotRod implementation of wildfly-clustering-ee-spi
-
-	https://github.com/wildfly-clustering/wildfly-clustering-ee-hotrod
-
-		$ git clone git@github.com:wildfly-clustering/wildfly-clustering-ee-hotrod.git
-		$ cd wildfly-clustering-ee-hotrod
-		$ mvn clean install
-
-1.	Built HotRod implementation of wildfly-clustering-web-spi
-
-	https://github.com/wildfly-clustering/wildfly-clustering-web-hotrod
-
-		$ git clone git@github.com:wildfly-clustering/wildfly-clustering-web-hotrod.git
-		$ cd wildfly-clustering-web-hotrod
-		$ mvn clean install
-
-1.	Once these modules are built, and the requisite SNAPSHOT artifacts exist in your local maven repository, this project can be cloned and built using a standard maven build.
+1.	Clone this repository and build using a standard maven build.
 
 		$ git clone git@github.com:wildfly-clustering/wildfly-clustering-tomcat.git
 		$ cd wildfly-clustering-tomcat
