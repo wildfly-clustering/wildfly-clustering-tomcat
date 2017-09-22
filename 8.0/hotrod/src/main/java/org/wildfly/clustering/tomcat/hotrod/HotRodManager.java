@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 import javax.servlet.ServletContext;
 
 import org.apache.catalina.Context;
+import org.apache.catalina.Engine;
 import org.apache.catalina.Host;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
@@ -126,6 +127,7 @@ public class HotRodManager extends ManagerBase implements RemoteCacheManagerConf
         Context context = this.getContext();
         ClassLoader loader = context.getLoader().getClassLoader();
         Host host = (Host) context.getParent();
+        Engine engine = (Engine) host.getParent();
         // Deployment name = host name + context path + version
         String deploymentName = host.getName() + context.getName();
         int maxActiveSessions = this.getMaxActiveSessions();
@@ -162,6 +164,11 @@ public class HotRodManager extends ManagerBase implements RemoteCacheManagerConf
             @Override
             public MarshallingContext getMarshallingContext() {
                 return marshallingContext;
+            }
+
+            @Override
+            public String getServerName() {
+                return engine.getService().getName();
             }
         };
 
