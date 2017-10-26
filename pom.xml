@@ -41,18 +41,19 @@
         <connection>scm:git:git://github.com:wildfly-clustering/wildfly-clustering-tomcat.git</connection>
         <developerConnection>scm:git:git@github.com:wildfly-clustering/wildfly-clustering-tomcat.git</developerConnection>
         <url>https://github.com/wildfly-clustering/wildfly-clustering-tomcat</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <modules>
         <module>common</module>
         <module>7.0</module>
         <module>8.0</module>
         <module>8.5</module>
+        <module>9.0</module>
     </modules>
 
     <properties>
-        <version.org.wildfly>11.0.0.CR1</version.org.wildfly>
+        <version.org.wildfly>11.0.0.Final</version.org.wildfly>
     </properties>
 
     <build>

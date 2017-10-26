@@ -26,43 +26,28 @@
 
     <parent>
         <groupId>org.wildfly.clustering</groupId>
-        <artifactId>wildfly-clustering-tomcat</artifactId>
+        <artifactId>wildfly-clustering-tomcat-9.0</artifactId>
         <version>1.0.0.Final-SNAPSHOT</version>
     </parent>
 
-    <artifactId>wildfly-clustering-tomcat-8.5</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>wildfly-clustering-tomcat-9.0-hotrod</artifactId>
+    <packaging>jar</packaging>
 
-    <name>Distributed session management for Tomcat 8.5</name>
+    <name>Distributed session management for Tomcat 9.0: HotRod integration</name>
 
-    <modules>
-        <module>catalina</module>
-        <module>hotrod</module>
-    </modules>
-
-    <properties>
-        <version.org.apache.tomcat>8.5.23</version.org.apache.tomcat>
-    </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.wildfly.clustering</groupId>
-                <artifactId>wildfly-clustering-tomcat-8.5-catalina</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.wildfly.clustering</groupId>
-                <artifactId>wildfly-clustering-tomcat-8.5-hotrod</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tomcat</groupId>
-                <artifactId>tomcat-catalina</artifactId>
-                <version>${version.org.apache.tomcat}</version>
-                <scope>provided</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.wildfly.clustering</groupId>
+            <artifactId>wildfly-clustering-tomcat-9.0-catalina</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.wildfly</groupId>
+            <artifactId>wildfly-clustering-web-hotrod</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-catalina</artifactId>
+        </dependency>
+    </dependencies>
 
 </project>
