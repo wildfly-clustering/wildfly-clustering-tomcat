@@ -23,19 +23,19 @@
 package org.wildfly.clustering.tomcat;
 
 import org.kohsuke.MetaInfServices;
-import org.wildfly.clustering.marshalling.Externalizer;
-import org.wildfly.clustering.web.IdentifierExternalizer;
-import org.wildfly.clustering.web.IdentifierExternalizerProvider;
+import org.wildfly.clustering.marshalling.spi.Serializer;
+import org.wildfly.clustering.web.IdentifierSerializer;
+import org.wildfly.clustering.web.IdentifierSerializerProvider;
 
 /**
  * Informs WildFly clustering how best to serialize Tomcat's session identifier.
  * @author Paul Ferraro
  */
-@MetaInfServices(IdentifierExternalizerProvider.class)
-public class TomcatIdentifierExternalizerProvider implements IdentifierExternalizerProvider {
+@MetaInfServices(IdentifierSerializerProvider.class)
+public class TomcatIdentifierSerializerProvider implements IdentifierSerializerProvider {
 
     @Override
-    public Externalizer<String> getExternalizer() {
-        return IdentifierExternalizer.HEX;
+    public Serializer<String> getSerializer() {
+        return IdentifierSerializer.HEX;
     }
 }

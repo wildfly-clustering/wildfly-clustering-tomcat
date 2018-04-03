@@ -13,7 +13,7 @@ Integrates Tomcat with WildFly's distributed web session management
 
 1.	Enter directory of target Tomcat version and session manager implementation:
 
-		$ cd 8.5/hotrod
+		$ cd 9.0/hotrod
 
 1.	Copy maven artifact to Tomcat's lib directory:
 
@@ -41,11 +41,11 @@ Define the distributed Manager implementation either within the global `$CATALIN
 #### HotRod properties
 These are configured without their "infinispan.client.hotrod." prefix:
 
-https://github.com/infinispan/infinispan/blob/8.2.x/client/hotrod-client/src/main/java/org/infinispan/client/hotrod/impl/ConfigurationProperties.java
+https://github.com/infinispan/infinispan/blob/9.2.x/client/hotrod-client/src/main/java/org/infinispan/client/hotrod/impl/ConfigurationProperties.java
 
 #### Common Manager properties
 
-https://tomcat.apache.org/tomcat-8.5-doc/config/cluster-manager.html#Common_Attributes
+https://tomcat.apache.org/tomcat-9.0-doc/config/cluster-manager.html#Common_Attributes
 
 #### Example
 

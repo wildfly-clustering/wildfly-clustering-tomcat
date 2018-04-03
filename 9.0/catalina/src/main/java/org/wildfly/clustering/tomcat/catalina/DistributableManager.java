@@ -215,4 +215,14 @@ public class DistributableManager implements CatalinaManager {
     public boolean willAttributeDistribute(String name, Object value) {
         return this.marshallability.isMarshallable(value);
     }
+
+    @Override
+    public void setNotifyBindingListenerOnUnchangedValue(boolean notify) {
+        // Do nothing
+    }
+
+    @Override
+    public void setNotifyAttributeListenerOnUnchangedValue(boolean notify) {
+        // Do nothing
+    }
 }

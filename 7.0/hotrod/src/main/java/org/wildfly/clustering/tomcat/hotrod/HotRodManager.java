@@ -39,7 +39,7 @@ import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Session;
 import org.apache.catalina.session.ManagerBase;
-import org.infinispan.client.hotrod.RemoteCacheManager;
+import org.infinispan.client.hotrod.RemoteCacheContainer;
 import org.infinispan.commons.marshall.jboss.DefaultContextClassResolver;
 import org.jboss.marshalling.MarshallingConfiguration;
 import org.wildfly.clustering.ee.Batch;
@@ -59,8 +59,8 @@ import org.wildfly.clustering.tomcat.catalina.CatalinaManager;
 import org.wildfly.clustering.tomcat.catalina.CatalinaSessionExpirationListener;
 import org.wildfly.clustering.web.IdentifierFactory;
 import org.wildfly.clustering.web.LocalContextFactory;
-import org.wildfly.clustering.web.hotrod.RemoteCacheManagerConfiguration;
-import org.wildfly.clustering.web.hotrod.RemoteCacheManagerFactory;
+import org.wildfly.clustering.web.hotrod.RemoteCacheContainerConfiguration;
+import org.wildfly.clustering.web.hotrod.RemoteCacheContainerFactory;
 import org.wildfly.clustering.web.hotrod.session.HotRodSessionManagerFactory;
 import org.wildfly.clustering.web.hotrod.session.HotRodSessionManagerFactoryConfiguration;
 import org.wildfly.clustering.web.session.ImmutableSession;
@@ -75,7 +75,7 @@ import org.wildfly.clustering.web.session.SessionManagerFactoryConfiguration.Ses
  * Distributed Manager implementation that configures a HotRod client.
  * @author Paul Ferraro
  */
-public class HotRodManager extends ManagerBase implements RemoteCacheManagerConfiguration {
+public class HotRodManager extends ManagerBase implements RemoteCacheContainerConfiguration {
 
     enum MarshallingVersion implements Function<ClassLoader, MarshallingConfiguration> {
         VERSION_1() {
@@ -92,10 +92,11 @@ public class HotRodManager extends ManagerBase implements RemoteCacheManagerConf
         static final MarshallingVersion CURRENT = VERSION_1;
     }
 
-    private final Supplier<RemoteCacheManager> factory = new RemoteCacheManagerFactory(this);
+    private final Supplier<RemoteCacheContainer> factory = new RemoteCacheContainerFactory(this);
     private final Properties properties = new Properties();
 
-    private volatile RemoteCacheManager container;
+    private volatile RemoteCacheContainer container;
+    private volatile SessionManagerFactory<LocalSessionContext, Batch> managerFactory;
     private volatile CatalinaManager manager;
     private volatile SessionAttributePersistenceStrategy persistenceStrategy = SessionAttributePersistenceStrategy.COARSE;
 
@@ -120,7 +121,7 @@ public class HotRodManager extends ManagerBase implements RemoteCacheManagerConf
     protected void startInternal() throws LifecycleException {
         super.startInternal();
 
-        RemoteCacheManager container = this.factory.get();
+        RemoteCacheContainer container = this.factory.get();
         container.start();
         this.container = container;
 
@@ -134,8 +135,9 @@ public class HotRodManager extends ManagerBase implements RemoteCacheManagerConf
         SessionAttributePersistenceStrategy strategy = this.persistenceStrategy;
         MarshallingContext marshallingContext = new SimpleMarshallingContextFactory().createMarshallingContext(new SimpleMarshallingConfigurationRepository(MarshallingVersion.class, MarshallingVersion.CURRENT, loader), loader);
         MarshalledValueFactory<MarshallingContext> marshallingFactory = new SimpleMarshalledValueFactory(marshallingContext);
+        LocalContextFactory<LocalSessionContext> localContextFactory = new LocalSessionContextFactory();
 
-        SessionManagerFactoryConfiguration<MarshallingContext> sessionManagerFactoryConfig = new SessionManagerFactoryConfiguration<MarshallingContext>() {
+        SessionManagerFactoryConfiguration<MarshallingContext, LocalSessionContext> sessionManagerFactoryConfig = new SessionManagerFactoryConfiguration<MarshallingContext, LocalSessionContext>() {
             @Override
             public int getMaxActiveSessions() {
                 return maxActiveSessions;
@@ -170,28 +172,32 @@ public class HotRodManager extends ManagerBase implements RemoteCacheManagerConf
             public String getServerName() {
                 return engine.getService().getName();
             }
+
+            @Override
+            public LocalContextFactory<LocalSessionContext> getLocalContextFactory() {
+                return localContextFactory;
+            }
         };
 
-        HotRodSessionManagerFactoryConfiguration<MarshallingContext> hotrodSessionManagerFactoryConfig = new HotRodSessionManagerFactoryConfiguration<MarshallingContext>() {
+        HotRodSessionManagerFactoryConfiguration<MarshallingContext, LocalSessionContext> hotrodSessionManagerFactoryConfig = new HotRodSessionManagerFactoryConfiguration<MarshallingContext, LocalSessionContext>() {
             @Override
-            public SessionManagerFactoryConfiguration<MarshallingContext> getSessionManagerFactoryConfiguration() {
+            public SessionManagerFactoryConfiguration<MarshallingContext, LocalSessionContext> getSessionManagerFactoryConfiguration() {
                 return sessionManagerFactoryConfig;
             }
 
             @Override
-            public RemoteCacheManager getCacheContainer() {
+            public RemoteCacheContainer getCacheContainer() {
                 return container;
             }
         };
 
-        SessionManagerFactory<Batch> sessionManagerFactory = new HotRodSessionManagerFactory<>(hotrodSessionManagerFactoryConfig);
+        this.managerFactory = new HotRodSessionManagerFactory<>(hotrodSessionManagerFactoryConfig);
 
         ServletContext servletContext = context.getServletContext();
         SessionExpirationListener expirationListener = new CatalinaSessionExpirationListener(context);
-        LocalContextFactory<LocalSessionContext> contextFactory = new LocalSessionContextFactory();
         IdentifierFactory<String> identifierFactory = new IdentifierFactoryAdapter(this.getSessionIdGenerator());
 
-        SessionManagerConfiguration<LocalSessionContext> sessionManagerConfiguration = new SessionManagerConfiguration<LocalSessionContext>() {
+        SessionManagerConfiguration sessionManagerConfiguration = new SessionManagerConfiguration() {
             @Override
             public ServletContext getServletContext() {
                 return servletContext;
@@ -208,16 +214,11 @@ public class HotRodManager extends ManagerBase implements RemoteCacheManagerConf
             }
 
             @Override
-            public LocalContextFactory<LocalSessionContext> getLocalContextFactory() {
-                return contextFactory;
-            }
-
-            @Override
             public Recordable<ImmutableSession> getInactiveSessionRecorder() {
                 return null;
             }
         };
-        SessionManager<LocalSessionContext, Batch> sessionManager = sessionManagerFactory.createSessionManager(sessionManagerConfiguration);
+        SessionManager<LocalSessionContext, Batch> sessionManager = this.managerFactory.createSessionManager(sessionManagerConfiguration);
 
         this.manager = new DistributableManager(sessionManager, context, marshallingContext);
         this.manager.start();
@@ -230,6 +231,7 @@ public class HotRodManager extends ManagerBase implements RemoteCacheManagerConf
         this.setState(LifecycleState.STOPPING);
 
         this.manager.stop();
+        this.managerFactory.close();
         this.container.stop();
     }
 
