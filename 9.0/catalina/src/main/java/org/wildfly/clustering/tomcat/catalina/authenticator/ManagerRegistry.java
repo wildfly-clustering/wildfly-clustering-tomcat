@@ -24,7 +24,7 @@ package org.wildfly.clustering.tomcat.catalina.authenticator;
 import org.apache.catalina.Manager;
 
 /**
- * Mechanism for looking up the {@link SessionManager} for a given deployment.
+ * Mechanism for looking up the {@link Manager} of a given deployment.
  * @author Paul Ferraro
  */
 public interface ManagerRegistry {

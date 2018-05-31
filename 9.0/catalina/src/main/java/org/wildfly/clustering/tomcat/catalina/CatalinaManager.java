@@ -50,7 +50,7 @@ public interface CatalinaManager extends Manager, Lifecycle {
 
     /**
      * Returns a mechanism for determining the marshallability of a session attribute.
-     * @return
+     * @return the mechanism for determining marshallability.
      */
     Marshallability getMarshallability();
 
