@@ -44,17 +44,17 @@ import org.wildfly.clustering.web.session.SessionManager;
  * Adapts a WildFly distributable Session to Tomcat's Session interface.
  * @author Paul Ferraro
  */
-public class DistributableSession implements CatalinaSession {
+public class DistributableSession<B extends Batch> implements CatalinaSession {
 
-    private final CatalinaManager manager;
+    private final CatalinaManager<B> manager;
     private final String internalId;
-    private final Batch batch;
+    private final B batch;
     private final Runnable invalidateAction;
     private final Runnable closeTask;
 
     private volatile Session<LocalSessionContext> session;
 
-    public DistributableSession(CatalinaManager manager, Session<LocalSessionContext> session, String internalId, Batch batch, Runnable invalidateAction, Runnable closeTask) {
+    public DistributableSession(CatalinaManager<B> manager, Session<LocalSessionContext> session, String internalId, B batch, Runnable invalidateAction, Runnable closeTask) {
         this.manager = manager;
         this.session = session;
         this.internalId = internalId;
@@ -128,7 +128,7 @@ public class DistributableSession implements CatalinaSession {
 
     @Override
     public HttpSession getSession() {
-        return new HttpSessionAdapter(this.session, this.manager, this.batch, this.invalidateAction);
+        return new HttpSessionAdapter<>(this.session, this.manager, this.batch, this.invalidateAction);
     }
 
     @Override
@@ -145,14 +145,14 @@ public class DistributableSession implements CatalinaSession {
     public void endAccess() {
         try {
             if (this.session.isValid()) {
-                Batcher<Batch> batcher = this.manager.getSessionManager().getBatcher();
+                Batcher<B> batcher = this.manager.getSessionManager().getBatcher();
                 try (BatchContext context = batcher.resumeBatch(this.batch)) {
                     // If batch was discarded, close it
                     if (this.batch.getState() == Batch.State.DISCARDED) {
                         this.batch.close();
                     }
                     // If batch is closed, close session in a new batch
-                    try (Batch batch = (this.batch.getState() == Batch.State.CLOSED) ? batcher.createBatch() : this.batch) {
+                    try (B batch = (this.batch.getState() == Batch.State.CLOSED) ? batcher.createBatch() : this.batch) {
                         this.session.close();
                     }
                 } catch (Throwable e) {
@@ -196,7 +196,7 @@ public class DistributableSession implements CatalinaSession {
 
     @Override
     public void tellChangedSessionId(String newId, String oldId, boolean notifySessionListeners, boolean notifyContainerListeners) {
-        SessionManager<LocalSessionContext, Batch> manager = this.manager.getSessionManager();
+        SessionManager<LocalSessionContext, B> manager = this.manager.getSessionManager();
         Session<LocalSessionContext> oldSession = this.session;
         try (BatchContext context = manager.getBatcher().resumeBatch(this.batch)) {
             Session<LocalSessionContext> newSession = manager.createSession(newId);

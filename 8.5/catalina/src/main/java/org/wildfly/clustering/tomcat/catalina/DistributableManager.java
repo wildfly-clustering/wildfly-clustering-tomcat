@@ -47,10 +47,10 @@ import org.wildfly.clustering.web.session.SessionManager;
  * Adapts a WildFly distributable SessionManager to Tomcat's Manager interface.
  * @author Paul Ferraro
  */
-public class DistributableManager implements CatalinaManager {
+public class DistributableManager<B extends Batch> implements CatalinaManager<B> {
     private static final char ROUTE_DELIMITER = '.';
 
-    private final SessionManager<LocalSessionContext, Batch> manager;
+    private final SessionManager<LocalSessionContext, B> manager;
     private final Context context;
     private final Consumer<ImmutableSession> invalidateAction;
     private final Marshallability marshallability;
@@ -60,7 +60,7 @@ public class DistributableManager implements CatalinaManager {
     // Guarded by this
     private OptionalLong lifecycleStamp = OptionalLong.empty();
 
-    public DistributableManager(SessionManager<LocalSessionContext, Batch> manager, Context context, Marshallability marshallability) {
+    public DistributableManager(SessionManager<LocalSessionContext, B> manager, Context context, Marshallability marshallability) {
         this.manager = manager;
         this.marshallability = marshallability;
         this.context = context;
@@ -71,7 +71,7 @@ public class DistributableManager implements CatalinaManager {
     }
 
     @Override
-    public SessionManager<LocalSessionContext, Batch> getSessionManager() {
+    public SessionManager<LocalSessionContext, B> getSessionManager() {
         return this.manager;
     }
 
@@ -94,7 +94,7 @@ public class DistributableManager implements CatalinaManager {
     private org.apache.catalina.Session getSession(Session<LocalSessionContext> session, Runnable closeTask) {
         String id = session.getId();
         String internalId = (this.route != null) ? new StringBuilder(id.length() + this.route.length() + 1).append(id).append(ROUTE_DELIMITER).append(this.route).toString() : id;
-        return new DistributableSession(this, session, internalId, this.manager.getBatcher().suspendBatch(), () -> this.invalidateAction.accept(session), closeTask);
+        return new DistributableSession<>(this, session, internalId, this.manager.getBatcher().suspendBatch(), () -> this.invalidateAction.accept(session), closeTask);
     }
 
     @Override
@@ -122,9 +122,9 @@ public class DistributableManager implements CatalinaManager {
         Runnable closeTask = this.getSessionCloseTask();
         boolean close = true;
         try {
-            Batcher<Batch> batcher = this.manager.getBatcher();
+            Batcher<B> batcher = this.manager.getBatcher();
             // Batch will be closed by Session.close();
-            Batch batch = batcher.createBatch();
+            B batch = batcher.createBatch();
             try {
                 Session<LocalSessionContext> session = this.manager.createSession(id);
                 HttpSessionEvent event = new HttpSessionEvent(new ImmutableHttpSessionAdapter(session, this.context.getServletContext()));
@@ -162,9 +162,9 @@ public class DistributableManager implements CatalinaManager {
         Runnable closeTask = this.getSessionCloseTask();
         boolean close = true;
         try {
-            Batcher<Batch> batcher = this.manager.getBatcher();
+            Batcher<B> batcher = this.manager.getBatcher();
             // Batch will be closed by Session.close();
-            Batch batch = batcher.createBatch();
+            B batch = batcher.createBatch();
             try {
                 Session<LocalSessionContext> session = this.manager.findSession(id);
                 if (session == null) {

@@ -39,11 +39,12 @@ import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Session;
 import org.apache.catalina.session.ManagerBase;
+import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheContainer;
 import org.infinispan.commons.marshall.jboss.DefaultContextClassResolver;
 import org.jboss.marshalling.MarshallingConfiguration;
-import org.wildfly.clustering.ee.Batch;
 import org.wildfly.clustering.ee.Recordable;
+import org.wildfly.clustering.ee.cache.tx.TransactionBatch;
 import org.wildfly.clustering.marshalling.jboss.ExternalizerObjectTable;
 import org.wildfly.clustering.marshalling.jboss.MarshallingContext;
 import org.wildfly.clustering.marshalling.jboss.SimpleClassTable;
@@ -51,12 +52,12 @@ import org.wildfly.clustering.marshalling.jboss.SimpleMarshalledValueFactory;
 import org.wildfly.clustering.marshalling.jboss.SimpleMarshallingConfigurationRepository;
 import org.wildfly.clustering.marshalling.jboss.SimpleMarshallingContextFactory;
 import org.wildfly.clustering.marshalling.spi.MarshalledValueFactory;
+import org.wildfly.clustering.tomcat.catalina.CatalinaManager;
+import org.wildfly.clustering.tomcat.catalina.CatalinaSessionExpirationListener;
 import org.wildfly.clustering.tomcat.catalina.DistributableManager;
 import org.wildfly.clustering.tomcat.catalina.IdentifierFactoryAdapter;
 import org.wildfly.clustering.tomcat.catalina.LocalSessionContext;
 import org.wildfly.clustering.tomcat.catalina.LocalSessionContextFactory;
-import org.wildfly.clustering.tomcat.catalina.CatalinaManager;
-import org.wildfly.clustering.tomcat.catalina.CatalinaSessionExpirationListener;
 import org.wildfly.clustering.web.IdentifierFactory;
 import org.wildfly.clustering.web.LocalContextFactory;
 import org.wildfly.clustering.web.hotrod.RemoteCacheContainerConfiguration;
@@ -68,7 +69,6 @@ import org.wildfly.clustering.web.session.SessionExpirationListener;
 import org.wildfly.clustering.web.session.SessionManager;
 import org.wildfly.clustering.web.session.SessionManagerConfiguration;
 import org.wildfly.clustering.web.session.SessionManagerFactory;
-import org.wildfly.clustering.web.session.SessionManagerFactoryConfiguration;
 import org.wildfly.clustering.web.session.SessionManagerFactoryConfiguration.SessionAttributePersistenceStrategy;
 
 /**
@@ -96,8 +96,8 @@ public class HotRodManager extends ManagerBase implements RemoteCacheContainerCo
     private final Properties properties = new Properties();
 
     private volatile RemoteCacheContainer container;
-    private volatile SessionManagerFactory<LocalSessionContext, Batch> managerFactory;
-    private volatile CatalinaManager manager;
+    private volatile SessionManagerFactory<LocalSessionContext, TransactionBatch> managerFactory;
+    private volatile CatalinaManager<TransactionBatch> manager;
     private volatile SessionAttributePersistenceStrategy persistenceStrategy = SessionAttributePersistenceStrategy.COARSE;
 
     @Override
@@ -137,7 +137,7 @@ public class HotRodManager extends ManagerBase implements RemoteCacheContainerCo
         MarshalledValueFactory<MarshallingContext> marshallingFactory = new SimpleMarshalledValueFactory(marshallingContext);
         LocalContextFactory<LocalSessionContext> localContextFactory = new LocalSessionContextFactory();
 
-        SessionManagerFactoryConfiguration<MarshallingContext, LocalSessionContext> sessionManagerFactoryConfig = new SessionManagerFactoryConfiguration<MarshallingContext, LocalSessionContext>() {
+        HotRodSessionManagerFactoryConfiguration<MarshallingContext, LocalSessionContext> hotrodSessionManagerFactoryConfig = new HotRodSessionManagerFactoryConfiguration<MarshallingContext, LocalSessionContext>() {
             @Override
             public int getMaxActiveSessions() {
                 return maxActiveSessions;
@@ -177,17 +177,15 @@ public class HotRodManager extends ManagerBase implements RemoteCacheContainerCo
             public LocalContextFactory<LocalSessionContext> getLocalContextFactory() {
                 return localContextFactory;
             }
-        };
 
-        HotRodSessionManagerFactoryConfiguration<MarshallingContext, LocalSessionContext> hotrodSessionManagerFactoryConfig = new HotRodSessionManagerFactoryConfiguration<MarshallingContext, LocalSessionContext>() {
             @Override
-            public SessionManagerFactoryConfiguration<MarshallingContext, LocalSessionContext> getSessionManagerFactoryConfiguration() {
-                return sessionManagerFactoryConfig;
+            public String getContainerName() {
+                return container.toString();
             }
 
             @Override
-            public RemoteCacheContainer getCacheContainer() {
-                return container;
+            public <K, V> RemoteCache<K, V> getCache() {
+                return container.getCache(true);
             }
         };
 
@@ -218,9 +216,9 @@ public class HotRodManager extends ManagerBase implements RemoteCacheContainerCo
                 return null;
             }
         };
-        SessionManager<LocalSessionContext, Batch> sessionManager = this.managerFactory.createSessionManager(sessionManagerConfiguration);
+        SessionManager<LocalSessionContext, TransactionBatch> sessionManager = this.managerFactory.createSessionManager(sessionManagerConfiguration);
 
-        this.manager = new DistributableManager(sessionManager, context, marshallingContext);
+        this.manager = new DistributableManager<>(sessionManager, context, marshallingContext);
         this.manager.start();
 
         this.setState(LifecycleState.STARTING);
