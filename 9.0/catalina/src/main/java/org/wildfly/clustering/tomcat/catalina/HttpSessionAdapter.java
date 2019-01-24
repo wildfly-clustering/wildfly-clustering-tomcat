@@ -42,7 +42,7 @@ import org.wildfly.clustering.web.session.Session;
  * Adapts a WildFly distributable Session to an HttpSession.
  * @author Paul Ferraro
  */
-public class HttpSessionAdapter extends ImmutableHttpSessionAdapter {
+public class HttpSessionAdapter<B extends Batch> extends ImmutableHttpSessionAdapter {
 
     enum AttributeEventType implements BiConsumer<Context, HttpSessionBindingEvent> {
         ADDED("beforeSessionAttributeAdded", "afterSessionAttributeAdded", (listener, event) -> listener.attributeAdded(event)),
@@ -75,11 +75,11 @@ public class HttpSessionAdapter extends ImmutableHttpSessionAdapter {
     }
 
     private final Session<LocalSessionContext> session;
-    private final CatalinaManager manager;
-    private final Batch batch;
+    private final CatalinaManager<B> manager;
+    private final B batch;
     private final Runnable invalidateAction;
 
-    public HttpSessionAdapter(Session<LocalSessionContext> session, CatalinaManager manager, Batch batch, Runnable invalidateAction) {
+    public HttpSessionAdapter(Session<LocalSessionContext> session, CatalinaManager<B> manager, B batch, Runnable invalidateAction) {
         super(session, manager.getContext().getServletContext());
         this.session = session;
         this.manager = manager;

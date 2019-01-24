@@ -46,7 +46,7 @@ import org.wildfly.clustering.web.session.Session;
  * Adapts a WildFly distributable Session to an HttpSession.
  * @author Paul Ferraro
  */
-public class HttpSessionAdapter extends ImmutableHttpSessionAdapter {
+public class HttpSessionAdapter<B extends Batch> extends ImmutableHttpSessionAdapter {
 
     private static final Set<String> EXCLUDED_ATTRIBUTES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(Globals.SUBJECT_ATTR, Globals.GSS_CREDENTIAL_ATTR, org.apache.catalina.valves.CrawlerSessionManagerValve.class.getName())));
 
@@ -81,11 +81,11 @@ public class HttpSessionAdapter extends ImmutableHttpSessionAdapter {
     }
 
     private final Session<LocalSessionContext> session;
-    private final CatalinaManager manager;
-    private final Batch batch;
+    private final CatalinaManager<B> manager;
+    private final B batch;
     private final Runnable invalidateAction;
 
-    public HttpSessionAdapter(Session<LocalSessionContext> session, CatalinaManager manager, Batch batch, Runnable invalidateAction) {
+    public HttpSessionAdapter(Session<LocalSessionContext> session, CatalinaManager<B> manager, B batch, Runnable invalidateAction) {
         super(session, manager.getContext().getServletContext());
         this.session = session;
         this.manager = manager;
