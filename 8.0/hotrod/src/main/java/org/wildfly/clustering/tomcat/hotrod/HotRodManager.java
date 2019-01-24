@@ -179,11 +179,6 @@ public class HotRodManager extends ManagerBase implements RemoteCacheContainerCo
             }
 
             @Override
-            public String getContainerName() {
-                return container.toString();
-            }
-
-            @Override
             public <K, V> RemoteCache<K, V> getCache() {
                 return container.getCache(true);
             }
