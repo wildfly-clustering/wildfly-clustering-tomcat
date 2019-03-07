@@ -53,7 +53,7 @@
     </modules>
 
     <properties>
-        <version.org.wildfly>15.0.0.Final</version.org.wildfly>
+        <version.org.wildfly>16.0.0.Final</version.org.wildfly>
     </properties>
 
     <build>
