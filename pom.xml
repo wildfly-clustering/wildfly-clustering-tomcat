@@ -54,6 +54,7 @@
 
     <properties>
         <version.org.wildfly>16.0.0.Final</version.org.wildfly>
+        <version.org.infinispan>9.4.8.Final</version.org.infinispan>
     </properties>
 
     <build>
@@ -106,6 +107,11 @@
                         <artifactId>jboss-servlet-api_3.1_spec</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.infinispan</groupId>
+                <artifactId>infinispan-client-hotrod</artifactId>
+                <version>${version.org.infinispan}</version>
             </dependency>
             <dependency>
                 <groupId>org.kohsuke.metainf-services</groupId>
