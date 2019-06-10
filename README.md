@@ -1,5 +1,7 @@
 # wildfly-clustering-tomcat
-Integrates Tomcat with WildFly's distributed web session management
+
+A distributed session manager for Tomcat based on WildFly's distributed session management.
+
 
 ## Building
 
@@ -35,13 +37,15 @@ Define the distributed Manager implementation either within the global `$CATALIN
 
 |Property|Description|
 |:---|:---|
+|configurationName|Defines the server-side configuration template from which a deployment cache is created on the server.  If undefined, the configuration of the server's default cache will be used.|
 |persistenceStrategy|Defines how a session is mapped to entries in the cache. "COARSE" will store all attributes of a session in a single cache entry.  "FINE" will store each session attribute in a separate cache entry.  Default is "COARSE".|
-|maxActiveSessions|Defines the maximum number of sessions to retain in the L1 cache. Default is limitless.|
+|maxActiveSessions|Defines the maximum number of sessions to retain in the near cache. Default is limitless. A value of 0 will disable the near cache.|
 
 #### HotRod properties
+
 These are configured without their "infinispan.client.hotrod." prefix:
 
-https://github.com/infinispan/infinispan/blob/9.2.x/client/hotrod-client/src/main/java/org/infinispan/client/hotrod/impl/ConfigurationProperties.java
+https://github.com/infinispan/infinispan/blob/9.4.x/client/hotrod-client/src/main/java/org/infinispan/client/hotrod/impl/ConfigurationProperties.java
 
 #### Common Manager properties
 
@@ -50,6 +54,8 @@ https://tomcat.apache.org/tomcat-9.0-doc/config/cluster-manager.html#Common_Attr
 #### Example
 
 	<Manager className="org.wildfly.clustering.tomcat.hotrod.HotRodManager"
+	         configurationName="transactional"
 	         persistenceStrategy="FINE"
 	         maxActiveSessions="100"
-	         server_list="127.0.0.1:11222;127.0.0.1:11223;127.0.0.1:11224"/>
+	         server_list="127.0.0.1:11222;127.0.0.1:11223;127.0.0.1:11224"
+	         transaction.transaction_mode="BATCH"/>

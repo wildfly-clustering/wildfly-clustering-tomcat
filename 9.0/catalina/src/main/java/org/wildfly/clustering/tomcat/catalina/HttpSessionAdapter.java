@@ -35,14 +35,14 @@ import org.apache.catalina.Context;
 import org.apache.catalina.session.Constants;
 import org.wildfly.clustering.ee.Batch;
 import org.wildfly.clustering.ee.BatchContext;
-import org.wildfly.clustering.web.session.ImmutableHttpSessionAdapter;
+import org.wildfly.clustering.web.cache.session.ImmutableFilteringHttpSession;
 import org.wildfly.clustering.web.session.Session;
 
 /**
  * Adapts a WildFly distributable Session to an HttpSession.
  * @author Paul Ferraro
  */
-public class HttpSessionAdapter<B extends Batch> extends ImmutableHttpSessionAdapter {
+public class HttpSessionAdapter<B extends Batch> extends ImmutableFilteringHttpSession {
 
     enum AttributeEventType implements BiConsumer<Context, HttpSessionBindingEvent> {
         ADDED("beforeSessionAttributeAdded", "afterSessionAttributeAdded", (listener, event) -> listener.attributeAdded(event)),
@@ -61,7 +61,7 @@ public class HttpSessionAdapter<B extends Batch> extends ImmutableHttpSessionAda
 
         @Override
         public void accept(Context context, HttpSessionBindingEvent event) {
-            Stream.of(context.getApplicationEventListeners()).filter(listener -> listener instanceof HttpSessionAttributeListener).map(listener -> (HttpSessionAttributeListener) listener).forEach(listener -> {
+            Stream.of(context.getApplicationEventListeners()).filter(HttpSessionAttributeListener.class::isInstance).map(HttpSessionAttributeListener.class::cast).forEach(listener -> {
                 try {
                     context.fireContainerEvent(this.beforeEvent, listener);
                     this.trigger.accept(listener, event);

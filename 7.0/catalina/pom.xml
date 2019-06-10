@@ -42,7 +42,7 @@
         </dependency>
         <dependency>
             <groupId>org.wildfly</groupId>
-            <artifactId>wildfly-clustering-web-spi</artifactId>
+            <artifactId>wildfly-clustering-web-cache</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat</groupId>
