@@ -22,19 +22,19 @@
 
 package org.wildfly.clustering.tomcat.catalina;
 
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
 import org.apache.catalina.Context;
-import org.wildfly.clustering.web.session.ImmutableHttpSessionAdapter;
+import org.wildfly.clustering.web.cache.session.FilteringHttpSession;
+import org.wildfly.clustering.web.cache.session.ImmutableFilteringHttpSession;
 import org.wildfly.clustering.web.session.ImmutableSession;
-import org.wildfly.clustering.web.session.ImmutableSessionAttributes;
 
 /**
  * Defines an action to be performed prior to destruction of a session.
@@ -49,9 +49,9 @@ public class CatalinaSessionDestroyAction implements Consumer<ImmutableSession> 
 
     @Override
     public void accept(ImmutableSession session) {
-        HttpSession httpSession = new ImmutableHttpSessionAdapter(session, this.context.getServletContext());
+        FilteringHttpSession httpSession = new ImmutableFilteringHttpSession(session, this.context.getServletContext());
         HttpSessionEvent event = new HttpSessionEvent(httpSession);
-        Stream.of(this.context.getApplicationLifecycleListeners()).filter(listener -> listener instanceof HttpSessionListener).map(listener -> (HttpSessionListener) listener).forEach(listener -> {
+        Stream.of(this.context.getApplicationLifecycleListeners()).filter(HttpSessionListener.class::isInstance).map(HttpSessionListener.class::cast).forEach(listener -> {
             try {
                 this.context.fireContainerEvent("beforeSessionDestroyed", listener);
                 listener.sessionDestroyed(event);
@@ -61,16 +61,12 @@ public class CatalinaSessionDestroyAction implements Consumer<ImmutableSession> 
                 this.context.fireContainerEvent("afterSessionDestroyed", listener);
             }
         });
-        ImmutableSessionAttributes attributes = session.getAttributes();
-        for (String name : attributes.getAttributeNames()) {
-            Object attribute = attributes.getAttribute(name);
-            if (attribute instanceof HttpSessionBindingListener) {
-                HttpSessionBindingListener listener = (HttpSessionBindingListener) attribute;
-                try {
-                    listener.valueUnbound(new HttpSessionBindingEvent(httpSession, name, attribute));
-                } catch (Throwable e) {
-                    this.context.getLogger().warn(e.getMessage(), e);
-                }
+        for (Map.Entry<String, HttpSessionBindingListener> entry : httpSession.getAttributes(HttpSessionBindingListener.class).entrySet()) {
+            HttpSessionBindingListener listener = entry.getValue();
+            try {
+                listener.valueUnbound(new HttpSessionBindingEvent(httpSession, entry.getKey(), listener));
+            } catch (Throwable e) {
+                this.context.getLogger().warn(e.getMessage(), e);
             }
         }
     }

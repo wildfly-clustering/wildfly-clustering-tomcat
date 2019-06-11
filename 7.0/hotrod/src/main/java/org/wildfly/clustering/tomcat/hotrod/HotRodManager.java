@@ -25,10 +25,11 @@ package org.wildfly.clustering.tomcat.hotrod;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Properties;
+import java.util.ServiceLoader;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import javax.servlet.ServletContext;
 
@@ -40,11 +41,18 @@ import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Session;
 import org.apache.catalina.session.ManagerBase;
 import org.infinispan.client.hotrod.RemoteCache;
-import org.infinispan.client.hotrod.RemoteCacheContainer;
+import org.infinispan.client.hotrod.configuration.Configuration;
+import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
+import org.infinispan.client.hotrod.configuration.NearCacheMode;
 import org.infinispan.commons.marshall.jboss.DefaultContextClassResolver;
 import org.jboss.marshalling.MarshallingConfiguration;
+import org.wildfly.clustering.ee.CompositeIterable;
+import org.wildfly.clustering.ee.Immutability;
 import org.wildfly.clustering.ee.Recordable;
 import org.wildfly.clustering.ee.cache.tx.TransactionBatch;
+import org.wildfly.clustering.ee.immutable.CompositeImmutability;
+import org.wildfly.clustering.ee.immutable.DefaultImmutability;
+import org.wildfly.clustering.infinispan.client.RemoteCacheContainer;
 import org.wildfly.clustering.marshalling.jboss.ExternalizerObjectTable;
 import org.wildfly.clustering.marshalling.jboss.MarshallingContext;
 import org.wildfly.clustering.marshalling.jboss.SimpleClassTable;
@@ -52,30 +60,30 @@ import org.wildfly.clustering.marshalling.jboss.SimpleMarshalledValueFactory;
 import org.wildfly.clustering.marshalling.jboss.SimpleMarshallingConfigurationRepository;
 import org.wildfly.clustering.marshalling.jboss.SimpleMarshallingContextFactory;
 import org.wildfly.clustering.marshalling.spi.MarshalledValueFactory;
+import org.wildfly.clustering.tomcat.catalina.CatalinaManager;
+import org.wildfly.clustering.tomcat.catalina.CatalinaSessionExpirationListener;
 import org.wildfly.clustering.tomcat.catalina.DistributableManager;
 import org.wildfly.clustering.tomcat.catalina.IdentifierFactoryAdapter;
 import org.wildfly.clustering.tomcat.catalina.LocalSessionContext;
 import org.wildfly.clustering.tomcat.catalina.LocalSessionContextFactory;
-import org.wildfly.clustering.tomcat.catalina.CatalinaManager;
-import org.wildfly.clustering.tomcat.catalina.CatalinaSessionExpirationListener;
 import org.wildfly.clustering.web.IdentifierFactory;
 import org.wildfly.clustering.web.LocalContextFactory;
-import org.wildfly.clustering.web.hotrod.RemoteCacheContainerConfiguration;
-import org.wildfly.clustering.web.hotrod.RemoteCacheContainerFactory;
 import org.wildfly.clustering.web.hotrod.session.HotRodSessionManagerFactory;
 import org.wildfly.clustering.web.hotrod.session.HotRodSessionManagerFactoryConfiguration;
+import org.wildfly.clustering.web.hotrod.session.SessionManagerNearCacheFactory;
 import org.wildfly.clustering.web.session.ImmutableSession;
+import org.wildfly.clustering.web.session.SessionAttributeImmutability;
+import org.wildfly.clustering.web.session.SessionAttributePersistenceStrategy;
 import org.wildfly.clustering.web.session.SessionExpirationListener;
 import org.wildfly.clustering.web.session.SessionManager;
 import org.wildfly.clustering.web.session.SessionManagerConfiguration;
 import org.wildfly.clustering.web.session.SessionManagerFactory;
-import org.wildfly.clustering.web.session.SessionManagerFactoryConfiguration.SessionAttributePersistenceStrategy;
 
 /**
  * Distributed Manager implementation that configures a HotRod client.
  * @author Paul Ferraro
  */
-public class HotRodManager extends ManagerBase implements RemoteCacheContainerConfiguration {
+public class HotRodManager extends ManagerBase {
 
     enum MarshallingVersion implements Function<ClassLoader, MarshallingConfiguration> {
         VERSION_1() {
@@ -92,18 +100,13 @@ public class HotRodManager extends ManagerBase implements RemoteCacheContainerCo
         static final MarshallingVersion CURRENT = VERSION_1;
     }
 
-    private final Supplier<RemoteCacheContainer> factory = new RemoteCacheContainerFactory(this);
     private final Properties properties = new Properties();
 
     private volatile RemoteCacheContainer container;
     private volatile SessionManagerFactory<LocalSessionContext, TransactionBatch> managerFactory;
     private volatile CatalinaManager<TransactionBatch> manager;
     private volatile SessionAttributePersistenceStrategy persistenceStrategy = SessionAttributePersistenceStrategy.COARSE;
-
-    @Override
-    public Properties getProperties() {
-        return this.properties;
-    }
+    private volatile String configurationName;
 
     public void setProperty(String name, String value) {
         this.properties.setProperty("infinispan.client.hotrod." + name, value);
@@ -117,11 +120,26 @@ public class HotRodManager extends ManagerBase implements RemoteCacheContainerCo
         this.setPersistenceStrategy(SessionAttributePersistenceStrategy.valueOf(strategy));
     }
 
+    public void setConfigurationName(String configurationName) {
+        this.configurationName = configurationName;
+    }
+
     @Override
     protected void startInternal() throws LifecycleException {
         super.startInternal();
 
-        RemoteCacheContainer container = this.factory.get();
+        Integer maxActiveSessions = (this.getMaxActiveSessions() >= 0) ? Integer.valueOf(this.getMaxActiveSessions()) : null;
+
+        Configuration configuration = new ConfigurationBuilder()
+                .withProperties(this.properties)
+                .marshaller(new HotRodMarshaller(this.getClass().getClassLoader()))
+                .nearCache()
+                    .mode((maxActiveSessions != null) && (maxActiveSessions.intValue() == 0) ? NearCacheMode.DISABLED : NearCacheMode.INVALIDATED)
+                    .maxEntries((maxActiveSessions != null) ? maxActiveSessions.intValue() : Integer.MAX_VALUE)
+                .build();
+
+        String containerName = this.getClass().getName();
+        RemoteCacheContainer container = new RemoteCacheManager(containerName, configuration);
         container.start();
         this.container = container;
 
@@ -131,15 +149,19 @@ public class HotRodManager extends ManagerBase implements RemoteCacheContainerCo
         Engine engine = (Engine) host.getParent();
         // Deployment name = host name + context path + version
         String deploymentName = host.getName() + context.getName();
-        int maxActiveSessions = this.getMaxActiveSessions();
         SessionAttributePersistenceStrategy strategy = this.persistenceStrategy;
+        String configurationName = this.configurationName;
+
         MarshallingContext marshallingContext = new SimpleMarshallingContextFactory().createMarshallingContext(new SimpleMarshallingConfigurationRepository(MarshallingVersion.class, MarshallingVersion.CURRENT, loader), loader);
         MarshalledValueFactory<MarshallingContext> marshallingFactory = new SimpleMarshalledValueFactory(marshallingContext);
         LocalContextFactory<LocalSessionContext> localContextFactory = new LocalSessionContextFactory();
 
+        ServiceLoader<Immutability> loadedImmutability = ServiceLoader.load(Immutability.class, Immutability.class.getClassLoader());
+        Immutability immutability = new CompositeImmutability(new CompositeIterable<>(EnumSet.allOf(DefaultImmutability.class), EnumSet.allOf(SessionAttributeImmutability.class), loadedImmutability));
+
         HotRodSessionManagerFactoryConfiguration<MarshallingContext, LocalSessionContext> sessionManagerFactoryConfig = new HotRodSessionManagerFactoryConfiguration<MarshallingContext, LocalSessionContext>() {
             @Override
-            public int getMaxActiveSessions() {
+            public Integer getMaxActiveSessions() {
                 return maxActiveSessions;
             }
 
@@ -151,11 +173,6 @@ public class HotRodManager extends ManagerBase implements RemoteCacheContainerCo
             @Override
             public String getDeploymentName() {
                 return deploymentName;
-            }
-
-            @Override
-            public String getCacheName() {
-                return null;
             }
 
             @Override
@@ -180,7 +197,25 @@ public class HotRodManager extends ManagerBase implements RemoteCacheContainerCo
 
             @Override
             public <K, V> RemoteCache<K, V> getCache() {
-                return container.getCache(true);
+                String cacheName = this.getDeploymentName();
+                try (RemoteCacheContainer.NearCacheRegistration registration = container.registerNearCacheFactory(cacheName, new SessionManagerNearCacheFactory<>(this.getMaxActiveSessions(), this.getAttributePersistenceStrategy()))) {
+                    return container.administration().getOrCreateCache(cacheName, this.getConfigurationName());
+                }
+            }
+
+            @Override
+            public String getConfigurationName() {
+                return configurationName;
+            }
+
+            @Override
+            public String getContainerName() {
+                return containerName;
+            }
+
+            @Override
+            public Immutability getImmutability() {
+                return immutability;
             }
         };
 

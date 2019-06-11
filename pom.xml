@@ -27,7 +27,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>29</version>
+        <version>34</version>
     </parent>
 
     <groupId>org.wildfly.clustering</groupId>
@@ -53,8 +53,8 @@
     </modules>
 
     <properties>
-        <version.org.wildfly>16.0.0.Final</version.org.wildfly>
-        <version.org.infinispan>9.4.8.Final</version.org.infinispan>
+        <version.org.wildfly>17.0.0.Final</version.org.wildfly>
+        <version.org.infinispan>9.4.14.Final</version.org.infinispan>
     </properties>
 
     <build>
@@ -84,12 +84,34 @@
             </dependency>
             <dependency>
                 <groupId>org.wildfly</groupId>
+                <artifactId>wildfly-clustering-infinispan-client</artifactId>
+                <version>${version.org.wildfly}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.wildfly</groupId>
+                        <artifactId>wildfly-clustering-common</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly</groupId>
                 <artifactId>wildfly-clustering-web-hotrod</artifactId>
                 <version>${version.org.wildfly}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.jboss.modules</groupId>
                         <artifactId>jboss-modules</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly</groupId>
+                <artifactId>wildfly-clustering-web-cache</artifactId>
+                <version>${version.org.wildfly}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.spec.javax.servlet</groupId>
+                        <artifactId>jboss-servlet-api_4.0_spec</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -103,8 +125,12 @@
                         <artifactId>wildfly-clustering-common</artifactId>
                     </exclusion>
                     <exclusion>
+                        <groupId>org.jboss.metadata</groupId>
+                        <artifactId>jboss-metadata-web</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>org.jboss.spec.javax.servlet</groupId>
-                        <artifactId>jboss-servlet-api_3.1_spec</artifactId>
+                        <artifactId>jboss-servlet-api_4.0_spec</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
