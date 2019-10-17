@@ -53,8 +53,8 @@
     </modules>
 
     <properties>
-        <version.org.wildfly>17.0.0.Final</version.org.wildfly>
-        <version.org.infinispan>9.4.14.Final</version.org.infinispan>
+        <version.org.wildfly>18.0.0.Final</version.org.wildfly>
+        <version.org.infinispan>9.4.16.Final</version.org.infinispan>
     </properties>
 
     <build>
