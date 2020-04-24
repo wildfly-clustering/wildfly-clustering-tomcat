@@ -50,6 +50,7 @@
         <module>8.0</module>
         <module>8.5</module>
         <module>9.0</module>
+        <module>10.0</module>
     </modules>
 
     <properties>
