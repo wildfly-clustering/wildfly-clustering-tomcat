@@ -1,6 +1,6 @@
 /*
  * JBoss, Home of Professional Open Source.
- * Copyright 2016, Red Hat, Inc., and individual contributors
+ * Copyright 2020, Red Hat, Inc., and individual contributors
  * as indicated by the @author tags. See the copyright.txt file in the
  * distribution for a full listing of individual contributors.
  *
@@ -20,22 +20,27 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.wildfly.clustering.tomcat.hotrod;
+package org.wildfly.clustering.tomcat.servlet;
 
-import org.infinispan.commons.marshall.jboss.AbstractJBossMarshaller;
-import org.infinispan.commons.marshall.jboss.DefaultContextClassResolver;
-import org.wildfly.clustering.marshalling.jboss.DynamicClassTable;
-import org.wildfly.clustering.marshalling.jboss.ExternalizerObjectTable;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 
 /**
  * @author Paul Ferraro
  */
-public class HotRodMarshaller extends AbstractJBossMarshaller {
+public interface SessionHandler<REQUEST, RESPONSE> {
+    final String SERVLET_NAME = "session";
+    final String SERVLET_PATH = "/" + SERVLET_NAME;
+    final String VALUE = "value";
+    final String SESSION_ID = "session-id";
 
-    public HotRodMarshaller(ClassLoader loader) {
-        super();
-        super.baseCfg.setClassResolver(new DefaultContextClassResolver(loader));
-        super.baseCfg.setClassTable(new DynamicClassTable(loader));
-        super.baseCfg.setObjectTable(new ExternalizerObjectTable(loader));
+    static URI createURI(URL baseURL) throws URISyntaxException {
+        return baseURL.toURI().resolve(SERVLET_NAME);
     }
+
+    void doHead(REQUEST request, RESPONSE response) throws IOException;
+    void doGet(REQUEST request, RESPONSE response) throws IOException;
+    void doDelete(REQUEST request, RESPONSE response) throws IOException;
 }

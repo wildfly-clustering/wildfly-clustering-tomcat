@@ -32,6 +32,9 @@ import java.util.ServiceLoader;
 import java.util.function.Function;
 
 import javax.servlet.ServletContext;
+import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionActivationListener;
+import javax.servlet.http.HttpSessionBindingListener;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.Engine;
@@ -44,8 +47,10 @@ import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.configuration.NearCacheMode;
-import org.infinispan.commons.marshall.jboss.DefaultContextClassResolver;
 import org.jboss.marshalling.MarshallingConfiguration;
+import org.jboss.marshalling.SimpleClassResolver;
+import org.wildfly.clustering.Registrar;
+import org.wildfly.clustering.Registration;
 import org.wildfly.clustering.ee.CompositeIterable;
 import org.wildfly.clustering.ee.Immutability;
 import org.wildfly.clustering.ee.Recordable;
@@ -53,6 +58,8 @@ import org.wildfly.clustering.ee.cache.tx.TransactionBatch;
 import org.wildfly.clustering.ee.immutable.CompositeImmutability;
 import org.wildfly.clustering.ee.immutable.DefaultImmutability;
 import org.wildfly.clustering.infinispan.client.RemoteCacheContainer;
+import org.wildfly.clustering.infinispan.client.manager.RemoteCacheManager;
+import org.wildfly.clustering.infinispan.marshalling.jboss.JBossMarshaller;
 import org.wildfly.clustering.marshalling.jboss.ExternalizerObjectTable;
 import org.wildfly.clustering.marshalling.jboss.MarshallingContext;
 import org.wildfly.clustering.marshalling.jboss.SimpleClassTable;
@@ -62,6 +69,7 @@ import org.wildfly.clustering.marshalling.jboss.SimpleMarshallingContextFactory;
 import org.wildfly.clustering.marshalling.spi.MarshalledValueFactory;
 import org.wildfly.clustering.tomcat.catalina.CatalinaManager;
 import org.wildfly.clustering.tomcat.catalina.CatalinaSessionExpirationListener;
+import org.wildfly.clustering.tomcat.catalina.CatalinaSpecificationProvider;
 import org.wildfly.clustering.tomcat.catalina.DistributableManager;
 import org.wildfly.clustering.tomcat.catalina.IdentifierFactoryAdapter;
 import org.wildfly.clustering.tomcat.catalina.LocalSessionContext;
@@ -78,19 +86,20 @@ import org.wildfly.clustering.web.session.SessionExpirationListener;
 import org.wildfly.clustering.web.session.SessionManager;
 import org.wildfly.clustering.web.session.SessionManagerConfiguration;
 import org.wildfly.clustering.web.session.SessionManagerFactory;
+import org.wildfly.clustering.web.session.SpecificationProvider;
 
 /**
  * Distributed Manager implementation that configures a HotRod client.
  * @author Paul Ferraro
  */
-public class HotRodManager extends ManagerBase {
+public class HotRodManager extends ManagerBase implements Registrar<String> {
 
     enum MarshallingVersion implements Function<ClassLoader, MarshallingConfiguration> {
         VERSION_1() {
             @Override
             public MarshallingConfiguration apply(ClassLoader loader) {
                 MarshallingConfiguration config = new MarshallingConfiguration();
-                config.setClassResolver(new DefaultContextClassResolver(loader));
+                config.setClassResolver(new SimpleClassResolver(loader));
                 config.setClassTable(new SimpleClassTable(Serializable.class, Externalizable.class));
                 config.setObjectTable(new ExternalizerObjectTable(loader));
                 return config;
@@ -103,7 +112,7 @@ public class HotRodManager extends ManagerBase {
     private final Properties properties = new Properties();
 
     private volatile RemoteCacheContainer container;
-    private volatile SessionManagerFactory<LocalSessionContext, TransactionBatch> managerFactory;
+    private volatile SessionManagerFactory<ServletContext, LocalSessionContext, TransactionBatch> managerFactory;
     private volatile CatalinaManager<TransactionBatch> manager;
     private volatile SessionAttributePersistenceStrategy persistenceStrategy = SessionAttributePersistenceStrategy.COARSE;
     private volatile String configurationName;
@@ -125,26 +134,31 @@ public class HotRodManager extends ManagerBase {
     }
 
     @Override
+    public Registration register(String cacheName) {
+        return () -> {};
+    }
+
+    @Override
     protected void startInternal() throws LifecycleException {
         super.startInternal();
 
         Integer maxActiveSessions = (this.getMaxActiveSessions() >= 0) ? Integer.valueOf(this.getMaxActiveSessions()) : null;
 
+        Context context = this.getContext();
+        ClassLoader loader = context.getLoader().getClassLoader();
         Configuration configuration = new ConfigurationBuilder()
                 .withProperties(this.properties)
-                .marshaller(new HotRodMarshaller(this.getClass().getClassLoader()))
+                .marshaller(new JBossMarshaller(new SimpleMarshallingConfigurationRepository(MarshallingVersion.class, MarshallingVersion.CURRENT, loader), loader))
                 .nearCache()
                     .mode((maxActiveSessions != null) && (maxActiveSessions.intValue() == 0) ? NearCacheMode.DISABLED : NearCacheMode.INVALIDATED)
                     .maxEntries((maxActiveSessions != null) ? maxActiveSessions.intValue() : Integer.MAX_VALUE)
                 .build();
 
         String containerName = this.getClass().getName();
-        RemoteCacheContainer container = new RemoteCacheManager(containerName, configuration);
+        RemoteCacheContainer container = new RemoteCacheManager(containerName, configuration, this);
         container.start();
         this.container = container;
 
-        Context context = this.getContext();
-        ClassLoader loader = context.getLoader().getClassLoader();
         Host host = (Host) context.getParent();
         Engine engine = (Engine) host.getParent();
         // Deployment name = host name + context path + version
@@ -159,7 +173,7 @@ public class HotRodManager extends ManagerBase {
         ServiceLoader<Immutability> loadedImmutability = ServiceLoader.load(Immutability.class, Immutability.class.getClassLoader());
         Immutability immutability = new CompositeImmutability(new CompositeIterable<>(EnumSet.allOf(DefaultImmutability.class), EnumSet.allOf(SessionAttributeImmutability.class), loadedImmutability));
 
-        HotRodSessionManagerFactoryConfiguration<MarshallingContext, LocalSessionContext> sessionManagerFactoryConfig = new HotRodSessionManagerFactoryConfiguration<MarshallingContext, LocalSessionContext>() {
+        HotRodSessionManagerFactoryConfiguration<HttpSession, ServletContext, HttpSessionActivationListener, HttpSessionBindingListener, MarshallingContext, LocalSessionContext> sessionManagerFactoryConfig = new HotRodSessionManagerFactoryConfiguration<HttpSession, ServletContext, HttpSessionActivationListener, HttpSessionBindingListener, MarshallingContext, LocalSessionContext>() {
             @Override
             public Integer getMaxActiveSessions() {
                 return maxActiveSessions;
@@ -181,11 +195,6 @@ public class HotRodManager extends ManagerBase {
             }
 
             @Override
-            public MarshallingContext getMarshallingContext() {
-                return marshallingContext;
-            }
-
-            @Override
             public String getServerName() {
                 return engine.getService().getName();
             }
@@ -204,18 +213,23 @@ public class HotRodManager extends ManagerBase {
             }
 
             @Override
-            public String getContainerName() {
-                return containerName;
-            }
-
-            @Override
             public String getConfigurationName() {
                 return configurationName;
             }
 
             @Override
+            public String getContainerName() {
+                return containerName;
+            }
+
+            @Override
             public Immutability getImmutability() {
                 return immutability;
+            }
+
+            @Override
+            public SpecificationProvider<HttpSession, ServletContext, HttpSessionActivationListener, HttpSessionBindingListener> getSpecificationProvider() {
+                return CatalinaSpecificationProvider.INSTANCE;
             }
         };
 
@@ -225,7 +239,7 @@ public class HotRodManager extends ManagerBase {
         SessionExpirationListener expirationListener = new CatalinaSessionExpirationListener(context);
         IdentifierFactory<String> identifierFactory = new IdentifierFactoryAdapter(this.getSessionIdGenerator());
 
-        SessionManagerConfiguration sessionManagerConfiguration = new SessionManagerConfiguration() {
+        SessionManagerConfiguration<ServletContext> sessionManagerConfiguration = new SessionManagerConfiguration<ServletContext>() {
             @Override
             public ServletContext getServletContext() {
                 return servletContext;
@@ -275,7 +289,7 @@ public class HotRodManager extends ManagerBase {
 
     @Override
     public void changeSessionId(Session session) {
-        this.manager.changeSessionId(session);
+        this.manager.changeSessionId(session, this.generateSessionId());
     }
 
     @Override
