@@ -31,6 +31,8 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionBindingListener;
@@ -39,14 +41,13 @@ import org.apache.catalina.Context;
 import org.apache.catalina.Globals;
 import org.wildfly.clustering.ee.Batch;
 import org.wildfly.clustering.ee.BatchContext;
-import org.wildfly.clustering.web.cache.session.ImmutableFilteringHttpSession;
 import org.wildfly.clustering.web.session.Session;
 
 /**
  * Adapts a WildFly distributable Session to an HttpSession.
  * @author Paul Ferraro
  */
-public class HttpSessionAdapter<B extends Batch> extends ImmutableFilteringHttpSession {
+public class HttpSessionAdapter<B extends Batch> implements HttpSession {
 
     private static final Set<String> EXCLUDED_ATTRIBUTES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(Globals.SUBJECT_ATTR, Globals.GSS_CREDENTIAL_ATTR, org.apache.catalina.valves.CrawlerSessionManagerValve.class.getName())));
 
@@ -86,7 +87,6 @@ public class HttpSessionAdapter<B extends Batch> extends ImmutableFilteringHttpS
     private final Runnable invalidateAction;
 
     public HttpSessionAdapter(Session<LocalSessionContext> session, CatalinaManager<B> manager, B batch, Runnable invalidateAction) {
-        super(session, manager.getContext().getServletContext());
         this.session = session;
         this.manager = manager;
         this.batch = batch;
@@ -96,28 +96,28 @@ public class HttpSessionAdapter<B extends Batch> extends ImmutableFilteringHttpS
     @Override
     public boolean isNew() {
         try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            return super.isNew();
+            return this.session.getMetaData().isNew();
         }
     }
 
     @Override
     public long getCreationTime() {
         try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            return super.getCreationTime();
+            return this.session.getMetaData().getCreationTime().toEpochMilli();
         }
     }
 
     @Override
     public long getLastAccessedTime() {
         try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            return super.getLastAccessedTime();
+            return this.session.getMetaData().getLastAccessedTime().toEpochMilli();
         }
     }
 
     @Override
     public int getMaxInactiveInterval() {
         try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            return super.getMaxInactiveInterval();
+            return (int) this.session.getMetaData().getMaxInactiveInterval().getSeconds();
         }
     }
 
@@ -144,14 +144,14 @@ public class HttpSessionAdapter<B extends Batch> extends ImmutableFilteringHttpS
         }
         this.session.getLocalContext().getNotes().get(name);
         try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            return super.getAttribute(name);
+            return this.session.getAttributes().getAttribute(name);
         }
     }
 
     @Override
     public Enumeration<String> getAttributeNames() {
         try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            return super.getAttributeNames();
+            return Collections.enumeration(this.session.getAttributes().getAttributeNames());
         }
     }
 
@@ -209,5 +209,51 @@ public class HttpSessionAdapter<B extends Batch> extends ImmutableFilteringHttpS
         HttpSessionBindingEvent event = new HttpSessionBindingEvent(this, name, (oldValue != null) ? oldValue : newValue);
         AttributeEventType type = (oldValue == null) ? AttributeEventType.ADDED : (newValue == null) ? AttributeEventType.REMOVED : AttributeEventType.REPLACED;
         type.accept(this.manager.getContext(), event);
+    }
+
+    @Override
+    public String getId() {
+        return this.session.getId();
+    }
+
+    @Override
+    public ServletContext getServletContext() {
+        return this.manager.getContext().getServletContext();
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    public javax.servlet.http.HttpSessionContext getSessionContext() {
+        return new javax.servlet.http.HttpSessionContext() {
+            @Override
+            public HttpSession getSession(String sessionId) {
+                throw null;
+            }
+
+            @Override
+            public Enumeration<String> getIds() {
+                return Collections.enumeration(Collections.<String>emptyList());
+            }
+        };
+    }
+
+    @Override
+    public Object getValue(String name) {
+        return this.getAttribute(name);
+    }
+
+    @Override
+    public String[] getValueNames() {
+        return Collections.list(this.getAttributeNames()).toArray(new String[0]);
+    }
+
+    @Override
+    public void putValue(String name, Object value) {
+        this.setAttribute(name, value);
+    }
+
+    @Override
+    public void removeValue(String name) {
+        this.removeAttribute(name);
     }
 }

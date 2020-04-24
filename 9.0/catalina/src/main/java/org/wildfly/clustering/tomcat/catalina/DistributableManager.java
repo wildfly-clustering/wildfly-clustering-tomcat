@@ -38,7 +38,6 @@ import org.apache.catalina.LifecycleException;
 import org.wildfly.clustering.ee.Batch;
 import org.wildfly.clustering.ee.Batcher;
 import org.wildfly.clustering.marshalling.spi.Marshallability;
-import org.wildfly.clustering.web.cache.session.ImmutableFilteringHttpSession;
 import org.wildfly.clustering.web.session.ImmutableSession;
 import org.wildfly.clustering.web.session.Session;
 import org.wildfly.clustering.web.session.SessionManager;
@@ -127,7 +126,7 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
             B batch = batcher.createBatch();
             try {
                 Session<LocalSessionContext> session = this.manager.createSession(id);
-                HttpSessionEvent event = new HttpSessionEvent(new ImmutableFilteringHttpSession(session, this.context.getServletContext()));
+                HttpSessionEvent event = new HttpSessionEvent(CatalinaSpecificationProvider.INSTANCE.createHttpSession(session, this.context.getServletContext()));
                 Stream.of(this.context.getApplicationLifecycleListeners()).filter(HttpSessionListener.class::isInstance).map(HttpSessionListener.class::cast).forEach(listener -> {
                     try {
                         this.context.fireContainerEvent("beforeSessionCreated", listener);

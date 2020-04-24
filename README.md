@@ -5,11 +5,11 @@ A distributed session manager for Tomcat based on WildFly's distributed session 
 
 ## Building
 
-1.	Clone this repository and build using a standard maven build.
+1.	Clone this repository and build using Java 8 and a standard maven build.
 
-		$ git clone git@github.com:wildfly-clustering/wildfly-clustering-tomcat.git
-		$ cd wildfly-clustering-tomcat
-		$ mvn clean install
+	$ git clone git@github.com:wildfly-clustering/wildfly-clustering-tomcat.git
+	$ cd wildfly-clustering-tomcat
+	$ mvn clean install
 
 ## Installation
 
@@ -29,7 +29,7 @@ A distributed session manager for Tomcat based on WildFly's distributed session 
 
 Define the distributed Manager implementation either within the global `$CATALINA_HOME/conf/context.xml`, or within the `/WEB-INF/context.xml` of a web application:
 
-    <Manager className="org.wildfly.clustering.tomcat.hotrod.HotRodManager"/>
+	<Manager className="org.wildfly.clustering.tomcat.hotrod.HotRodManager"/>
 
 ### Configuration Properties
 
