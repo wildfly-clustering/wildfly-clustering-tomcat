@@ -57,6 +57,7 @@ public abstract class AbstractSmokeITCase {
     @ClassRule
     public static final InfinispanServerRule SERVERS = InfinispanServerRuleBuilder.config("config.xml")
             .runMode(ServerRunMode.EMBEDDED)
+            .numServers(1)
             .build();
 
     public static Archive<?> deployment(Class<? extends AbstractSmokeITCase> testClass, Class<? extends SessionHandler<?, ?>> servletClass) {
