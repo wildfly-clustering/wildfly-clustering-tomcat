@@ -32,8 +32,8 @@ import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
 import org.apache.catalina.Context;
-import org.wildfly.clustering.web.cache.session.FilteringHttpSession;
-import org.wildfly.clustering.web.cache.session.ImmutableFilteringHttpSession;
+import org.wildfly.clustering.web.cache.session.ImmutableSessionAttributesFilter;
+import org.wildfly.clustering.web.cache.session.SessionAttributesFilter;
 import org.wildfly.clustering.web.session.ImmutableSession;
 
 /**
@@ -49,8 +49,8 @@ public class CatalinaSessionDestroyAction implements Consumer<ImmutableSession> 
 
     @Override
     public void accept(ImmutableSession session) {
-        FilteringHttpSession httpSession = new ImmutableFilteringHttpSession(session, this.context.getServletContext());
-        HttpSessionEvent event = new HttpSessionEvent(httpSession);
+        SessionAttributesFilter filter = new ImmutableSessionAttributesFilter(session);
+        HttpSessionEvent event = new HttpSessionEvent(CatalinaSpecificationProvider.INSTANCE.createHttpSession(session, this.context.getServletContext()));
         Stream.of(this.context.getApplicationLifecycleListeners()).filter(HttpSessionListener.class::isInstance).map(HttpSessionListener.class::cast).forEach(listener -> {
             try {
                 this.context.fireContainerEvent("beforeSessionDestroyed", listener);
@@ -61,10 +61,10 @@ public class CatalinaSessionDestroyAction implements Consumer<ImmutableSession> 
                 this.context.fireContainerEvent("afterSessionDestroyed", listener);
             }
         });
-        for (Map.Entry<String, HttpSessionBindingListener> entry : httpSession.getAttributes(HttpSessionBindingListener.class).entrySet()) {
+        for (Map.Entry<String, HttpSessionBindingListener> entry : filter.getAttributes(HttpSessionBindingListener.class).entrySet()) {
             HttpSessionBindingListener listener = entry.getValue();
             try {
-                listener.valueUnbound(new HttpSessionBindingEvent(httpSession, entry.getKey(), listener));
+                listener.valueUnbound(new HttpSessionBindingEvent(event.getSession(), entry.getKey(), listener));
             } catch (Throwable e) {
                 this.context.getLogger().warn(e.getMessage(), e);
             }

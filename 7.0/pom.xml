@@ -42,6 +42,7 @@
 
     <properties>
         <version.org.apache.tomcat>7.0.100</version.org.apache.tomcat>
+        <version.org.jboss.arquillian.container.tomcat>1.1.0.Final</version.org.jboss.arquillian.container.tomcat>
     </properties>
 
     <dependencyManagement>
@@ -61,6 +62,12 @@
                 <artifactId>tomcat-catalina</artifactId>
                 <version>${version.org.apache.tomcat}</version>
                 <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.arquillian.container</groupId>
+                <artifactId>arquillian-tomcat-managed-7</artifactId>
+                <version>${version.org.jboss.arquillian.container.tomcat}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

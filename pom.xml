@@ -50,11 +50,16 @@
         <module>8.0</module>
         <module>8.5</module>
         <module>9.0</module>
+        <module>10.0</module>
     </modules>
 
     <properties>
-        <version.org.wildfly>19.0.0.Final</version.org.wildfly>
-        <version.org.infinispan>9.4.18.Final</version.org.infinispan>
+        <!-- Requires https://github.com/pferraro/wildfly/tree/infinispan-10.1.x -->
+        <version.org.wildfly>20.0.0.Beta1-SNAPSHOT</version.org.wildfly>
+        <version.org.infinispan>10.1.6.Final</version.org.infinispan>
+        <version.org.apache.httpcomponents>4.5.9</version.org.apache.httpcomponents>
+        <version.org.jboss.arquillian>1.6.0.Final</version.org.jboss.arquillian>
+        <version.org.junit>4.13</version.org.junit>
     </properties>
 
     <build>
@@ -92,6 +97,11 @@
                         <artifactId>wildfly-clustering-common</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly</groupId>
+                <artifactId>wildfly-clustering-infinispan-marshalling</artifactId>
+                <version>${version.org.wildfly}</version>
             </dependency>
             <dependency>
                 <groupId>org.wildfly</groupId>
@@ -140,10 +150,37 @@
                 <version>${version.org.infinispan}</version>
             </dependency>
             <dependency>
+                <groupId>org.infinispan</groupId>
+                <artifactId>infinispan-server-testdriver-junit4</artifactId>
+                <version>${version.org.infinispan}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.kohsuke.metainf-services</groupId>
                 <artifactId>metainf-services</artifactId>
                 <version>1.7</version>
-                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${version.org.apache.httpcomponents}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.arquillian</groupId>
+                <artifactId>arquillian-bom</artifactId>
+                <version>${version.org.jboss.arquillian}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.arquillian.container</groupId>
+                <artifactId>arquillian-tomcat-managed-8</artifactId>
+                <version>${version.org.jboss.arquillian.container.tomcat}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${version.org.junit}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
