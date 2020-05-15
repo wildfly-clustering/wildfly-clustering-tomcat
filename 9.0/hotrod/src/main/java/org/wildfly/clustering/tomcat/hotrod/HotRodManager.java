@@ -273,6 +273,7 @@ public class HotRodManager extends ManagerBase {
         return this.manager.findSession(id);
     }
 
+    @Deprecated
     @Override
     public void changeSessionId(Session session) {
         this.manager.changeSessionId(session);

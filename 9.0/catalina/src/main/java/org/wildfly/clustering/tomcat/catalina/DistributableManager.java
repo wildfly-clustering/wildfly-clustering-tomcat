@@ -196,6 +196,7 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
         return () -> this.lifecycleLock.unlock(stamp);
     }
 
+    @Deprecated
     @Override
     public void changeSessionId(org.apache.catalina.Session session) {
         this.changeSessionId(session, this.manager.createIdentifier());

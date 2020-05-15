@@ -41,7 +41,6 @@
         <connection>scm:git:git://github.com:wildfly-clustering/wildfly-clustering-tomcat.git</connection>
         <developerConnection>scm:git:git@github.com:wildfly-clustering/wildfly-clustering-tomcat.git</developerConnection>
         <url>https://github.com/wildfly-clustering/wildfly-clustering-tomcat</url>
-        <tag>9.0.0.Final</tag>
     </scm>
 
     <modules>
@@ -53,8 +52,8 @@
     </modules>
 
     <properties>
-        <version.org.wildfly>19.0.0.Final</version.org.wildfly>
-        <version.org.infinispan>9.4.18.Final</version.org.infinispan>
+        <version.org.wildfly>19.1.0.Final</version.org.wildfly>
+        <version.org.infinispan>9.4.19.Final</version.org.infinispan>
     </properties>
 
     <build>
