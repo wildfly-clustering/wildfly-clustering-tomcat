@@ -149,9 +149,7 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
         Configuration configuration = new ConfigurationBuilder()
                 .withProperties(this.properties)
                 .marshaller(new JBossMarshaller(new SimpleMarshallingConfigurationRepository(MarshallingVersion.class, MarshallingVersion.CURRENT, loader), loader))
-                .nearCache()
-                    .mode((maxActiveSessions != null) && (maxActiveSessions.intValue() == 0) ? NearCacheMode.DISABLED : NearCacheMode.INVALIDATED)
-                    .maxEntries((maxActiveSessions != null) ? maxActiveSessions.intValue() : Integer.MAX_VALUE)
+                .nearCache().mode(NearCacheMode.INVALIDATED).maxEntries(-1)
                 .build();
 
         String containerName = this.getClass().getName();
