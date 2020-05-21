@@ -54,9 +54,8 @@
     </modules>
 
     <properties>
-        <!-- Requires https://github.com/pferraro/wildfly/tree/infinispan-10.1.x -->
-        <version.org.wildfly>20.0.0.Beta1-SNAPSHOT</version.org.wildfly>
-        <version.org.infinispan>10.1.6.Final</version.org.infinispan>
+        <version.org.wildfly>20.0.0.Beta1</version.org.wildfly>
+        <version.org.infinispan>10.1.8.Final</version.org.infinispan>
         <version.org.apache.httpcomponents>4.5.9</version.org.apache.httpcomponents>
         <version.org.jboss.arquillian>1.6.0.Final</version.org.jboss.arquillian>
         <version.org.junit>4.13</version.org.junit>

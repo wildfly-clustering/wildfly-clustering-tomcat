@@ -216,12 +216,7 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
     }
 
     @Override
-    public void setNotifyBindingListenerOnUnchangedValue(boolean notify) {
-        // Do nothing
-    }
-
-    @Override
-    public void setNotifyAttributeListenerOnUnchangedValue(boolean notify) {
-        // Do nothing
+    public boolean getNotifyAttributeListenerOnUnchangedValue() {
+        return false;
     }
 }

@@ -202,4 +202,20 @@ public interface CatalinaManager<B extends Batch> extends Manager, Lifecycle {
     default String getStateName() {
         return null;
     }
+
+    @Override
+    default void setNotifyBindingListenerOnUnchangedValue(boolean notifyBindingListenerOnUnchangedValue) {
+    }
+
+    @Override
+    default void setNotifyAttributeListenerOnUnchangedValue(boolean notifyAttributeListenerOnUnchangedValue) {
+    }
+
+    @Override
+    default void setSessionActivityCheck(boolean sessionActivityCheck) {
+    }
+
+    @Override
+    default void setSessionLastAccessAtStart(boolean sessionLastAccessAtStart) {
+    }
 }

@@ -202,4 +202,12 @@ public interface CatalinaManager<B extends Batch> extends Manager, Lifecycle {
     default String getStateName() {
         return null;
     }
+
+    @Override
+    default void setNotifyBindingListenerOnUnchangedValue(boolean notify) {
+    }
+
+    @Override
+    default void setNotifyAttributeListenerOnUnchangedValue(boolean notify) {
+    }
 }
