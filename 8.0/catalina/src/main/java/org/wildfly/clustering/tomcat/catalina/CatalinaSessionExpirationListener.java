@@ -22,10 +22,12 @@
 
 package org.wildfly.clustering.tomcat.catalina;
 
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 import org.apache.catalina.Context;
-import org.wildfly.clustering.tomcat.ContextClassLoaderAction;
+import org.jboss.as.clustering.context.ContextClassLoaderReference;
+import org.jboss.as.clustering.context.ContextReferenceExecutor;
 import org.wildfly.clustering.web.session.ImmutableSession;
 import org.wildfly.clustering.web.session.SessionExpirationListener;
 
@@ -36,15 +38,15 @@ import org.wildfly.clustering.web.session.SessionExpirationListener;
 public class CatalinaSessionExpirationListener implements SessionExpirationListener {
 
     private final Consumer<ImmutableSession> expireAction;
-    private final Consumer<Runnable> classLoaderAction;
+    private final Executor executor;
 
     public CatalinaSessionExpirationListener(Context context) {
         this.expireAction = new CatalinaSessionDestroyAction(context);
-        this.classLoaderAction = new ContextClassLoaderAction(context.getLoader().getClassLoader());
+        this.executor = new ContextReferenceExecutor<>(context.getLoader().getClassLoader(), ContextClassLoaderReference.INSTANCE);
     }
 
     @Override
     public void sessionExpired(ImmutableSession session) {
-        this.classLoaderAction.accept(() -> this.expireAction.accept(session));
+        this.executor.execute(() -> this.expireAction.accept(session));
     }
 }
