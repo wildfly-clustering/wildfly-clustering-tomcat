@@ -28,47 +28,28 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
-import org.wildfly.clustering.tomcat.servlet.SessionHandler;
+import org.wildfly.clustering.tomcat.servlet.ServletHandler;
 
 /**
  * @author Paul Ferraro
  */
-@WebServlet(SessionHandler.SERVLET_PATH)
-public class SessionServlet extends HttpServlet implements SessionHandler<HttpServletRequest, HttpServletResponse> {
+@WebServlet(ServletHandler.SERVLET_PATH)
+public class SessionServlet extends HttpServlet implements ServletHandler<HttpServletRequest, HttpServletResponse> {
     private static final long serialVersionUID = 2878267318695777395L;
 
     @Override
     public void doHead(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            response.setHeader(SESSION_ID, session.getId());
-        }
+        this.doHead(new TomcatService(request, response));
     }
 
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        HttpSession session = request.getSession();
-        response.setHeader(SESSION_ID, session.getId());
-
-        Integer value = (Integer) session.getAttribute(VALUE);
-        if (value == null) {
-            value = Integer.valueOf(0);
-        } else {
-            value = Integer.valueOf(value.intValue() + 1);
-        }
-        session.setAttribute(VALUE, value);
-
-        response.setIntHeader(VALUE, value);
+        this.doGet(new TomcatService(request, response));
     }
 
     @Override
     public void doDelete(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            response.setHeader(SESSION_ID, session.getId());
-            session.invalidate();
-        }
+        this.doDelete(new TomcatService(request, response));
     }
 }

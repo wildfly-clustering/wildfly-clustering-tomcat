@@ -22,10 +22,7 @@
 
 package org.wildfly.clustering.tomcat;
 
-import java.io.IOException;
-import java.net.InetAddress;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Arrays;
 
@@ -36,16 +33,18 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.infinispan.server.Server;
+import org.infinispan.protostream.SerializationContextInitializer;
 import org.infinispan.server.test.core.ServerRunMode;
-import org.infinispan.server.test.junit4.InfinispanServerRule;
+import org.infinispan.server.test.core.TestSystemPropertyNames;
 import org.infinispan.server.test.junit4.InfinispanServerRuleBuilder;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.Assert;
 import org.junit.ClassRule;
-import org.wildfly.clustering.tomcat.servlet.SessionHandler;
+import org.junit.rules.TestRule;
+import org.wildfly.clustering.tomcat.servlet.ServletHandler;
+import org.wildfly.clustering.tomcat.servlet.TestSerializationContextInitializer;
 
 /**
  * @author Paul Ferraro
@@ -56,29 +55,33 @@ public abstract class AbstractSmokeITCase {
     public static final String DEPLOYMENT_1 = "deployment-1";
     public static final String DEPLOYMENT_2 = "deployment-2";
 
+/*  Only needed for clustered server configuration
     static {
-        System.setProperty(Server.INFINISPAN_CLUSTER_STACK, Server.DEFAULT_CLUSTER_STACK);
-        System.setProperty(Server.INFINISPAN_CLUSTER_NAME, Server.DEFAULT_CLUSTER_NAME);
-        System.setProperty(Server.INFINISPAN_NODE_NAME, InetAddress.getLoopbackAddress().getHostName());
+        System.setProperty("infinispan.cluster.stack", "tcp");
+        System.setProperty("infinispan.cluster.name", "cluster");
+        System.setProperty("infinispan.node.name", InetAddress.getLoopbackAddress().getHostName());
     }
+*/
+    static final String INFINISPAN_SERVER_HOME = System.getProperty("infinispan.server.home");
 
     @ClassRule
-    public static final InfinispanServerRule SERVERS = InfinispanServerRuleBuilder.config("config.xml")
-            .runMode(ServerRunMode.FORKED)
-            .numServers(1)
-            .build();
+    public static final TestRule SERVERS = InfinispanServerRuleBuilder.config(INFINISPAN_SERVER_HOME + "/server/conf/infinispan.xml")
+                .property(TestSystemPropertyNames.INFINISPAN_SERVER_HOME, INFINISPAN_SERVER_HOME)
+                .runMode(ServerRunMode.FORKED)
+                .numServers(1)
+                .build();
 
-    public static Archive<?> deployment(Class<? extends AbstractSmokeITCase> testClass, Class<? extends SessionHandler<?, ?>> servletClass) {
+    public static Archive<?> deployment(Class<? extends AbstractSmokeITCase> testClass, Class<? extends ServletHandler<?, ?>> servletClass) {
         return ShrinkWrap.create(WebArchive.class, testClass.getSimpleName() + ".war")
-                .addClass(SessionHandler.class)
-                .addClass(servletClass)
-                .addAsManifestResource(AbstractSmokeITCase.class.getPackage(), "context.xml", "context.xml")
+                .addPackage(ServletHandler.class.getPackage())
+                .addPackage(servletClass.getPackage())
+                .addAsServiceProvider(SerializationContextInitializer.class.getName(), TestSerializationContextInitializer.class.getName() + "Impl")
                 ;
     }
 
-    protected void test(URL baseURL1, URL baseURL2) throws IOException, URISyntaxException {
-        URI uri1 = SessionHandler.createURI(baseURL1);
-        URI uri2 = SessionHandler.createURI(baseURL2);
+    protected void test(URL baseURL1, URL baseURL2) throws Exception {
+        URI uri1 = ServletHandler.createURI(baseURL1);
+        URI uri2 = ServletHandler.createURI(baseURL2);
 
         try (CloseableHttpClient client = HttpClients.createDefault()) {
             String sessionId = null;
@@ -87,22 +90,23 @@ public abstract class AbstractSmokeITCase {
                 for (URI uri : Arrays.asList(uri1, uri2)) {
                     try (CloseableHttpResponse response = client.execute(new HttpGet(uri))) {
                         Assert.assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
-                        Assert.assertEquals(String.valueOf(value++), response.getFirstHeader(SessionHandler.VALUE).getValue());
+                        Assert.assertEquals(String.valueOf(value++), response.getFirstHeader(ServletHandler.VALUE).getValue());
                         if (sessionId == null) {
-                            sessionId = response.getFirstHeader(SessionHandler.SESSION_ID).getValue();
+                            sessionId = response.getFirstHeader(ServletHandler.SESSION_ID).getValue();
                         } else {
-                            Assert.assertEquals(sessionId, response.getFirstHeader(SessionHandler.SESSION_ID).getValue());
+                            Assert.assertEquals(sessionId, response.getFirstHeader(ServletHandler.SESSION_ID).getValue());
                         }
                     }
+                    Thread.sleep(100);
                 }
             }
             try (CloseableHttpResponse response = client.execute(new HttpDelete(uri1))) {
                 Assert.assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
-                Assert.assertEquals(sessionId, response.getFirstHeader(SessionHandler.SESSION_ID).getValue());
+                Assert.assertEquals(sessionId, response.getFirstHeader(ServletHandler.SESSION_ID).getValue());
             }
             try (CloseableHttpResponse response = client.execute(new HttpHead(uri2))) {
                 Assert.assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
-                Assert.assertFalse(response.containsHeader(SessionHandler.SESSION_ID));
+                Assert.assertFalse(response.containsHeader(ServletHandler.SESSION_ID));
             }
         }
     }
