@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.function.Function;
@@ -34,7 +36,6 @@ import java.util.function.Function;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionActivationListener;
-import javax.servlet.http.HttpSessionBindingListener;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.Engine;
@@ -46,7 +47,6 @@ import org.apache.catalina.session.ManagerBase;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
-import org.infinispan.client.hotrod.configuration.NearCacheMode;
 import org.jboss.marshalling.MarshallingConfiguration;
 import org.jboss.marshalling.SimpleClassResolver;
 import org.wildfly.clustering.Registrar;
@@ -59,13 +59,15 @@ import org.wildfly.clustering.ee.immutable.CompositeImmutability;
 import org.wildfly.clustering.ee.immutable.DefaultImmutability;
 import org.wildfly.clustering.infinispan.client.RemoteCacheContainer;
 import org.wildfly.clustering.infinispan.client.manager.RemoteCacheManager;
-import org.wildfly.clustering.infinispan.marshalling.jboss.JBossMarshaller;
+import org.wildfly.clustering.infinispan.marshalling.protostream.ProtoStreamMarshaller;
 import org.wildfly.clustering.marshalling.jboss.ExternalizerObjectTable;
-import org.wildfly.clustering.marshalling.jboss.MarshallingContext;
+import org.wildfly.clustering.marshalling.jboss.JBossByteBufferMarshaller;
 import org.wildfly.clustering.marshalling.jboss.SimpleClassTable;
-import org.wildfly.clustering.marshalling.jboss.SimpleMarshalledValueFactory;
 import org.wildfly.clustering.marshalling.jboss.SimpleMarshallingConfigurationRepository;
-import org.wildfly.clustering.marshalling.jboss.SimpleMarshallingContextFactory;
+import org.wildfly.clustering.marshalling.protostream.ProtoStreamByteBufferMarshaller;
+import org.wildfly.clustering.marshalling.protostream.SerializationContextBuilder;
+import org.wildfly.clustering.marshalling.spi.ByteBufferMarshalledValueFactory;
+import org.wildfly.clustering.marshalling.spi.ByteBufferMarshaller;
 import org.wildfly.clustering.marshalling.spi.MarshalledValueFactory;
 import org.wildfly.clustering.tomcat.catalina.CatalinaManager;
 import org.wildfly.clustering.tomcat.catalina.CatalinaSessionExpirationListener;
@@ -87,6 +89,7 @@ import org.wildfly.clustering.web.session.SessionManager;
 import org.wildfly.clustering.web.session.SessionManagerConfiguration;
 import org.wildfly.clustering.web.session.SessionManagerFactory;
 import org.wildfly.clustering.web.session.SpecificationProvider;
+import org.wildfly.security.manager.WildFlySecurityManager;
 
 /**
  * Distributed Manager implementation that configures a HotRod client.
@@ -138,6 +141,14 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
         return () -> {};
     }
 
+    private static ByteBufferMarshaller createByteBufferMarshaller(ClassLoader loader) {
+        try {
+            return new ProtoStreamByteBufferMarshaller(new SerializationContextBuilder().register(loader).build());
+        } catch (NoSuchElementException e) {
+            return new JBossByteBufferMarshaller(new SimpleMarshallingConfigurationRepository(MarshallingVersion.class, MarshallingVersion.CURRENT, loader), loader);
+        }
+    }
+
     @Override
     protected void startInternal() throws LifecycleException {
         super.startInternal();
@@ -148,8 +159,7 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
         ClassLoader loader = context.getLoader().getClassLoader();
         Configuration configuration = new ConfigurationBuilder()
                 .withProperties(this.properties)
-                .marshaller(new JBossMarshaller(new SimpleMarshallingConfigurationRepository(MarshallingVersion.class, MarshallingVersion.CURRENT, loader), loader))
-                .nearCache().mode(NearCacheMode.INVALIDATED).maxEntries(-1)
+                .marshaller(new ProtoStreamMarshaller(WildFlySecurityManager.getClassLoaderPrivileged(HotRodSessionManagerFactory.class)))
                 .build();
 
         String containerName = this.getClass().getName();
@@ -164,14 +174,14 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
         SessionAttributePersistenceStrategy strategy = this.persistenceStrategy;
         String configurationName = this.configurationName;
 
-        MarshallingContext marshallingContext = new SimpleMarshallingContextFactory().createMarshallingContext(new SimpleMarshallingConfigurationRepository(MarshallingVersion.class, MarshallingVersion.CURRENT, loader), loader);
-        MarshalledValueFactory<MarshallingContext> marshallingFactory = new SimpleMarshalledValueFactory(marshallingContext);
+        ByteBufferMarshaller marshaller = createByteBufferMarshaller(loader);
+        MarshalledValueFactory<ByteBufferMarshaller> marshallingFactory = new ByteBufferMarshalledValueFactory(marshaller);
         LocalContextFactory<LocalSessionContext> localContextFactory = new LocalSessionContextFactory();
 
         ServiceLoader<Immutability> loadedImmutability = ServiceLoader.load(Immutability.class, Immutability.class.getClassLoader());
         Immutability immutability = new CompositeImmutability(new CompositeIterable<>(EnumSet.allOf(DefaultImmutability.class), EnumSet.allOf(SessionAttributeImmutability.class), loadedImmutability));
 
-        HotRodSessionManagerFactoryConfiguration<HttpSession, ServletContext, HttpSessionActivationListener, HttpSessionBindingListener, MarshallingContext, LocalSessionContext> sessionManagerFactoryConfig = new HotRodSessionManagerFactoryConfiguration<HttpSession, ServletContext, HttpSessionActivationListener, HttpSessionBindingListener, MarshallingContext, LocalSessionContext>() {
+        HotRodSessionManagerFactoryConfiguration<HttpSession, ServletContext, HttpSessionActivationListener, ByteBufferMarshaller, LocalSessionContext> sessionManagerFactoryConfig = new HotRodSessionManagerFactoryConfiguration<HttpSession, ServletContext, HttpSessionActivationListener, ByteBufferMarshaller, LocalSessionContext>() {
             @Override
             public Integer getMaxActiveSessions() {
                 return maxActiveSessions;
@@ -188,7 +198,7 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
             }
 
             @Override
-            public MarshalledValueFactory<MarshallingContext> getMarshalledValueFactory() {
+            public MarshalledValueFactory<ByteBufferMarshaller> getMarshalledValueFactory() {
                 return marshallingFactory;
             }
 
@@ -226,7 +236,7 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
             }
 
             @Override
-            public SpecificationProvider<HttpSession, ServletContext, HttpSessionActivationListener, HttpSessionBindingListener> getSpecificationProvider() {
+            public SpecificationProvider<HttpSession, ServletContext, HttpSessionActivationListener> getSpecificationProvider() {
                 return CatalinaSpecificationProvider.INSTANCE;
             }
         };
@@ -260,7 +270,7 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
         };
         SessionManager<LocalSessionContext, TransactionBatch> sessionManager = this.managerFactory.createSessionManager(sessionManagerConfiguration);
 
-        this.manager = new DistributableManager<>(sessionManager, context, marshallingContext);
+        this.manager = new DistributableManager<>(sessionManager, context, marshaller);
         this.manager.start();
 
         this.setState(LifecycleState.STARTING);
@@ -270,9 +280,9 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
     protected void stopInternal() throws LifecycleException {
         this.setState(LifecycleState.STOPPING);
 
-        this.manager.stop();
-        this.managerFactory.close();
-        this.container.stop();
+        Optional.ofNullable(this.manager).ifPresent(CatalinaManager::stop);
+        Optional.ofNullable(this.managerFactory).ifPresent(SessionManagerFactory::close);
+        Optional.ofNullable(this.container).ifPresent(RemoteCacheContainer::stop);
     }
 
     @Override

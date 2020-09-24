@@ -34,7 +34,6 @@ import javax.servlet.http.HttpSessionListener;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.Engine;
-import org.apache.catalina.LifecycleException;
 import org.wildfly.clustering.ee.Batch;
 import org.wildfly.clustering.ee.Batcher;
 import org.wildfly.clustering.marshalling.spi.Marshallability;
@@ -97,14 +96,14 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
     }
 
     @Override
-    public void start() throws LifecycleException {
+    public void start() {
         this.lifecycleStamp.ifPresent(stamp -> this.lifecycleLock.unlock(stamp));
         this.manager.setDefaultMaxInactiveInterval(Duration.ofMinutes(this.context.getSessionTimeout()));
         this.manager.start();
     }
 
     @Override
-    public void stop() throws LifecycleException {
+    public void stop() {
         if (!this.lifecycleStamp.isPresent()) {
             try {
                 this.lifecycleStamp = OptionalLong.of(this.lifecycleLock.writeLockInterruptibly());

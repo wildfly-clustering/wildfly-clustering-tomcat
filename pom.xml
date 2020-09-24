@@ -27,7 +27,7 @@
     <parent>
         <groupId>org.jboss</groupId>
         <artifactId>jboss-parent</artifactId>
-        <version>35</version>
+        <version>37</version>
     </parent>
 
     <groupId>org.wildfly.clustering</groupId>
@@ -54,8 +54,8 @@
     </modules>
 
     <properties>
-        <version.org.wildfly>20.0.0.Final</version.org.wildfly>
-        <version.org.infinispan>10.1.8.Final</version.org.infinispan>
+        <version.org.wildfly>21.0.0.Beta1</version.org.wildfly>
+        <version.org.infinispan>11.0.3.Final</version.org.infinispan>
         <version.org.apache.httpcomponents>4.5.12</version.org.apache.httpcomponents>
         <version.org.jboss.arquillian>1.6.0.Final</version.org.jboss.arquillian>
         <version.org.junit>4.13</version.org.junit>
@@ -84,6 +84,15 @@
                 </configuration>
             </plugin>
         </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>com.googlecode.maven-download-plugin</groupId>
+                    <artifactId>download-maven-plugin</artifactId>
+                    <version>1.6.0</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 
     <dependencyManagement>
