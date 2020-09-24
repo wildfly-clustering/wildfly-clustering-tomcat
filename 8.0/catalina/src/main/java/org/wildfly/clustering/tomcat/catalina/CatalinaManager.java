@@ -55,6 +55,12 @@ public interface CatalinaManager<B extends Batch> extends Manager, Lifecycle {
      */
     Marshallability getMarshallability();
 
+    @Override
+    void start();
+
+    @Override
+    void stop();
+
     // We don't care about any of the methods below
 
     @Override

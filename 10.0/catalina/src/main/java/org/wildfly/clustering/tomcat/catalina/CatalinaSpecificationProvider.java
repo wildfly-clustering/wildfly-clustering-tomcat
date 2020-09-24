@@ -24,7 +24,6 @@ package org.wildfly.clustering.tomcat.catalina;
 
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.wildfly.clustering.web.session.ImmutableSession;
@@ -33,14 +32,12 @@ import org.wildfly.clustering.web.session.SpecificationProvider;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionActivationListener;
-import jakarta.servlet.http.HttpSessionBindingEvent;
-import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionEvent;
 
 /**
  * @author Paul Ferraro
  */
-public enum CatalinaSpecificationProvider implements SpecificationProvider<HttpSession, ServletContext, HttpSessionActivationListener, HttpSessionBindingListener> {
+public enum CatalinaSpecificationProvider implements SpecificationProvider<HttpSession, ServletContext, HttpSessionActivationListener> {
     INSTANCE;
 
     @Override
@@ -184,31 +181,6 @@ public enum CatalinaSpecificationProvider implements SpecificationProvider<HttpS
             @Override
             public void sessionDidActivate(HttpSessionEvent event) {
                 postActivate.accept(event.getSession());
-            }
-        };
-    }
-
-    @Override
-    public Class<HttpSessionBindingListener> getHttpSessionBindingListenerClass() {
-        return HttpSessionBindingListener.class;
-    }
-
-    @Override
-    public BiConsumer<HttpSession, String> valueBoundNotifier(HttpSessionBindingListener listener) {
-        return new BiConsumer<HttpSession, String>() {
-            @Override
-            public void accept(HttpSession session, String attributeName) {
-                listener.valueBound(new HttpSessionBindingEvent(session, attributeName, listener));
-            }
-        };
-    }
-
-    @Override
-    public BiConsumer<HttpSession, String> valueUnboundNotifier(HttpSessionBindingListener listener) {
-        return new BiConsumer<HttpSession, String>() {
-            @Override
-            public void accept(HttpSession session, String attributeName) {
-                listener.valueUnbound(new HttpSessionBindingEvent(session, attributeName, listener));
             }
         };
     }
