@@ -58,7 +58,7 @@
         <version.org.infinispan>11.0.3.Final</version.org.infinispan>
         <version.org.apache.httpcomponents>4.5.12</version.org.apache.httpcomponents>
         <version.org.jboss.arquillian>1.6.0.Final</version.org.jboss.arquillian>
-        <version.org.junit>4.13</version.org.junit>
+        <version.org.junit>4.13.1</version.org.junit>
     </properties>
 
     <build>
