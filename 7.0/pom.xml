@@ -41,12 +41,16 @@
     </modules>
 
     <properties>
-        <version.org.apache.tomcat>7.0.105</version.org.apache.tomcat>
-        <version.org.jboss.arquillian.container.tomcat>1.1.0.Final</version.org.jboss.arquillian.container.tomcat>
+        <version.org.apache.tomcat>7.0.106</version.org.apache.tomcat>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.apache.tomcat</groupId>
+                <artifactId>tomcat-catalina</artifactId>
+                <version>${version.org.apache.tomcat}</version>
+            </dependency>
             <dependency>
                 <groupId>org.wildfly.clustering</groupId>
                 <artifactId>wildfly-clustering-tomcat-7.0-catalina</artifactId>
@@ -58,16 +62,9 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.apache.tomcat</groupId>
-                <artifactId>tomcat-catalina</artifactId>
-                <version>${version.org.apache.tomcat}</version>
-                <scope>provided</scope>
-            </dependency>
-            <dependency>
                 <groupId>org.jboss.arquillian.container</groupId>
                 <artifactId>arquillian-tomcat-managed-7</artifactId>
                 <version>${version.org.jboss.arquillian.container.tomcat}</version>
-                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

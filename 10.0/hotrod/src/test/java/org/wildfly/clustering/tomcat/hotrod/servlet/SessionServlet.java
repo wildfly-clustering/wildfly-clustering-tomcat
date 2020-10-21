@@ -24,51 +24,32 @@ package org.wildfly.clustering.tomcat.hotrod.servlet;
 
 import java.io.IOException;
 
-import org.wildfly.clustering.tomcat.servlet.SessionHandler;
+import org.wildfly.clustering.tomcat.servlet.ServletHandler;
 
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
 /**
  * @author Paul Ferraro
  */
-@WebServlet(SessionHandler.SERVLET_PATH)
-public class SessionServlet extends HttpServlet implements SessionHandler<HttpServletRequest, HttpServletResponse> {
+@WebServlet(ServletHandler.SERVLET_PATH)
+public class SessionServlet extends HttpServlet implements ServletHandler<HttpServletRequest, HttpServletResponse> {
     private static final long serialVersionUID = 2878267318695777395L;
 
     @Override
     public void doHead(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            response.setHeader(SESSION_ID, session.getId());
-        }
+        this.doHead(new TomcatService(request, response));
     }
 
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        HttpSession session = request.getSession();
-        response.setHeader(SESSION_ID, session.getId());
-
-        Integer value = (Integer) session.getAttribute(VALUE);
-        if (value == null) {
-            value = Integer.valueOf(0);
-        } else {
-            value = Integer.valueOf(value.intValue() + 1);
-        }
-        session.setAttribute(VALUE, value);
-
-        response.setIntHeader(VALUE, value);
+        this.doGet(new TomcatService(request, response));
     }
 
     @Override
     public void doDelete(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            response.setHeader(SESSION_ID, session.getId());
-            session.invalidate();
-        }
+        this.doDelete(new TomcatService(request, response));
     }
 }

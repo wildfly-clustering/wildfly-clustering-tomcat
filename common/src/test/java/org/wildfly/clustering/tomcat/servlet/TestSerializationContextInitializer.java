@@ -22,25 +22,13 @@
 
 package org.wildfly.clustering.tomcat.servlet;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
+import org.infinispan.protostream.SerializationContextInitializer;
+import org.infinispan.protostream.annotations.AutoProtoSchemaBuilder;
 
 /**
  * @author Paul Ferraro
  */
-public interface SessionHandler<REQUEST, RESPONSE> {
-    final String SERVLET_NAME = "session";
-    final String SERVLET_PATH = "/" + SERVLET_NAME;
-    final String VALUE = "value";
-    final String SESSION_ID = "session-id";
+@AutoProtoSchemaBuilder(includeClasses = { MutableInteger.class })
+public interface TestSerializationContextInitializer extends SerializationContextInitializer {
 
-    static URI createURI(URL baseURL) throws URISyntaxException {
-        return baseURL.toURI().resolve(SERVLET_NAME);
-    }
-
-    void doHead(REQUEST request, RESPONSE response) throws IOException;
-    void doGet(REQUEST request, RESPONSE response) throws IOException;
-    void doDelete(REQUEST request, RESPONSE response) throws IOException;
 }

@@ -22,16 +22,12 @@
 
 package org.wildfly.clustering.tomcat.hotrod;
 
-import java.io.Externalizable;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
-import java.util.function.Function;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
@@ -44,11 +40,12 @@ import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Session;
 import org.apache.catalina.session.ManagerBase;
+import org.infinispan.client.hotrod.DefaultTemplate;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
-import org.jboss.marshalling.MarshallingConfiguration;
-import org.jboss.marshalling.SimpleClassResolver;
+import org.infinispan.client.hotrod.configuration.NearCacheMode;
+import org.infinispan.client.hotrod.configuration.TransactionMode;
 import org.wildfly.clustering.Registrar;
 import org.wildfly.clustering.Registration;
 import org.wildfly.clustering.ee.CompositeIterable;
@@ -60,15 +57,11 @@ import org.wildfly.clustering.ee.immutable.DefaultImmutability;
 import org.wildfly.clustering.infinispan.client.RemoteCacheContainer;
 import org.wildfly.clustering.infinispan.client.manager.RemoteCacheManager;
 import org.wildfly.clustering.infinispan.marshalling.protostream.ProtoStreamMarshaller;
-import org.wildfly.clustering.marshalling.jboss.ExternalizerObjectTable;
-import org.wildfly.clustering.marshalling.jboss.JBossByteBufferMarshaller;
-import org.wildfly.clustering.marshalling.jboss.SimpleClassTable;
-import org.wildfly.clustering.marshalling.jboss.SimpleMarshallingConfigurationRepository;
-import org.wildfly.clustering.marshalling.protostream.ProtoStreamByteBufferMarshaller;
-import org.wildfly.clustering.marshalling.protostream.SerializationContextBuilder;
 import org.wildfly.clustering.marshalling.spi.ByteBufferMarshalledValueFactory;
 import org.wildfly.clustering.marshalling.spi.ByteBufferMarshaller;
 import org.wildfly.clustering.marshalling.spi.MarshalledValueFactory;
+import org.wildfly.clustering.tomcat.SessionMarshallerFactory;
+import org.wildfly.clustering.tomcat.SessionPersistenceGranularity;
 import org.wildfly.clustering.tomcat.catalina.CatalinaManager;
 import org.wildfly.clustering.tomcat.catalina.CatalinaSessionExpirationListener;
 import org.wildfly.clustering.tomcat.catalina.CatalinaSpecificationProvider;
@@ -97,28 +90,14 @@ import org.wildfly.security.manager.WildFlySecurityManager;
  */
 public class HotRodManager extends ManagerBase implements Registrar<String> {
 
-    enum MarshallingVersion implements Function<ClassLoader, MarshallingConfiguration> {
-        VERSION_1() {
-            @Override
-            public MarshallingConfiguration apply(ClassLoader loader) {
-                MarshallingConfiguration config = new MarshallingConfiguration();
-                config.setClassResolver(new SimpleClassResolver(loader));
-                config.setClassTable(new SimpleClassTable(Serializable.class, Externalizable.class));
-                config.setObjectTable(new ExternalizerObjectTable(loader));
-                return config;
-            }
-        },
-        ;
-        static final MarshallingVersion CURRENT = VERSION_1;
-    }
-
     private final Properties properties = new Properties();
 
     private volatile RemoteCacheContainer container;
     private volatile SessionManagerFactory<ServletContext, LocalSessionContext, TransactionBatch> managerFactory;
     private volatile CatalinaManager<TransactionBatch> manager;
     private volatile SessionAttributePersistenceStrategy persistenceStrategy = SessionAttributePersistenceStrategy.COARSE;
-    private volatile String configurationName;
+    private volatile SessionMarshallerFactory marshallerFactory = SessionMarshallerFactory.JBOSS;
+    private volatile String templateName = DefaultTemplate.DIST_SYNC.getTemplateName();
 
     public void setProperty(String name, String value) {
         this.properties.setProperty("infinispan.client.hotrod." + name, value);
@@ -128,12 +107,34 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
         this.persistenceStrategy = strategy;
     }
 
+    public void setGranularity(SessionPersistenceGranularity granularity) {
+        this.setPersistenceStrategy(granularity.get());
+    }
+
+    public void setGranularity(String granularity) {
+        this.setGranularity(SessionPersistenceGranularity.valueOf(granularity));
+    }
+
+    public void setTemplate(String templateName) {
+        this.templateName = templateName;
+    }
+
+    public void setMarshallerFactory(SessionMarshallerFactory marshallerFactory) {
+        this.marshallerFactory = marshallerFactory;
+    }
+
+    public void setMarshaller(String marshallerFactory) {
+        this.setMarshallerFactory(SessionMarshallerFactory.valueOf(marshallerFactory));
+    }
+
+    @Deprecated
     public void setPersistenceStrategy(String strategy) {
         this.setPersistenceStrategy(SessionAttributePersistenceStrategy.valueOf(strategy));
     }
 
+    @Deprecated
     public void setConfigurationName(String configurationName) {
-        this.configurationName = configurationName;
+        this.setTemplate(configurationName);
     }
 
     @Override
@@ -141,41 +142,34 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
         return () -> {};
     }
 
-    private static ByteBufferMarshaller createByteBufferMarshaller(ClassLoader loader) {
-        try {
-            return new ProtoStreamByteBufferMarshaller(new SerializationContextBuilder().register(loader).build());
-        } catch (NoSuchElementException e) {
-            return new JBossByteBufferMarshaller(new SimpleMarshallingConfigurationRepository(MarshallingVersion.class, MarshallingVersion.CURRENT, loader), loader);
-        }
-    }
-
     @Override
     protected void startInternal() throws LifecycleException {
         super.startInternal();
 
-        Integer maxActiveSessions = (this.getMaxActiveSessions() >= 0) ? Integer.valueOf(this.getMaxActiveSessions()) : null;
-
         Context context = (Context) this.getContainer();
-        ClassLoader loader = context.getLoader().getClassLoader();
-        Configuration configuration = new ConfigurationBuilder()
-                .withProperties(this.properties)
-                .marshaller(new ProtoStreamMarshaller(WildFlySecurityManager.getClassLoaderPrivileged(HotRodSessionManagerFactory.class)))
-                .build();
-
-        String containerName = this.getClass().getName();
-        RemoteCacheContainer container = new RemoteCacheManager(containerName, configuration, this);
-        container.start();
-        this.container = container;
-
         Host host = (Host) context.getParent();
         Engine engine = (Engine) host.getParent();
         // Deployment name = host name + context path + version
         String deploymentName = host.getName() + context.getName();
+        Integer maxActiveSessions = (this.getMaxActiveSessions() >= 0) ? Integer.valueOf(this.getMaxActiveSessions()) : null;
         SessionAttributePersistenceStrategy strategy = this.persistenceStrategy;
-        String configurationName = this.configurationName;
 
-        ByteBufferMarshaller marshaller = createByteBufferMarshaller(loader);
-        MarshalledValueFactory<ByteBufferMarshaller> marshallingFactory = new ByteBufferMarshalledValueFactory(marshaller);
+        ClassLoader containerLoader = WildFlySecurityManager.getClassLoaderPrivileged(HotRodSessionManagerFactory.class);
+        Configuration configuration = new ConfigurationBuilder()
+                .withProperties(this.properties)
+                .marshaller(new ProtoStreamMarshaller(containerLoader))
+                .classLoader(containerLoader)
+                .build();
+
+        configuration.addRemoteCache(deploymentName, builder -> builder.forceReturnValues(false).nearCacheMode(NearCacheMode.INVALIDATED).transactionMode(TransactionMode.NONE).templateName(this.templateName));
+
+        RemoteCacheContainer container = new RemoteCacheManager(this.getClass().getName(), configuration, this);
+        container.start();
+        this.container = container;
+
+        ClassLoader loader = context.getLoader().getClassLoader();
+        ByteBufferMarshaller marshaller = this.marshallerFactory.apply(loader);
+        MarshalledValueFactory<ByteBufferMarshaller> marshalledValueFactory = new ByteBufferMarshalledValueFactory(marshaller);
         LocalContextFactory<LocalSessionContext> localContextFactory = new LocalSessionContextFactory();
 
         ServiceLoader<Immutability> loadedImmutability = ServiceLoader.load(Immutability.class, Immutability.class.getClassLoader());
@@ -199,7 +193,7 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
 
             @Override
             public MarshalledValueFactory<ByteBufferMarshaller> getMarshalledValueFactory() {
-                return marshallingFactory;
+                return marshalledValueFactory;
             }
 
             @Override
@@ -216,18 +210,18 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
             public <K, V> RemoteCache<K, V> getCache() {
                 String cacheName = this.getDeploymentName();
                 try (RemoteCacheContainer.NearCacheRegistration registration = container.registerNearCacheFactory(cacheName, new SessionManagerNearCacheFactory<>(this.getMaxActiveSessions(), this.getAttributePersistenceStrategy()))) {
-                    return container.administration().getOrCreateCache(cacheName, this.getConfigurationName());
+                    return container.getCache(cacheName);
                 }
             }
 
             @Override
             public String getConfigurationName() {
-                return configurationName;
+                return null;
             }
 
             @Override
             public String getContainerName() {
-                return containerName;
+                return null;
             }
 
             @Override
