@@ -27,7 +27,7 @@
     <parent>
         <groupId>org.wildfly.clustering</groupId>
         <artifactId>wildfly-clustering-tomcat</artifactId>
-        <version>11.0.0.Beta1-SNAPSHOT</version>
+        <version>11.0.0.Final</version>
     </parent>
 
     <artifactId>wildfly-clustering-tomcat-7.0</artifactId>
