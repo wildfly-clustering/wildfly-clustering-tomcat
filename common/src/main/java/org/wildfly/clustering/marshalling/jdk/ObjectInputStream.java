@@ -28,7 +28,7 @@ import java.io.ObjectStreamClass;
 import java.lang.reflect.Proxy;
 
 /**
- * An {@link java.io.ObjectInputStream} that resolves classes using a given {@link ClassLoader}.
+ * An {@link java.io.ObjectInputStream} that resolves classes using a given {@link ClassResolver}.
  * @author Paul Ferraro
  */
 public class ObjectInputStream extends java.io.ObjectInputStream {

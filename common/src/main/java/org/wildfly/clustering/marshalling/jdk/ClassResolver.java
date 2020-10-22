@@ -27,6 +27,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 /**
+ * Annotates a resolves {@link Class} instances to/from an object stream.
  * @author Paul Ferraro
  */
 public interface ClassResolver {
