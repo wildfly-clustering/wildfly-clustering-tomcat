@@ -27,6 +27,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 /**
+ * A {@link ClassResolver} that resolves classes against a given class loader.
  * @author Paul Ferraro
  */
 public class ClassLoaderResolver implements ClassResolver {

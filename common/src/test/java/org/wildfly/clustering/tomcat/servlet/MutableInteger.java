@@ -22,6 +22,7 @@
 
 package org.wildfly.clustering.tomcat.servlet;
 
+import java.io.Serializable;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 
@@ -31,7 +32,7 @@ import org.infinispan.protostream.annotations.ProtoField;
 /**
  * @author Paul Ferraro
  */
-public class MutableInteger implements IntSupplier, IntConsumer, java.io.Serializable {
+public class MutableInteger implements IntSupplier, IntConsumer, Serializable {
     private static final long serialVersionUID = -5935940924708909645L;
 
     @ProtoField(value = 1, defaultValue = "0")

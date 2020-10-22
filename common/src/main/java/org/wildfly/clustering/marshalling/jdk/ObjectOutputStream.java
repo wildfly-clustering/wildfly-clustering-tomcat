@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
+ * An {@link java.io.ObjectInputStream} that annotates classes using a given {@link ClassResolver}.
  * @author Paul Ferraro
  */
 public class ObjectOutputStream extends java.io.ObjectOutputStream {
