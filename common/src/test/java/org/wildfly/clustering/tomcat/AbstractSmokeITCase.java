@@ -43,6 +43,8 @@ import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.rules.TestRule;
+import org.wildfly.clustering.marshalling.Externalizer;
+import org.wildfly.clustering.tomcat.servlet.MutableIntegerExternalizer;
 import org.wildfly.clustering.tomcat.servlet.ServletHandler;
 import org.wildfly.clustering.tomcat.servlet.TestSerializationContextInitializer;
 
@@ -50,18 +52,7 @@ import org.wildfly.clustering.tomcat.servlet.TestSerializationContextInitializer
  * @author Paul Ferraro
  */
 public abstract class AbstractSmokeITCase {
-    public static final String CONTAINER_1 = "tomcat-1";
-    public static final String CONTAINER_2 = "tomcat-2";
-    public static final String DEPLOYMENT_1 = "deployment-1";
-    public static final String DEPLOYMENT_2 = "deployment-2";
 
-/*  Only needed for clustered server configuration
-    static {
-        System.setProperty("infinispan.cluster.stack", "tcp");
-        System.setProperty("infinispan.cluster.name", "cluster");
-        System.setProperty("infinispan.node.name", InetAddress.getLoopbackAddress().getHostName());
-    }
-*/
     static final String INFINISPAN_SERVER_HOME = System.getProperty("infinispan.server.home");
 
     @ClassRule
@@ -75,6 +66,7 @@ public abstract class AbstractSmokeITCase {
         return ShrinkWrap.create(WebArchive.class, testClass.getSimpleName() + ".war")
                 .addPackage(ServletHandler.class.getPackage())
                 .addPackage(servletClass.getPackage())
+                .addAsServiceProvider(Externalizer.class, MutableIntegerExternalizer.class)
                 .addAsServiceProvider(SerializationContextInitializer.class.getName(), TestSerializationContextInitializer.class.getName() + "Impl")
                 ;
     }

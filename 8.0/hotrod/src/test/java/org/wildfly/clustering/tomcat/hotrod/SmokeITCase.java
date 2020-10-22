@@ -42,6 +42,10 @@ import org.wildfly.clustering.tomcat.hotrod.servlet.SessionServlet;
 @RunWith(Arquillian.class)
 @RunAsClient
 public class SmokeITCase extends AbstractSmokeITCase {
+    private static final String CONTAINER_1 = "tomcat-1";
+    private static final String CONTAINER_2 = "tomcat-2";
+    private static final String DEPLOYMENT_1 = "deployment-1";
+    private static final String DEPLOYMENT_2 = "deployment-2";
 
     @Deployment(name = DEPLOYMENT_1, testable = false)
     @TargetsContainer(CONTAINER_1)
