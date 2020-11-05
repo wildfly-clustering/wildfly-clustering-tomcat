@@ -23,6 +23,7 @@
 package org.wildfly.clustering.tomcat.hotrod;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Optional;
@@ -42,6 +43,7 @@ import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.configuration.NearCacheMode;
 import org.infinispan.client.hotrod.configuration.TransactionMode;
+import org.infinispan.client.hotrod.impl.HotRodURI;
 import org.wildfly.clustering.Registrar;
 import org.wildfly.clustering.Registration;
 import org.wildfly.clustering.ee.CompositeIterable;
@@ -98,6 +100,11 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
     private volatile SessionAttributePersistenceStrategy persistenceStrategy = SessionPersistenceGranularity.SESSION.get();
     private volatile SessionMarshallerFactory marshallerFactory = SessionMarshallerFactory.JBOSS;
     private volatile String templateName = DefaultTemplate.DIST_SYNC.getTemplateName();
+    private volatile URI uri = null;
+
+    public void setUri(String uri) {
+        this.uri = URI.create(uri);
+    }
 
     public void setProperty(String name, String value) {
         this.properties.setProperty("infinispan.client.hotrod." + name, value);
@@ -155,7 +162,7 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
         SessionAttributePersistenceStrategy strategy = this.persistenceStrategy;
 
         ClassLoader containerLoader = WildFlySecurityManager.getClassLoaderPrivileged(HotRodSessionManagerFactory.class);
-        Configuration configuration = new ConfigurationBuilder()
+        Configuration configuration = Optional.ofNullable(this.uri).map(HotRodURI::create).map(HotRodURI::toConfigurationBuilder).orElseGet(ConfigurationBuilder::new)
                 .withProperties(this.properties)
                 .marshaller(new ProtoStreamMarshaller(containerLoader))
                 .classLoader(containerLoader)
