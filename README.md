@@ -1,6 +1,6 @@
 # wildfly-clustering-tomcat
 
-A distributed session manager for Tomcat based on WildFly's distributed session management.
+A high-availability session manager for Tomcat based on WildFly's distributed session management and Infinispan server.
 
 
 ## Building
@@ -37,6 +37,7 @@ Define the distributed Manager implementation either within the global `$CATALIN
 
 |Property|Description|
 |:---|:---|
+|uri|Defines a HotRod URI, which includes a list of infinispan server instances and any authentication details. For details, see: https://infinispan.org/blog/2020/05/26/hotrod-uri/|
 |template|Defines the server-side configuration template from which a deployment cache is created on the server. Default is `org.infinispan.DIST_SYNC`.|
 |granularity|Defines how a session is mapped to entries in the cache. "SESSION" will store all attributes of a session in a single cache entry.  "ATTRIBUTE" will store each session attribute in a separate cache entry.  Default is "SESSION".|
 |maxActiveSessions|Defines the maximum number of sessions to retain in the near cache. Default is limitless. A value of 0 will disable the near cache.|
@@ -46,7 +47,7 @@ Define the distributed Manager implementation either within the global `$CATALIN
 
 These are configured without their "infinispan.client.hotrod." prefix:
 
-https://github.com/infinispan/infinispan/blob/9.4.x/client/hotrod-client/src/main/java/org/infinispan/client/hotrod/impl/ConfigurationProperties.java
+https://github.com/infinispan/infinispan/blob/11.0.x/client/hotrod-client/src/main/java/org/infinispan/client/hotrod/impl/ConfigurationProperties.java
 
 #### Common Manager properties
 
@@ -55,9 +56,9 @@ https://tomcat.apache.org/tomcat-9.0-doc/config/cluster-manager.html#Common_Attr
 #### Example
 
 	<Manager className="org.wildfly.clustering.tomcat.hotrod.HotRodManager"
+	         uri="hotrod://127.0.0.1:11222"
 	         template="transactional"
 	         granularity="ATTRIBUTE"
 	         marshaller="PROTOSTREAM"
 	         maxActiveSessions="100"
-	         server_list="127.0.0.1:11222;127.0.0.1:11223;127.0.0.1:11224"
-	         transaction.transaction_mode="BATCH"/>
+	         tcp_keep_alive="true"/>
