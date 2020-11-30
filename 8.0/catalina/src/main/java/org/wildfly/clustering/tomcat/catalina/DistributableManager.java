@@ -155,7 +155,7 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
     }
 
     @Override
-    public org.apache.catalina.Session findSession(String sessionId) throws IOException {
+    public synchronized org.apache.catalina.Session findSession(String sessionId) throws IOException {
         String id = parseSessionId(sessionId);
         Runnable closeTask = this.getSessionCloseTask();
         boolean close = true;
