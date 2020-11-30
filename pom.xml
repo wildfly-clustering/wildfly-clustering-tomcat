@@ -41,7 +41,7 @@
         <connection>scm:git:git://github.com:wildfly-clustering/wildfly-clustering-tomcat.git</connection>
         <developerConnection>scm:git:git@github.com:wildfly-clustering/wildfly-clustering-tomcat.git</developerConnection>
         <url>https://github.com/wildfly-clustering/wildfly-clustering-tomcat</url>
-        <tag>11.0.1.Final</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <modules>
