@@ -59,6 +59,7 @@ import org.wildfly.clustering.ee.immutable.DefaultImmutability;
 import org.wildfly.clustering.infinispan.client.RemoteCacheContainer;
 import org.wildfly.clustering.infinispan.client.manager.RemoteCacheManager;
 import org.wildfly.clustering.infinispan.marshalling.protostream.ProtoStreamMarshaller;
+import org.wildfly.clustering.marshalling.protostream.ClassLoaderResolver;
 import org.wildfly.clustering.marshalling.spi.ByteBufferMarshalledValueFactory;
 import org.wildfly.clustering.marshalling.spi.ByteBufferMarshaller;
 import org.wildfly.clustering.marshalling.spi.MarshalledValueFactory;
@@ -164,7 +165,7 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
         ClassLoader containerLoader = WildFlySecurityManager.getClassLoaderPrivileged(HotRodSessionManagerFactory.class);
         Configuration configuration = Optional.ofNullable(this.uri).map(HotRodURI::create).map(HotRodURI::toConfigurationBuilder).orElseGet(ConfigurationBuilder::new)
                 .withProperties(this.properties)
-                .marshaller(new ProtoStreamMarshaller(containerLoader))
+                .marshaller(new ProtoStreamMarshaller(new ClassLoaderResolver(containerLoader), containerLoader))
                 .classLoader(containerLoader)
                 .build();
 
