@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Context>
-    <Manager className="org.wildfly.clustering.tomcat.hotrod.HotRodManager" granularity="SESSION" marshaller="JBOSS" template="default" uri="hotrod://127.0.0.1:11222" tcp_no_delay="true"/>
-</Context>
