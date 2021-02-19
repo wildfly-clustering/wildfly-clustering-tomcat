@@ -110,7 +110,7 @@ public class HttpSessionAdapter<B extends Batch> implements HttpSession {
     @Override
     public long getLastAccessedTime() {
         try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            return this.session.getMetaData().getLastAccessedTime().toEpochMilli();
+            return this.session.getMetaData().getLastAccessStartTime().toEpochMilli();
         }
     }
 

@@ -93,7 +93,7 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
     @Override
     public long getLastAccessedTime() {
         try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            return this.session.getMetaData().getLastAccessedTime().toEpochMilli();
+            return this.session.getMetaData().getLastAccessStartTime().toEpochMilli();
         }
     }
 
@@ -204,7 +204,7 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
                 newSession.getAttributes().setAttribute(name, oldSession.getAttributes().getAttribute(name));
             }
             newSession.getMetaData().setMaxInactiveInterval(oldSession.getMetaData().getMaxInactiveInterval());
-            newSession.getMetaData().setLastAccessedTime(oldSession.getMetaData().getLastAccessedTime());
+            newSession.getMetaData().setLastAccess(oldSession.getMetaData().getLastAccessStartTime(), oldSession.getMetaData().getLastAccessEndTime());
             newSession.getLocalContext().setAuthType(oldSession.getLocalContext().getAuthType());
             newSession.getLocalContext().setPrincipal(oldSession.getLocalContext().getPrincipal());
             this.session = newSession;
