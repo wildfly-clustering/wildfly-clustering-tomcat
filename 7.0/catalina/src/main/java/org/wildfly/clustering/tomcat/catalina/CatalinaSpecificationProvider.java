@@ -65,7 +65,7 @@ public enum CatalinaSpecificationProvider implements SpecificationProvider<HttpS
 
             @Override
             public long getLastAccessedTime() {
-                return session.getMetaData().getLastAccessedTime().toEpochMilli();
+                return session.getMetaData().getLastAccessStartTime().toEpochMilli();
             }
 
             @Override
