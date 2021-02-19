@@ -24,6 +24,7 @@ package org.wildfly.clustering.tomcat.catalina;
 
 import java.security.Principal;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Iterator;
 
 import javax.servlet.http.HttpSession;
@@ -48,6 +49,7 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
     private final B batch;
     private final Runnable invalidateAction;
     private final Runnable closeTask;
+    private final Instant startTime;
 
     private volatile Session<LocalSessionContext> session;
 
@@ -58,6 +60,7 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
         this.batch = batch;
         this.invalidateAction = invalidateAction;
         this.closeTask = closeTask;
+        this.startTime = !session.getMetaData().isNew() ? Instant.now() : null;
     }
 
     @Override
@@ -150,6 +153,11 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
                     }
                     // If batch is closed, close session in a new batch
                     try (B batch = (this.batch.getState() == Batch.State.CLOSED) ? batcher.createBatch() : this.batch) {
+                        if (this.startTime != null) {
+                            // According to §7.6 of the servlet specification:
+                            // The session is considered to be accessed when a request that is part of the session is first handled by the servlet container.
+                            this.session.getMetaData().setLastAccess(this.startTime, Instant.now());
+                        }
                         this.session.close();
                     }
                 } catch (Throwable e) {
