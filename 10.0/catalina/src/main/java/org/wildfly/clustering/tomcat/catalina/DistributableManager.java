@@ -213,14 +213,4 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
     public boolean getNotifyAttributeListenerOnUnchangedValue() {
         return false;
     }
-
-    @Override
-    public boolean getSessionActivityCheck() {
-        return false;
-    }
-
-    @Override
-    public boolean getSessionLastAccessAtStart() {
-        return false;
-    }
 }
