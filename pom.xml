@@ -46,7 +46,6 @@
 
     <modules>
         <module>common</module>
-        <module>7.0</module>
         <module>8.5</module>
         <module>9.0</module>
         <module>10.0</module>
