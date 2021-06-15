@@ -22,20 +22,22 @@
 
 package org.wildfly.clustering.tomcat;
 
+import java.nio.ByteBuffer;
+
 import org.kohsuke.MetaInfServices;
-import org.wildfly.clustering.marshalling.spi.Serializer;
-import org.wildfly.clustering.web.IdentifierSerializer;
-import org.wildfly.clustering.web.IdentifierSerializerProvider;
+import org.wildfly.clustering.marshalling.spi.Marshaller;
+import org.wildfly.clustering.web.IdentifierMarshaller;
+import org.wildfly.clustering.web.IdentifierMarshallerProvider;
 
 /**
  * Informs WildFly clustering how best to serialize Tomcat's session identifier.
  * @author Paul Ferraro
  */
-@MetaInfServices(IdentifierSerializerProvider.class)
-public class TomcatIdentifierSerializerProvider implements IdentifierSerializerProvider {
+@MetaInfServices(IdentifierMarshallerProvider.class)
+public class TomcatIdentifierMarshallerProvider implements IdentifierMarshallerProvider {
 
     @Override
-    public Serializer<String> getSerializer() {
-        return IdentifierSerializer.HEX;
+    public Marshaller<String, ByteBuffer> getMarshaller() {
+        return IdentifierMarshaller.HEX;
     }
 }

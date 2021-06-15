@@ -165,7 +165,7 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
         ClassLoader containerLoader = WildFlySecurityManager.getClassLoaderPrivileged(HotRodSessionManagerFactory.class);
         Configuration configuration = Optional.ofNullable(this.uri).map(HotRodURI::create).map(HotRodURI::toConfigurationBuilder).orElseGet(ConfigurationBuilder::new)
                 .withProperties(this.properties)
-                .marshaller(new ProtoStreamMarshaller(new SimpleClassLoaderMarshaller(containerLoader), containerLoader))
+                .marshaller(new ProtoStreamMarshaller(new SimpleClassLoaderMarshaller(containerLoader), builder -> builder.load(containerLoader)))
                 .classLoader(containerLoader)
                 .build();
 
