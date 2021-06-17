@@ -20,18 +20,24 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.wildfly.clustering.tomcat.catalina;
+package org.wildfly.clustering.tomcat;
 
-import org.wildfly.clustering.web.LocalContextFactory;
+import java.nio.ByteBuffer;
+
+import org.kohsuke.MetaInfServices;
+import org.wildfly.clustering.marshalling.spi.Marshaller;
+import org.wildfly.clustering.web.IdentifierMarshaller;
+import org.wildfly.clustering.web.IdentifierMarshallerProvider;
 
 /**
- * Create a local (i.e. non-persistent) context for a Tomcat session.
+ * Informs WildFly clustering how best to serialize Tomcat's session identifier.
  * @author Paul Ferraro
  */
-public class LocalSessionContextFactory implements LocalContextFactory<LocalSessionContext> {
+@MetaInfServices(IdentifierMarshallerProvider.class)
+public class TomcatIdentifierMarshallerProvider implements IdentifierMarshallerProvider {
 
     @Override
-    public LocalSessionContext createLocalContext() {
-        return new LocalSessionContext();
+    public Marshaller<String, ByteBuffer> getMarshaller() {
+        return IdentifierMarshaller.HEX;
     }
 }
