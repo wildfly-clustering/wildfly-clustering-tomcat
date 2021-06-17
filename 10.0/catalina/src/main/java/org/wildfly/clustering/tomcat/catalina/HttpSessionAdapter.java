@@ -40,7 +40,6 @@ import org.wildfly.clustering.ee.BatchContext;
 import org.wildfly.clustering.web.session.Session;
 
 import jakarta.servlet.ServletContext;
-import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingEvent;
 import jakarta.servlet.http.HttpSessionBindingListener;
@@ -49,7 +48,7 @@ import jakarta.servlet.http.HttpSessionBindingListener;
  * Adapts a WildFly distributable Session to an HttpSession.
  * @author Paul Ferraro
  */
-public class HttpSessionAdapter<B extends Batch> implements HttpSession {
+public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 
     private static final Set<String> EXCLUDED_ATTRIBUTES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(Globals.SUBJECT_ATTR, Globals.GSS_CREDENTIAL_ATTR, org.apache.catalina.valves.CrawlerSessionManagerValve.class.getName())));
 
@@ -263,41 +262,5 @@ public class HttpSessionAdapter<B extends Batch> implements HttpSession {
     @Override
     public ServletContext getServletContext() {
         return this.manager.getContext().getServletContext();
-    }
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public jakarta.servlet.http.HttpSessionContext getSessionContext() {
-        return new jakarta.servlet.http.HttpSessionContext() {
-            @Override
-            public HttpSession getSession(String sessionId) {
-                throw null;
-            }
-
-            @Override
-            public Enumeration<String> getIds() {
-                return Collections.enumeration(Collections.<String>emptyList());
-            }
-        };
-    }
-
-    @Override
-    public Object getValue(String name) {
-        return this.getAttribute(name);
-    }
-
-    @Override
-    public String[] getValueNames() {
-        return Collections.list(this.getAttributeNames()).toArray(new String[0]);
-    }
-
-    @Override
-    public void putValue(String name, Object value) {
-        this.setAttribute(name, value);
-    }
-
-    @Override
-    public void removeValue(String name) {
-        this.removeAttribute(name);
     }
 }
