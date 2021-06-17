@@ -34,7 +34,6 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import javax.servlet.ServletContext;
-import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionBindingListener;
@@ -49,7 +48,7 @@ import org.wildfly.clustering.web.session.Session;
  * Adapts a WildFly distributable Session to an HttpSession.
  * @author Paul Ferraro
  */
-public class HttpSessionAdapter<B extends Batch> implements HttpSession {
+public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 
     private static final Set<String> EXCLUDED_ATTRIBUTES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(Globals.SUBJECT_ATTR, Globals.GSS_CREDENTIAL_ATTR, org.apache.catalina.valves.CrawlerSessionManagerValve.class.getName())));
 
@@ -263,41 +262,5 @@ public class HttpSessionAdapter<B extends Batch> implements HttpSession {
     @Override
     public ServletContext getServletContext() {
         return this.manager.getContext().getServletContext();
-    }
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public javax.servlet.http.HttpSessionContext getSessionContext() {
-        return new javax.servlet.http.HttpSessionContext() {
-            @Override
-            public HttpSession getSession(String sessionId) {
-                throw null;
-            }
-
-            @Override
-            public Enumeration<String> getIds() {
-                return Collections.enumeration(Collections.<String>emptyList());
-            }
-        };
-    }
-
-    @Override
-    public Object getValue(String name) {
-        return this.getAttribute(name);
-    }
-
-    @Override
-    public String[] getValueNames() {
-        return Collections.list(this.getAttributeNames()).toArray(new String[0]);
-    }
-
-    @Override
-    public void putValue(String name, Object value) {
-        this.setAttribute(name, value);
-    }
-
-    @Override
-    public void removeValue(String name) {
-        this.removeAttribute(name);
     }
 }
