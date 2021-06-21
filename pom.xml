@@ -32,7 +32,7 @@
 
     <groupId>org.wildfly.clustering</groupId>
     <artifactId>wildfly-clustering-tomcat</artifactId>
-    <version>13.0.1.Final-SNAPSHOT</version>
+    <version>14.0.0.Final-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Distributed session management for Tomcat</name>
@@ -142,6 +142,12 @@
                 <groupId>org.infinispan</groupId>
                 <artifactId>infinispan-client-hotrod</artifactId>
                 <version>${version.org.infinispan}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.spec.javax.transaction</groupId>
+                        <artifactId>jboss-transaction-api_1.2_spec</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.infinispan</groupId>
