@@ -28,7 +28,9 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.apache.catalina.Context;
@@ -38,7 +40,6 @@ import org.wildfly.clustering.ee.BatchContext;
 import org.wildfly.clustering.web.session.Session;
 
 import jakarta.servlet.ServletContext;
-import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingEvent;
 import jakarta.servlet.http.HttpSessionBindingListener;
@@ -47,7 +48,7 @@ import jakarta.servlet.http.HttpSessionBindingListener;
  * Adapts a WildFly distributable Session to an HttpSession.
  * @author Paul Ferraro
  */
-public class HttpSessionAdapter<B extends Batch> implements HttpSession {
+public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 
     private static final Set<String> EXCLUDED_ATTRIBUTES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(Globals.SUBJECT_ATTR, Globals.GSS_CREDENTIAL_ATTR, org.apache.catalina.valves.CrawlerSessionManagerValve.class.getName())));
 
@@ -81,93 +82,134 @@ public class HttpSessionAdapter<B extends Batch> implements HttpSession {
         }
     }
 
-    private final Session<LocalSessionContext> session;
+    private final AtomicReference<Session<LocalSessionContext>> session;
     private final CatalinaManager<B> manager;
     private final B batch;
     private final Runnable invalidateAction;
+    private final Consumer<Session<LocalSessionContext>> closeIfInvalid;
 
-    public HttpSessionAdapter(Session<LocalSessionContext> session, CatalinaManager<B> manager, B batch, Runnable invalidateAction) {
+    public HttpSessionAdapter(AtomicReference<Session<LocalSessionContext>> session, CatalinaManager<B> manager, B batch, Runnable invalidateAction, Consumer<Session<LocalSessionContext>> closeIfInvalid) {
         this.session = session;
         this.manager = manager;
         this.batch = batch;
         this.invalidateAction = invalidateAction;
+        this.closeIfInvalid = closeIfInvalid;
     }
 
     @Override
     public boolean isNew() {
-        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            return this.session.getMetaData().isNew();
+        Session<LocalSessionContext> session = this.session.get();
+        try (BatchContext context = this.resumeBatch()) {
+            return session.getMetaData().isNew();
+        } catch (IllegalStateException e) {
+            this.closeIfInvalid.accept(session);
+            throw e;
         }
     }
 
     @Override
     public long getCreationTime() {
-        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            return this.session.getMetaData().getCreationTime().toEpochMilli();
+        Session<LocalSessionContext> session = this.session.get();
+        try (BatchContext context = this.resumeBatch()) {
+            return session.getMetaData().getCreationTime().toEpochMilli();
+        } catch (IllegalStateException e) {
+            this.closeIfInvalid.accept(session);
+            throw e;
         }
     }
 
     @Override
     public long getLastAccessedTime() {
-        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            return this.session.getMetaData().getLastAccessStartTime().toEpochMilli();
+        Session<LocalSessionContext> session = this.session.get();
+        try (BatchContext context = this.resumeBatch()) {
+            return session.getMetaData().getLastAccessStartTime().toEpochMilli();
+        } catch (IllegalStateException e) {
+            this.closeIfInvalid.accept(session);
+            throw e;
         }
     }
 
     @Override
     public int getMaxInactiveInterval() {
-        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            return (int) this.session.getMetaData().getMaxInactiveInterval().getSeconds();
+        Session<LocalSessionContext> session = this.session.get();
+        try (BatchContext context = this.resumeBatch()) {
+            return (int) session.getMetaData().getMaxInactiveInterval().getSeconds();
+        } catch (IllegalStateException e) {
+            this.closeIfInvalid.accept(session);
+            throw e;
         }
     }
 
     @Override
     public void setMaxInactiveInterval(int interval) {
-        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            this.session.getMetaData().setMaxInactiveInterval((interval > 0) ? Duration.ofSeconds(interval) : Duration.ZERO);
+        Session<LocalSessionContext> session = this.session.get();
+        try (BatchContext context = this.resumeBatch()) {
+            session.getMetaData().setMaxInactiveInterval((interval > 0) ? Duration.ofSeconds(interval) : Duration.ZERO);
+        } catch (IllegalStateException e) {
+            this.closeIfInvalid.accept(session);
+            throw e;
         }
     }
 
     @Override
     public void invalidate() {
         this.invalidateAction.run();
-        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            this.session.invalidate();
+        Session<LocalSessionContext> session = this.session.get();
+        try (BatchContext context = this.resumeBatch()) {
+            session.invalidate();
             this.batch.close();
+        } catch (IllegalStateException e) {
+            this.closeIfInvalid.accept(session);
+            throw e;
         }
     }
 
     @Override
     public Object getAttribute(String name) {
-        if (EXCLUDED_ATTRIBUTES.contains(name)) {
-            return this.session.getLocalContext().getNotes().get(name);
-        }
-        this.session.getLocalContext().getNotes().get(name);
-        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            return this.session.getAttributes().getAttribute(name);
+        Session<LocalSessionContext> session = this.session.get();
+        try {
+            if (EXCLUDED_ATTRIBUTES.contains(name)) {
+                return session.getLocalContext().getNotes().get(name);
+            }
+            try (BatchContext context = this.resumeBatch()) {
+                return session.getAttributes().getAttribute(name);
+            }
+        } catch (IllegalStateException e) {
+            this.closeIfInvalid.accept(session);
+            throw e;
         }
     }
 
     @Override
     public Enumeration<String> getAttributeNames() {
-        try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-            return Collections.enumeration(this.session.getAttributes().getAttributeNames());
+        Session<LocalSessionContext> session = this.session.get();
+        try (BatchContext context = this.resumeBatch()) {
+            return Collections.enumeration(session.getAttributes().getAttributeNames());
+        } catch (IllegalStateException e) {
+            this.closeIfInvalid.accept(session);
+            throw e;
         }
     }
 
     @Override
     public void setAttribute(String name, Object value) {
         if (value != null) {
-            if (EXCLUDED_ATTRIBUTES.contains(name)) {
-                this.session.getLocalContext().getNotes().put(name, value);
-            } else {
-                Object old = null;
-                try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-                    old = this.session.getAttributes().setAttribute(name, value);
+            Session<LocalSessionContext> session = this.session.get();
+            try {
+                if (EXCLUDED_ATTRIBUTES.contains(name)) {
+                    session.getLocalContext().getNotes().put(name, value);
+                } else {
+                    Object old = null;
+                    try (BatchContext context = this.resumeBatch()) {
+                        old = session.getAttributes().setAttribute(name, value);
+                    }
+                    if (old != value) {
+                        this.notifySessionAttributeListeners(name, old, value);
+                    }
                 }
-                if (old != value) {
-                    this.notifySessionAttributeListeners(name, old, value);
-                }
+            } catch (IllegalStateException e) {
+                this.closeIfInvalid.accept(session);
+                throw e;
             }
         } else {
             this.removeAttribute(name);
@@ -176,16 +218,22 @@ public class HttpSessionAdapter<B extends Batch> implements HttpSession {
 
     @Override
     public void removeAttribute(String name) {
-        if (EXCLUDED_ATTRIBUTES.contains(name)) {
-            this.session.getLocalContext().getNotes().remove(name);
-        } else {
-            Object value = null;
-            try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-                value = this.session.getAttributes().removeAttribute(name);
+        Session<LocalSessionContext> session = this.session.get();
+        try {
+            if (EXCLUDED_ATTRIBUTES.contains(name)) {
+                session.getLocalContext().getNotes().remove(name);
+            } else {
+                Object value = null;
+                try (BatchContext context = this.resumeBatch()) {
+                    value = session.getAttributes().removeAttribute(name);
+                }
+                if (value != null) {
+                    this.notifySessionAttributeListeners(name, value, null);
+                }
             }
-            if (value != null) {
-                this.notifySessionAttributeListeners(name, value, null);
-            }
+        } catch (IllegalStateException e) {
+            this.closeIfInvalid.accept(session);
+            throw e;
         }
     }
 
@@ -213,7 +261,7 @@ public class HttpSessionAdapter<B extends Batch> implements HttpSession {
 
     @Override
     public String getId() {
-        return this.session.getId();
+        return this.session.get().getId();
     }
 
     @Override
@@ -221,39 +269,8 @@ public class HttpSessionAdapter<B extends Batch> implements HttpSession {
         return this.manager.getContext().getServletContext();
     }
 
-    @SuppressWarnings("deprecation")
-    @Override
-    public jakarta.servlet.http.HttpSessionContext getSessionContext() {
-        return new jakarta.servlet.http.HttpSessionContext() {
-            @Override
-            public HttpSession getSession(String sessionId) {
-                throw null;
-            }
-
-            @Override
-            public Enumeration<String> getIds() {
-                return Collections.enumeration(Collections.<String>emptyList());
-            }
-        };
-    }
-
-    @Override
-    public Object getValue(String name) {
-        return this.getAttribute(name);
-    }
-
-    @Override
-    public String[] getValueNames() {
-        return Collections.list(this.getAttributeNames()).toArray(new String[0]);
-    }
-
-    @Override
-    public void putValue(String name, Object value) {
-        this.setAttribute(name, value);
-    }
-
-    @Override
-    public void removeValue(String name) {
-        this.removeAttribute(name);
+    private BatchContext resumeBatch() {
+        B batch = (this.batch.getState() != Batch.State.CLOSED) ? this.batch : null;
+        return this.manager.getSessionManager().getBatcher().resumeBatch(batch);
     }
 }

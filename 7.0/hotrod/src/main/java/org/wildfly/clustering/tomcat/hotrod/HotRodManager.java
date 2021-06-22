@@ -178,7 +178,6 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
         ClassLoader loader = context.getLoader().getClassLoader();
         ByteBufferMarshaller marshaller = this.marshallerFactory.apply(loader);
         MarshalledValueFactory<ByteBufferMarshaller> marshalledValueFactory = new ByteBufferMarshalledValueFactory(marshaller);
-        LocalContextFactory<LocalSessionContext> localContextFactory = new LocalSessionContextFactory();
 
         ServiceLoader<Immutability> loadedImmutability = ServiceLoader.load(Immutability.class, Immutability.class.getClassLoader());
         Immutability immutability = new CompositeImmutability(new CompositeIterable<>(EnumSet.allOf(DefaultImmutability.class), EnumSet.allOf(SessionAttributeImmutability.class), loadedImmutability));
@@ -211,7 +210,7 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
 
             @Override
             public LocalContextFactory<LocalSessionContext> getLocalContextFactory() {
-                return localContextFactory;
+                return LocalSessionContextFactory.INSTANCE;
             }
 
             @Override
