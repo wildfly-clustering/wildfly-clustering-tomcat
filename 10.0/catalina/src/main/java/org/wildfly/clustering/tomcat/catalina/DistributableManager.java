@@ -25,6 +25,7 @@ package org.wildfly.clustering.tomcat.catalina;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.OptionalLong;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -187,11 +188,22 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
     }
 
     private Runnable getSessionCloseTask() {
+        StampedLock lock = this.lifecycleLock;
         long stamp = this.lifecycleLock.tryReadLock();
         if (stamp == 0L) {
             throw new IllegalStateException("Session manager was stopped");
         }
-        return () -> this.lifecycleLock.unlock(stamp);
+        AtomicLong stampRef = new AtomicLong(stamp);
+        return new Runnable() {
+            @Override
+            public void run() {
+                // Ensure we only unlock once.
+                long stamp = stampRef.getAndSet(0L);
+                if (stamp != 0L) {
+                    lock.unlock(stamp);
+                }
+            }
+        };
     }
 
     @Override
