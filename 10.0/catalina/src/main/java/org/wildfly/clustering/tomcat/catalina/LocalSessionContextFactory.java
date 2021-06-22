@@ -28,7 +28,8 @@ import org.wildfly.clustering.web.LocalContextFactory;
  * Create a local (i.e. non-persistent) context for a Tomcat session.
  * @author Paul Ferraro
  */
-public class LocalSessionContextFactory implements LocalContextFactory<LocalSessionContext> {
+public enum LocalSessionContextFactory implements LocalContextFactory<LocalSessionContext> {
+    INSTANCE;
 
     @Override
     public LocalSessionContext createLocalContext() {
