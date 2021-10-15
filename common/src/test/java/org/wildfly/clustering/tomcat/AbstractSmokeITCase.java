@@ -54,11 +54,12 @@ import org.wildfly.clustering.tomcat.servlet.TestSerializationContextInitializer
 public abstract class AbstractSmokeITCase {
 
     static final String INFINISPAN_SERVER_HOME = System.getProperty("infinispan.server.home");
+    static final String INFINISPAN_SERVER_PROFILE = System.getProperty("infinispan.server.profile");
     static final String INFINISPAN_DRIVER_USERNAME = "testsuite-driver-user";
     static final String INFINISPAN_DRIVER_PASSWORD = "testsuite-driver-password";
 
     @ClassRule
-    public static final TestRule SERVERS = InfinispanServerRuleBuilder.config(INFINISPAN_SERVER_HOME + "/server/conf/infinispan.xml")
+    public static final TestRule SERVERS = InfinispanServerRuleBuilder.config(INFINISPAN_SERVER_PROFILE)
             .property(TestSystemPropertyNames.INFINISPAN_TEST_SERVER_DIR, INFINISPAN_SERVER_HOME)
             .property("infinispan.client.rest.auth_username", INFINISPAN_DRIVER_USERNAME)
             .property("infinispan.client.rest.auth_password", INFINISPAN_DRIVER_PASSWORD)
