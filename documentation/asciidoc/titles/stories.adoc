@@ -1,0 +1,1 @@
+include::{stories}/assembly_externalizing_tomcat_sessions.adoc[leveloffset=+0]

@@ -9,7 +9,7 @@ A high-availability session manager for Tomcat based on WildFly's distributed se
 
 		$ git clone git@github.com:wildfly-clustering/wildfly-clustering-tomcat.git
 		$ cd wildfly-clustering-tomcat
-		$ mvn clean install
+		$ mvn clean install -DskipTests=true
 
 ## Installation
 

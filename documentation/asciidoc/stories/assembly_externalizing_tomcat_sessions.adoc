@@ -1,0 +1,14 @@
+ifdef::context[:parent-context: {context}]
+[id='tomcat-session-externalization']
+:context: tomcat-session-externalization
+= Externalizing HTTP sessions from {tomcat_long} to {infinispan_long}
+
+Achieve high availability by externalizing HTTP session data from {tomcat_short} deployments to {infinispan_short} Server clusters through the `org.apache.catalina.Manager` interface.
+
+include::{topics}/proc_installing_session_client.adoc[leveloffset=+1]
+include::{topics}/proc_configuring_session_manager.adoc[leveloffset=+1]
+include::{topics}/ref_hotrodmanager_configuration_properties.adoc[leveloffset=+2]
+
+// Restore the parent context.
+ifdef::parent-context[:context: {parent-context}]
+ifndef::parent-context[:!context:]
