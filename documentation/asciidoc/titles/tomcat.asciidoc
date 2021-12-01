@@ -1,0 +1,14 @@
+//Community attributes
+:toc2:
+:icons: font
+:toclevels: 4
+:sectnums:
+
+:topics: ../topics
+:stories: ../stories
+:imagesdir: {topics}/images
+
+//Include community attributes
+include::{topics}/attributes/community-attributes.adoc[]
+
+include::stories.adoc[]

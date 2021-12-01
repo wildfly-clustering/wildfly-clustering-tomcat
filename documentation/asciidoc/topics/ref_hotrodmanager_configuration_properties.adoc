@@ -1,0 +1,33 @@
+[id='hotrodmanager-configuration-properties_{context}']
+= Hot Rod manager configuration properties
+
+The following table lists and describes configuration properties for the `HotRodManager` class:
+
+[%autowidth,%noheader,cols="1,1",stripes=even]
+|===
+|Property |Description
+
+|`className`
+|Specifies `org.wildfly.clustering.tomcat.hotrod.HotRodManager` as the session manager.
+
+|`configurationName`
+|Specifies a remote cache on {infinispan_short} Server to use as a template for storing HTTP session data.
+
+|`persistenceStrategy`
+|Defines how sessions map to entries in the cache.
+
+`COARSE` stores all attributes of a session in a single cache entry. This is the default.
+
+`FINE` stores session attributes in separate cache entries.
+
+|`maxActiveSessions`
+|Defines the maximum number of sessions to store in the cache. The default is no maximum (limitless).
+|===
+
+[role="_additional-resources"]
+.Additional resources
+* link:{infinispan_docs}[{infinispan_short} documentation]
+* link:https://tomcat.apache.org/tomcat-7.0-doc/config/cluster-manager.html#Common_Attributes[Common Attributes for Tomcat 7.0 Manager]
+* link:https://tomcat.apache.org/tomcat-8.0-doc/config/cluster-manager.html#Common_Attributes[Common Attributes for Tomcat 8.0 Manager]
+* link:https://tomcat.apache.org/tomcat-8.5-doc/config/cluster-manager.html#Common_Attributes[Common Attributes for Tomcat 8.5 Manager]
+* link:https://tomcat.apache.org/tomcat-9.0-doc/config/cluster-manager.html#Common_Attributes[Common Attributes for Tomcat 9.0 Manager]
