@@ -117,7 +117,7 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
 
     @Override
     public org.apache.catalina.Session createSession(String sessionId) {
-        String id = (sessionId != null) ? parseSessionId(sessionId) : this.manager.createIdentifier();
+        String id = (sessionId != null) ? parseSessionId(sessionId) : this.manager.getIdentifierFactory().get();
         Runnable closeTask = this.getSessionCloseTask();
         boolean close = true;
         try {
@@ -208,7 +208,7 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
 
     @Override
     public void changeSessionId(org.apache.catalina.Session session) {
-        this.changeSessionId(session, this.manager.createIdentifier());
+        this.changeSessionId(session, this.manager.getIdentifierFactory().get());
     }
 
     @Override

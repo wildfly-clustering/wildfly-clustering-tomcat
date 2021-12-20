@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
+import java.util.function.Supplier;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
@@ -69,10 +70,9 @@ import org.wildfly.clustering.tomcat.catalina.CatalinaManager;
 import org.wildfly.clustering.tomcat.catalina.CatalinaSessionExpirationListener;
 import org.wildfly.clustering.tomcat.catalina.CatalinaSpecificationProvider;
 import org.wildfly.clustering.tomcat.catalina.DistributableManager;
-import org.wildfly.clustering.tomcat.catalina.IdentifierFactoryAdapter;
+import org.wildfly.clustering.tomcat.catalina.CatalinaIdentifierFactory;
 import org.wildfly.clustering.tomcat.catalina.LocalSessionContext;
 import org.wildfly.clustering.tomcat.catalina.LocalSessionContextFactory;
-import org.wildfly.clustering.web.IdentifierFactory;
 import org.wildfly.clustering.web.LocalContextFactory;
 import org.wildfly.clustering.web.hotrod.session.HotRodSessionManagerFactory;
 import org.wildfly.clustering.web.hotrod.session.HotRodSessionManagerFactoryConfiguration;
@@ -236,7 +236,7 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
 
         ServletContext servletContext = context.getServletContext();
         SessionExpirationListener expirationListener = new CatalinaSessionExpirationListener(context);
-        IdentifierFactory<String> identifierFactory = new IdentifierFactoryAdapter(this.getSessionIdGenerator());
+        Supplier<String> identifierFactory = new CatalinaIdentifierFactory(this.getSessionIdGenerator());
 
         SessionManagerConfiguration<ServletContext> sessionManagerConfiguration = new SessionManagerConfiguration<ServletContext>() {
             @Override
@@ -245,7 +245,7 @@ public class HotRodManager extends ManagerBase implements Registrar<String> {
             }
 
             @Override
-            public IdentifierFactory<String> getIdentifierFactory() {
+            public Supplier<String> getIdentifierFactory() {
                 return identifierFactory;
             }
 
