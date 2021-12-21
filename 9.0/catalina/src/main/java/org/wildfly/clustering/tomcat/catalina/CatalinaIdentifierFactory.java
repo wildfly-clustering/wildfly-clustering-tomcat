@@ -22,33 +22,26 @@
 
 package org.wildfly.clustering.tomcat.catalina;
 
+import java.util.function.Supplier;
+
 import org.apache.catalina.SessionIdGenerator;
-import org.wildfly.clustering.web.IdentifierFactory;
 
 /**
  * An identifier factory that uses Tomcat's SessionIdGenerator.
  * @author Paul Ferraro
  */
-public class IdentifierFactoryAdapter implements IdentifierFactory<String> {
+public class CatalinaIdentifierFactory implements Supplier<String> {
 
     private final SessionIdGenerator generator;
 
-    public IdentifierFactoryAdapter(SessionIdGenerator generator) {
+    public CatalinaIdentifierFactory(SessionIdGenerator generator) {
         this.generator = generator;
         // Prevent Tomcat's session id generator from auto-appending the route
         this.generator.setJvmRoute(null);
     }
 
     @Override
-    public String createIdentifier() {
+    public String get() {
         return this.generator.generateSessionId();
-    }
-
-    @Override
-    public void start() {
-    }
-
-    @Override
-    public void stop() {
     }
 }
