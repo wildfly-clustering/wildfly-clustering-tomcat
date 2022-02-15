@@ -32,7 +32,7 @@
 
     <groupId>org.wildfly.clustering</groupId>
     <artifactId>wildfly-clustering-tomcat</artifactId>
-    <version>13.0.3.Final</version>
+    <version>13.0.4.Final-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Distributed session management for Tomcat</name>
@@ -41,7 +41,7 @@
         <connection>scm:git:git://github.com:wildfly-clustering/wildfly-clustering-tomcat.git</connection>
         <developerConnection>scm:git:git@github.com:wildfly-clustering/wildfly-clustering-tomcat.git</developerConnection>
         <url>https://github.com/wildfly-clustering/wildfly-clustering-tomcat</url>
-      <tag>13.0.3.Final</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <modules>
