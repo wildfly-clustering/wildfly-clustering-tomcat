@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Context>
-    <Manager className="org.wildfly.clustering.tomcat.hotrod.HotRodManager" granularity="ATTRIBUTE" marshaller="JBOSS" template="default" uri="hotrod://127.0.0.1:11222" tcp_no_delay="true"/>
+    <Manager className="org.wildfly.clustering.tomcat.hotrod.HotRodManager" granularity="ATTRIBUTE" marshaller="JBOSS" template="default" uri="hotrod://127.0.0.1:11222" tcp_no_delay="true" auth_username="testsuite-application-user" auth_password="testsuite-application-password"/>
 </Context>
