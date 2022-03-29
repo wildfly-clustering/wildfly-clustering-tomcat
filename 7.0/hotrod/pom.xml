@@ -84,6 +84,19 @@
             <artifactId>infinispan-server-testdriver-junit4</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Hack alert!  Trick Maven into allowing a different version of org.infinispan:infinispan-commons for compile vs test phase -->
+        <dependency>
+            <groupId>org.infinispan.</groupId>
+            <artifactId>infinispan-commons</artifactId>
+            <version>${version.org.infinispan.server.driver}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-commons</artifactId>
+            <version>${version.org.infinispan}</version>
+            <scope>compile</scope>
+        </dependency>
         <dependency>
             <groupId>org.jboss.arquillian.container</groupId>
             <artifactId>arquillian-tomcat-managed-7</artifactId>
