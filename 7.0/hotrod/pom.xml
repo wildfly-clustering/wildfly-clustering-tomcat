@@ -38,6 +38,7 @@
     <properties>
         <infinispan.server.home>${project.build.directory}/infinispan-server-${version.org.infinispan.server}</infinispan.server.home>
         <infinispan.server.profile>${infinispan.server.home}/server/conf/infinispan.xml</infinispan.server.profile>
+        <catalina.home>${project.build.directory}/apache-tomcat-${version.org.apache.tomcat}</catalina.home>
     </properties>
 
     <dependencies>
@@ -133,7 +134,7 @@
             </testResource>
             <testResource>
                 <directory>src/test/resources/tomcat</directory>
-                <targetPath>${project.build.directory}/apache-tomcat-${version.org.apache.tomcat}/conf</targetPath>
+                <targetPath>${catalina.home}/conf</targetPath>
                 <includes>
                     <include>*</include>
                 </includes>
@@ -198,7 +199,7 @@
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.build.directory}/apache-tomcat-${version.org.apache.tomcat}/lib/</outputDirectory>
+                            <outputDirectory>${catalina.home}/lib/</outputDirectory>
                             <includeScope>runtime</includeScope>
                         </configuration>
                     </execution>
@@ -218,7 +219,7 @@
                             <excludeDefaultDirectories>true</excludeDefaultDirectories>
                             <filesets>
                                 <fileset>
-                                    <directory>${project.build.directory}/apache-tomcat-${version.org.apache.tomcat}/webapps</directory>
+                                    <directory>${catalina.home}/webapps</directory>
                                     <includes>
                                         <include>ROOT/**</include>
                                         <include>docs/**</include>
@@ -244,7 +245,7 @@
                             <outputDirectory>${project.build.directory}/tomcat-1</outputDirectory>
                             <resources>
                                 <resource>
-                                    <directory>${project.build.directory}/apache-tomcat-${version.org.apache.tomcat}</directory>
+                                    <directory>${catalina.home}</directory>
                                 </resource>
                             </resources>
                         </configuration>
@@ -259,7 +260,7 @@
                             <outputDirectory>${project.build.directory}/tomcat-2</outputDirectory>
                             <resources>
                                 <resource>
-                                    <directory>${project.build.directory}/apache-tomcat-${version.org.apache.tomcat}</directory>
+                                    <directory>${catalina.home}</directory>
                                 </resource>
                             </resources>
                         </configuration>
@@ -336,6 +337,60 @@
                                     <resources>
                                         <resource>
                                             <directory>${infinispan.server.home.override}</directory>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>custom-tomcat</id>
+            <activation>
+                <property>
+                    <name>catalina.home.override</name>
+                </property>
+            </activation>
+            <properties>
+                <catalina.home>${project.build.directory}/tomcat-custom</catalina.home>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <!-- Disable unpacking execution -->
+                            <execution>
+                                <id>unpack-tomcat</id>
+                                <phase>generate-test-resources</phase>
+                                <goals>
+                                    <goal>unpack</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>true</skip>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <!-- Copy over tomcat distribution from custom path -->
+                            <execution>
+                                <phase>generate-test-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${catalina.home}</outputDirectory>
+                                    <includeEmptyDirs>true</includeEmptyDirs>
+                                    <resources>
+                                        <resource>
+                                            <directory>${catalina.home.override}</directory>
                                             <filtering>false</filtering>
                                         </resource>
                                     </resources>
