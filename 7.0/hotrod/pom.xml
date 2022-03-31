@@ -327,6 +327,7 @@
                         <executions>
                             <!-- Copy over infinispan server distribution from custom path -->
                             <execution>
+                                <id>copy-custom-infinispan-server</id>
                                 <phase>generate-test-resources</phase>
                                 <goals>
                                     <goal>copy-resources</goal>
@@ -381,6 +382,7 @@
                         <executions>
                             <!-- Copy over tomcat distribution from custom path -->
                             <execution>
+                                <id>copy-custom-tomcat</id>
                                 <phase>generate-test-resources</phase>
                                 <goals>
                                     <goal>copy-resources</goal>
