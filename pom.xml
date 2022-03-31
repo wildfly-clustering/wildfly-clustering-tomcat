@@ -42,15 +42,7 @@
         <developerConnection>scm:git:git@github.com:wildfly-clustering/wildfly-clustering-tomcat.git</developerConnection>
         <url>https://github.com/wildfly-clustering/wildfly-clustering-tomcat</url>
       <tag>HEAD</tag>
-  </scm>
-
-    <modules>
-        <module>common</module>
-        <module>7.0</module>
-        <module>8.5</module>
-        <module>9.0</module>
-        <module>10.0</module>
-    </modules>
+    </scm>
 
     <properties>
         <jdk.min.version>11</jdk.min.version>
@@ -312,4 +304,73 @@
         </dependencies>
     </dependencyManagement>
 
+    <profiles>
+        <profile>
+            <id>default</id>
+            <activation>
+                <property>
+                    <name>!tomcat.version</name>
+                </property>
+            </activation>
+            <modules>
+                <module>common</module>
+                <module>10.0</module>
+                <module>9.0</module>
+                <module>8.5</module>
+                <module>7.0</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>10.0</id>
+            <activation>
+                <property>
+                    <name>tomcat.version</name>
+                    <value>10.0</value>
+                </property>
+            </activation>
+            <modules>
+                <module>common</module>
+                <module>10.0</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>9.0</id>
+            <activation>
+                <property>
+                    <name>tomcat.version</name>
+                    <value>9.0</value>
+                </property>
+            </activation>
+            <modules>
+                <module>common</module>
+                <module>9.0</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>8.5</id>
+            <activation>
+                <property>
+                    <name>tomcat.version</name>
+                    <value>8.5</value>
+                </property>
+            </activation>
+            <modules>
+                <module>common</module>
+                <module>8.5</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>7.0</id>
+            <activation>
+                <property>
+                    <name>tomcat.version</name>
+                    <value>7.0</value>
+                </property>
+            </activation>
+            <modules>
+                <module>common</module>
+                <module>7.0</module>
+            </modules>
+        </profile>
+    </profiles>
 </project>
