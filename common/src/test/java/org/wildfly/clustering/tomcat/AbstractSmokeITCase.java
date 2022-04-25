@@ -26,13 +26,13 @@ import java.net.URI;
 import java.net.URL;
 import java.util.Arrays;
 
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpHead;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.hc.client5.http.classic.methods.HttpDelete;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpHead;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.HttpStatus;
 import org.infinispan.protostream.SerializationContextInitializer;
 import org.infinispan.server.test.core.ServerRunMode;
 import org.infinispan.server.test.core.TestSystemPropertyNames;
@@ -87,7 +87,7 @@ public abstract class AbstractSmokeITCase {
                 for (URI uri : Arrays.asList(uri1, uri2)) {
                     for (int j = 0; j < 4; j++) {
                         try (CloseableHttpResponse response = client.execute(new HttpGet(uri))) {
-                            Assert.assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+                            Assert.assertEquals(HttpStatus.SC_OK, response.getCode());
                             Assert.assertEquals(String.valueOf(value++), response.getFirstHeader(ServletHandler.VALUE).getValue());
                             String requestSessionId = response.getFirstHeader(ServletHandler.SESSION_ID).getValue();
                             if (sessionId == null) {
@@ -102,11 +102,11 @@ public abstract class AbstractSmokeITCase {
                 }
             }
             try (CloseableHttpResponse response = client.execute(new HttpDelete(uri1))) {
-                Assert.assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+                Assert.assertEquals(HttpStatus.SC_OK, response.getCode());
                 Assert.assertEquals(sessionId, response.getFirstHeader(ServletHandler.SESSION_ID).getValue());
             }
             try (CloseableHttpResponse response = client.execute(new HttpHead(uri2))) {
-                Assert.assertEquals(HttpStatus.SC_OK, response.getStatusLine().getStatusCode());
+                Assert.assertEquals(HttpStatus.SC_OK, response.getCode());
                 Assert.assertFalse(response.containsHeader(ServletHandler.SESSION_ID));
             }
         }
