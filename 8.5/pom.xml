@@ -41,7 +41,7 @@
     </modules>
 
     <properties>
-        <version.org.apache.tomcat>8.5.73</version.org.apache.tomcat>
+        <version.org.apache.tomcat>8.5.78</version.org.apache.tomcat>
     </properties>
 
     <dependencyManagement>
