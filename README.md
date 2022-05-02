@@ -5,15 +5,15 @@ A high-availability session manager for Tomcat based on WildFly's distributed se
 
 ## Building
 
-1.	Clone this repository and build using Java 8 and a standard maven build.
+1.	Clone this repository and build for the target Tomcat version using Java 8 and a standard maven build.
 
 		$ git clone git@github.com:wildfly-clustering/wildfly-clustering-tomcat.git
 		$ cd wildfly-clustering-tomcat
-		$ mvn clean install -DskipTests=true
+		$ mvn clean install -Dtomcat.version=9.0 -DskipTests=true
 
 ## Installation
 
-1.	Enter directory of target Tomcat version and session manager implementation:
+1.	Enter directory of the target Tomcat version and session manager implementation:
 
 		$ cd 9.0/hotrod
 
@@ -47,7 +47,7 @@ Define the distributed Manager implementation either within the global `$CATALIN
 
 These are configured without their "infinispan.client.hotrod." prefix:
 
-https://github.com/infinispan/infinispan/blob/11.0.x/client/hotrod-client/src/main/java/org/infinispan/client/hotrod/impl/ConfigurationProperties.java
+https://github.com/infinispan/infinispan/blob/13.0.x/client/hotrod-client/src/main/java/org/infinispan/client/hotrod/impl/ConfigurationProperties.java
 
 #### Common Manager properties
 
