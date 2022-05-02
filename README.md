@@ -5,7 +5,7 @@ A high-availability session manager for Tomcat based on WildFly's distributed se
 
 ## Building
 
-1.	Clone this repository and build for the target Tomcat version using Java 8 and a standard maven build.
+1.	Clone this repository and build using the target Tomcat version with Java 8 and a standard maven build.
 
 		$ git clone git@github.com:wildfly-clustering/wildfly-clustering-tomcat.git
 		$ cd wildfly-clustering-tomcat
