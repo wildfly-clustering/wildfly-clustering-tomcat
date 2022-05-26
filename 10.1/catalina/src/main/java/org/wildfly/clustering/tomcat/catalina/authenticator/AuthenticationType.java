@@ -20,33 +20,30 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.wildfly.clustering.tomcat.catalina;
+package org.wildfly.clustering.tomcat.catalina.authenticator;
 
-import java.util.concurrent.Executor;
-import java.util.function.Consumer;
+import org.apache.catalina.authenticator.Constants;
 
-import org.apache.catalina.Context;
-import org.wildfly.clustering.context.ContextClassLoaderReference;
-import org.wildfly.clustering.context.ContextReferenceExecutor;
-import org.wildfly.clustering.web.session.ImmutableSession;
-import org.wildfly.clustering.web.session.SessionExpirationListener;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
- * Invokes following timeout of a session.
  * @author Paul Ferraro
  */
-public class CatalinaSessionExpirationListener implements SessionExpirationListener {
+public enum AuthenticationType {
+    BASIC(HttpServletRequest.BASIC_AUTH),
+    CLIENT_CERT(HttpServletRequest.CLIENT_CERT_AUTH),
+    DIGEST(HttpServletRequest.DIGEST_AUTH),
+    FORM(HttpServletRequest.FORM_AUTH),
+    SPNEGO(Constants.SPNEGO_METHOD),
+    ;
+    private String name;
 
-    private final Consumer<ImmutableSession> expireAction;
-    private final Executor executor;
-
-    public CatalinaSessionExpirationListener(Context context) {
-        this.expireAction = new CatalinaSessionDestroyAction(context);
-        this.executor = new ContextReferenceExecutor<>(context.getLoader().getClassLoader(), ContextClassLoaderReference.INSTANCE);
+    AuthenticationType(String name) {
+        this.name = name;
     }
 
     @Override
-    public void sessionExpired(ImmutableSession session) {
-        this.executor.execute(() -> this.expireAction.accept(session));
+    public String toString() {
+        return this.name;
     }
 }

@@ -22,31 +22,45 @@
 
 package org.wildfly.clustering.tomcat.catalina;
 
-import java.util.concurrent.Executor;
-import java.util.function.Consumer;
+import java.security.Principal;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.apache.catalina.Context;
-import org.wildfly.clustering.context.ContextClassLoaderReference;
-import org.wildfly.clustering.context.ContextReferenceExecutor;
-import org.wildfly.clustering.web.session.ImmutableSession;
-import org.wildfly.clustering.web.session.SessionExpirationListener;
+import org.apache.catalina.SessionListener;
 
 /**
- * Invokes following timeout of a session.
+ * Local (i.e. non-persistent) context for a Tomcat session.
  * @author Paul Ferraro
  */
-public class CatalinaSessionExpirationListener implements SessionExpirationListener {
+public class LocalSessionContext {
+    private final Map<String, Object> notes = new ConcurrentHashMap<>();
+    private final List<SessionListener> listeners = new CopyOnWriteArrayList<>();
+    private volatile String authType;
+    private volatile Principal principal;
 
-    private final Consumer<ImmutableSession> expireAction;
-    private final Executor executor;
-
-    public CatalinaSessionExpirationListener(Context context) {
-        this.expireAction = new CatalinaSessionDestroyAction(context);
-        this.executor = new ContextReferenceExecutor<>(context.getLoader().getClassLoader(), ContextClassLoaderReference.INSTANCE);
+    public String getAuthType() {
+        return this.authType;
     }
 
-    @Override
-    public void sessionExpired(ImmutableSession session) {
-        this.executor.execute(() -> this.expireAction.accept(session));
+    public void setAuthType(String authType) {
+        this.authType = authType;
+    }
+
+    public Principal getPrincipal() {
+        return this.principal;
+    }
+
+    public void setPrincipal(Principal principal) {
+        this.principal = principal;
+    }
+
+    public Map<String, Object> getNotes() {
+        return this.notes;
+    }
+
+    public List<SessionListener> getSessionListeners() {
+        return this.listeners;
     }
 }

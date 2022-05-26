@@ -26,37 +26,32 @@
 
     <parent>
         <groupId>org.wildfly.clustering</groupId>
-        <artifactId>wildfly-clustering-tomcat</artifactId>
+        <artifactId>wildfly-clustering-tomcat-10.1</artifactId>
         <version>17.0.0.Beta1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>wildfly-clustering-tomcat-8.5</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>wildfly-clustering-tomcat-10.1-catalina</artifactId>
+    <packaging>jar</packaging>
 
-    <name>Distributed session management for Tomcat 8.5</name>
+    <name>Distributed session management for Tomcat 10.1: Catalina integration</name>
 
-    <modules>
-        <module>catalina</module>
-        <module>hotrod</module>
-    </modules>
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>wildfly-clustering-tomcat-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-    <properties>
-        <version.org.apache.tomcat>8.5.79</version.org.apache.tomcat>
-    </properties>
+        <dependency>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-catalina</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.apache.tomcat</groupId>
-                <artifactId>tomcat-catalina</artifactId>
-                <version>${version.org.apache.tomcat}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.arquillian.container</groupId>
-                <artifactId>arquillian-tomcat-managed-8</artifactId>
-                <version>${version.org.jboss.arquillian.container.tomcat}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+        <dependency>
+            <groupId>org.wildfly</groupId>
+            <artifactId>wildfly-clustering-web-cache</artifactId>
+        </dependency>
+    </dependencies>
 
 </project>

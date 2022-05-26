@@ -20,33 +20,22 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.wildfly.clustering.tomcat.catalina;
+package org.wildfly.clustering.tomcat.catalina.authenticator;
 
-import java.util.concurrent.Executor;
-import java.util.function.Consumer;
-
-import org.apache.catalina.Context;
-import org.wildfly.clustering.context.ContextClassLoaderReference;
-import org.wildfly.clustering.context.ContextReferenceExecutor;
-import org.wildfly.clustering.web.session.ImmutableSession;
-import org.wildfly.clustering.web.session.SessionExpirationListener;
+import java.security.Principal;
 
 /**
- * Invokes following timeout of a session.
  * @author Paul Ferraro
  */
-public class CatalinaSessionExpirationListener implements SessionExpirationListener {
+public class LocalSSOContext {
 
-    private final Consumer<ImmutableSession> expireAction;
-    private final Executor executor;
+    private volatile Principal principal;
 
-    public CatalinaSessionExpirationListener(Context context) {
-        this.expireAction = new CatalinaSessionDestroyAction(context);
-        this.executor = new ContextReferenceExecutor<>(context.getLoader().getClassLoader(), ContextClassLoaderReference.INSTANCE);
+    public Principal getPrincipal() {
+        return this.principal;
     }
 
-    @Override
-    public void sessionExpired(ImmutableSession session) {
-        this.executor.execute(() -> this.expireAction.accept(session));
+    public void setPrincipal(Principal principal) {
+        this.principal = principal;
     }
 }

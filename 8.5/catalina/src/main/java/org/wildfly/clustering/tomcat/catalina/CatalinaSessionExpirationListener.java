@@ -26,8 +26,8 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 import org.apache.catalina.Context;
-import org.jboss.as.clustering.context.ContextClassLoaderReference;
-import org.jboss.as.clustering.context.ContextReferenceExecutor;
+import org.wildfly.clustering.context.ContextClassLoaderReference;
+import org.wildfly.clustering.context.ContextReferenceExecutor;
 import org.wildfly.clustering.web.session.ImmutableSession;
 import org.wildfly.clustering.web.session.SessionExpirationListener;
 

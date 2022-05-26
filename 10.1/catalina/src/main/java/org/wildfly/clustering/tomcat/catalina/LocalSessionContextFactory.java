@@ -22,31 +22,17 @@
 
 package org.wildfly.clustering.tomcat.catalina;
 
-import java.util.concurrent.Executor;
-import java.util.function.Consumer;
-
-import org.apache.catalina.Context;
-import org.wildfly.clustering.context.ContextClassLoaderReference;
-import org.wildfly.clustering.context.ContextReferenceExecutor;
-import org.wildfly.clustering.web.session.ImmutableSession;
-import org.wildfly.clustering.web.session.SessionExpirationListener;
+import org.wildfly.clustering.web.LocalContextFactory;
 
 /**
- * Invokes following timeout of a session.
+ * Create a local (i.e. non-persistent) context for a Tomcat session.
  * @author Paul Ferraro
  */
-public class CatalinaSessionExpirationListener implements SessionExpirationListener {
-
-    private final Consumer<ImmutableSession> expireAction;
-    private final Executor executor;
-
-    public CatalinaSessionExpirationListener(Context context) {
-        this.expireAction = new CatalinaSessionDestroyAction(context);
-        this.executor = new ContextReferenceExecutor<>(context.getLoader().getClassLoader(), ContextClassLoaderReference.INSTANCE);
-    }
+public enum LocalSessionContextFactory implements LocalContextFactory<LocalSessionContext> {
+    INSTANCE;
 
     @Override
-    public void sessionExpired(ImmutableSession session) {
-        this.executor.execute(() -> this.expireAction.accept(session));
+    public LocalSessionContext createLocalContext() {
+        return new LocalSessionContext();
     }
 }

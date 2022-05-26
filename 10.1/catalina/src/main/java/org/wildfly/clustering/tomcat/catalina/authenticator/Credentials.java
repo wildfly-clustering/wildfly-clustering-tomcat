@@ -20,33 +20,37 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.wildfly.clustering.tomcat.catalina;
-
-import java.util.concurrent.Executor;
-import java.util.function.Consumer;
-
-import org.apache.catalina.Context;
-import org.wildfly.clustering.context.ContextClassLoaderReference;
-import org.wildfly.clustering.context.ContextReferenceExecutor;
-import org.wildfly.clustering.web.session.ImmutableSession;
-import org.wildfly.clustering.web.session.SessionExpirationListener;
+package org.wildfly.clustering.tomcat.catalina.authenticator;
 
 /**
- * Invokes following timeout of a session.
  * @author Paul Ferraro
  */
-public class CatalinaSessionExpirationListener implements SessionExpirationListener {
+public class Credentials {
+    private volatile AuthenticationType authType;
+    private volatile String user;
+    private volatile String password;
 
-    private final Consumer<ImmutableSession> expireAction;
-    private final Executor executor;
-
-    public CatalinaSessionExpirationListener(Context context) {
-        this.expireAction = new CatalinaSessionDestroyAction(context);
-        this.executor = new ContextReferenceExecutor<>(context.getLoader().getClassLoader(), ContextClassLoaderReference.INSTANCE);
+    public AuthenticationType getAuthenticationType() {
+        return this.authType;
     }
 
-    @Override
-    public void sessionExpired(ImmutableSession session) {
-        this.executor.execute(() -> this.expireAction.accept(session));
+    public void setAuthenticationType(AuthenticationType authType) {
+        this.authType = authType;
+    }
+
+    public String getUser() {
+        return this.user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
+    public String getPassword() {
+        return this.password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }

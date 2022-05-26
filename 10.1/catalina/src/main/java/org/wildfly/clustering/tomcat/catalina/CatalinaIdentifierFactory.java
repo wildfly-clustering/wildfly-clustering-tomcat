@@ -22,31 +22,26 @@
 
 package org.wildfly.clustering.tomcat.catalina;
 
-import java.util.concurrent.Executor;
-import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-import org.apache.catalina.Context;
-import org.wildfly.clustering.context.ContextClassLoaderReference;
-import org.wildfly.clustering.context.ContextReferenceExecutor;
-import org.wildfly.clustering.web.session.ImmutableSession;
-import org.wildfly.clustering.web.session.SessionExpirationListener;
+import org.apache.catalina.SessionIdGenerator;
 
 /**
- * Invokes following timeout of a session.
+ * An identifier factory that uses Tomcat's SessionIdGenerator.
  * @author Paul Ferraro
  */
-public class CatalinaSessionExpirationListener implements SessionExpirationListener {
+public class CatalinaIdentifierFactory implements Supplier<String> {
 
-    private final Consumer<ImmutableSession> expireAction;
-    private final Executor executor;
+    private final SessionIdGenerator generator;
 
-    public CatalinaSessionExpirationListener(Context context) {
-        this.expireAction = new CatalinaSessionDestroyAction(context);
-        this.executor = new ContextReferenceExecutor<>(context.getLoader().getClassLoader(), ContextClassLoaderReference.INSTANCE);
+    public CatalinaIdentifierFactory(SessionIdGenerator generator) {
+        this.generator = generator;
+        // Prevent Tomcat's session id generator from auto-appending the route
+        this.generator.setJvmRoute(null);
     }
 
     @Override
-    public void sessionExpired(ImmutableSession session) {
-        this.executor.execute(() -> this.expireAction.accept(session));
+    public String get() {
+        return this.generator.generateSessionId();
     }
 }
