@@ -31,6 +31,10 @@ import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.function.Supplier;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSessionActivationListener;
+
 import org.apache.catalina.Context;
 import org.apache.catalina.Engine;
 import org.apache.catalina.Host;
@@ -54,9 +58,7 @@ import org.wildfly.clustering.ee.immutable.CompositeImmutability;
 import org.wildfly.clustering.ee.immutable.DefaultImmutability;
 import org.wildfly.clustering.infinispan.marshalling.protostream.ProtoStreamMarshaller;
 import org.wildfly.clustering.marshalling.protostream.SimpleClassLoaderMarshaller;
-import org.wildfly.clustering.marshalling.spi.ByteBufferMarshalledValueFactory;
 import org.wildfly.clustering.marshalling.spi.ByteBufferMarshaller;
-import org.wildfly.clustering.marshalling.spi.MarshalledValueFactory;
 import org.wildfly.clustering.tomcat.SessionMarshallerFactory;
 import org.wildfly.clustering.tomcat.SessionPersistenceGranularity;
 import org.wildfly.clustering.tomcat.catalina.CatalinaManager;
@@ -79,10 +81,6 @@ import org.wildfly.clustering.web.session.SessionManagerFactory;
 import org.wildfly.clustering.web.session.SpecificationProvider;
 import org.wildfly.common.iteration.CompositeIterable;
 import org.wildfly.security.manager.WildFlySecurityManager;
-
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.http.HttpSession;
-import jakarta.servlet.http.HttpSessionActivationListener;
 
 /**
  * Distributed Manager implementation that configures a HotRod client.
@@ -169,12 +167,11 @@ public class HotRodManager extends ManagerBase {
 
         ClassLoader loader = context.getLoader().getClassLoader();
         ByteBufferMarshaller marshaller = this.marshallerFactory.apply(loader);
-        MarshalledValueFactory<ByteBufferMarshaller> marshalledValueFactory = new ByteBufferMarshalledValueFactory(marshaller);
 
         ServiceLoader<Immutability> loadedImmutability = ServiceLoader.load(Immutability.class, Immutability.class.getClassLoader());
         Immutability immutability = new CompositeImmutability(new CompositeIterable<>(EnumSet.allOf(DefaultImmutability.class), EnumSet.allOf(SessionAttributeImmutability.class), loadedImmutability));
 
-        HotRodSessionManagerFactoryConfiguration<HttpSession, ServletContext, HttpSessionActivationListener, ByteBufferMarshaller, LocalSessionContext> sessionManagerFactoryConfig = new HotRodSessionManagerFactoryConfiguration<>() {
+        HotRodSessionManagerFactoryConfiguration<HttpSession, ServletContext, HttpSessionActivationListener, LocalSessionContext> sessionManagerFactoryConfig = new HotRodSessionManagerFactoryConfiguration<>() {
             @Override
             public Integer getMaxActiveSessions() {
                 return maxActiveSessions;
@@ -191,8 +188,8 @@ public class HotRodManager extends ManagerBase {
             }
 
             @Override
-            public MarshalledValueFactory<ByteBufferMarshaller> getMarshalledValueFactory() {
-                return marshalledValueFactory;
+            public ByteBufferMarshaller getMarshaller() {
+                return marshaller;
             }
 
             @Override

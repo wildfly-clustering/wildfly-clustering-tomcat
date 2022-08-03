@@ -58,9 +58,7 @@ import org.wildfly.clustering.ee.immutable.CompositeImmutability;
 import org.wildfly.clustering.ee.immutable.DefaultImmutability;
 import org.wildfly.clustering.infinispan.marshalling.protostream.ProtoStreamMarshaller;
 import org.wildfly.clustering.marshalling.protostream.SimpleClassLoaderMarshaller;
-import org.wildfly.clustering.marshalling.spi.ByteBufferMarshalledValueFactory;
 import org.wildfly.clustering.marshalling.spi.ByteBufferMarshaller;
-import org.wildfly.clustering.marshalling.spi.MarshalledValueFactory;
 import org.wildfly.clustering.tomcat.SessionMarshallerFactory;
 import org.wildfly.clustering.tomcat.SessionPersistenceGranularity;
 import org.wildfly.clustering.tomcat.catalina.CatalinaManager;
@@ -169,12 +167,11 @@ public class HotRodManager extends ManagerBase {
 
         ClassLoader loader = context.getLoader().getClassLoader();
         ByteBufferMarshaller marshaller = this.marshallerFactory.apply(loader);
-        MarshalledValueFactory<ByteBufferMarshaller> marshalledValueFactory = new ByteBufferMarshalledValueFactory(marshaller);
 
         ServiceLoader<Immutability> loadedImmutability = ServiceLoader.load(Immutability.class, Immutability.class.getClassLoader());
         Immutability immutability = new CompositeImmutability(new CompositeIterable<>(EnumSet.allOf(DefaultImmutability.class), EnumSet.allOf(SessionAttributeImmutability.class), loadedImmutability));
 
-        HotRodSessionManagerFactoryConfiguration<HttpSession, ServletContext, HttpSessionActivationListener, ByteBufferMarshaller, LocalSessionContext> sessionManagerFactoryConfig = new HotRodSessionManagerFactoryConfiguration<>() {
+        HotRodSessionManagerFactoryConfiguration<HttpSession, ServletContext, HttpSessionActivationListener, LocalSessionContext> sessionManagerFactoryConfig = new HotRodSessionManagerFactoryConfiguration<>() {
             @Override
             public Integer getMaxActiveSessions() {
                 return maxActiveSessions;
@@ -191,8 +188,8 @@ public class HotRodManager extends ManagerBase {
             }
 
             @Override
-            public MarshalledValueFactory<ByteBufferMarshaller> getMarshalledValueFactory() {
-                return marshalledValueFactory;
+            public ByteBufferMarshaller getMarshaller() {
+                return marshaller;
             }
 
             @Override
