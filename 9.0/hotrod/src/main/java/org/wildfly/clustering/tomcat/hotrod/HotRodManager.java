@@ -205,12 +205,6 @@ public class HotRodManager extends ManagerBase {
             @Override
             public <K, V> RemoteCache<K, V> getCache() {
                 return container.getCache(this.getDeploymentName());
-/*
-                String cacheName = this.getDeploymentName();
-                try (RemoteCacheContainer.NearCacheRegistration registration = container.registerNearCacheFactory(cacheName, new SessionManagerNearCacheFactory<>(this.getMaxActiveSessions(), this.getAttributePersistenceStrategy()))) {
-                    return container.getCache(cacheName);
-                }
-*/
             }
 
             @Override
