@@ -5,25 +5,21 @@ A high-availability session manager for Tomcat based on WildFly's distributed se
 
 ## Building
 
-1.	Clone this repository and build for a specific Tomcat version using Java 8+ and a standard maven build.
+1.	Clone this repository and build for a specific Tomcat version using Java 11+ and a standard maven build.
 
 		$ git clone git@github.com:wildfly-clustering/wildfly-clustering-tomcat.git
 		$ cd wildfly-clustering-tomcat
-		$ mvn clean install -Dtomcat.version=9.0 -DskipTests=true
+		$ mvn clean install -Dtomcat.version=10.1 -DskipTests=true
 
 ## Installation
 
-1.	Enter directory of the target Tomcat version and session manager implementation:
+1.	Copy the releveant maven artifact to Tomcat's lib directory:
 
-		$ cd 9.0/hotrod
+		$ mvn --projects 10.1/hotrod dependency:copy -DoutputDirectory=$CATALINA_HOME/lib
 
-1.	Copy maven artifact to Tomcat's lib directory:
+1.	Copy the relevant runtime dependencies to Tomcat's lib directory:
 
-		$ mvn dependency:copy -DoutputDirectory=$CATALINA_HOME/lib
-
-1.	Copy runtime dependencies to Tomcat's lib directory:
-
-		$ mvn dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=$CATALINA_HOME/lib
+		$ mvn --projects 10.1/hotrod dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=$CATALINA_HOME/lib
 
 ## Configuration
 
@@ -51,7 +47,7 @@ https://github.com/infinispan/infinispan/blob/13.0.x/client/hotrod-client/src/ma
 
 #### Common Manager properties
 
-https://tomcat.apache.org/tomcat-9.0-doc/config/cluster-manager.html#Common_Attributes
+https://tomcat.apache.org/tomcat-10.1-doc/config/cluster-manager.html#Common_Attributes
 
 #### Example
 
