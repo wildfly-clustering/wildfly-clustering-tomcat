@@ -52,7 +52,6 @@ import org.infinispan.client.hotrod.configuration.NearCacheMode;
 import org.infinispan.client.hotrod.configuration.TransactionMode;
 import org.infinispan.client.hotrod.impl.HotRodURI;
 import org.wildfly.clustering.ee.Immutability;
-import org.wildfly.clustering.ee.Recordable;
 import org.wildfly.clustering.ee.cache.tx.TransactionBatch;
 import org.wildfly.clustering.ee.immutable.CompositeImmutability;
 import org.wildfly.clustering.ee.immutable.DefaultImmutability;
@@ -71,7 +70,6 @@ import org.wildfly.clustering.tomcat.catalina.LocalSessionContextFactory;
 import org.wildfly.clustering.web.LocalContextFactory;
 import org.wildfly.clustering.web.hotrod.session.HotRodSessionManagerFactory;
 import org.wildfly.clustering.web.hotrod.session.HotRodSessionManagerFactoryConfiguration;
-import org.wildfly.clustering.web.session.ImmutableSessionMetaData;
 import org.wildfly.clustering.web.session.SessionAttributeImmutability;
 import org.wildfly.clustering.web.session.SessionAttributePersistenceStrategy;
 import org.wildfly.clustering.web.session.SessionExpirationListener;
@@ -238,11 +236,6 @@ public class HotRodManager extends ManagerBase {
             @Override
             public SessionExpirationListener getExpirationListener() {
                 return expirationListener;
-            }
-
-            @Override
-            public Recordable<ImmutableSessionMetaData> getInactiveSessionRecorder() {
-                return null;
             }
         };
         SessionManager<LocalSessionContext, TransactionBatch> sessionManager = this.managerFactory.createSessionManager(sessionManagerConfiguration);
