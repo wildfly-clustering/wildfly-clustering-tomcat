@@ -4,6 +4,10 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    ignore:
+      - dependency-name: jakarta.annotation:jakarta.annotation-api
+        versions:
+          - ">= 2"
   - package-ecosystem: "maven"
     directory: "/8.5"
     schedule:
