@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
@@ -166,8 +168,11 @@ public class HotRodManager extends ManagerBase {
         ClassLoader loader = context.getLoader().getClassLoader();
         ByteBufferMarshaller marshaller = this.marshallerFactory.apply(loader);
 
-        ServiceLoader<Immutability> loadedImmutability = ServiceLoader.load(Immutability.class, Immutability.class.getClassLoader());
-        Immutability immutability = new CompositeImmutability(new CompositeIterable<>(EnumSet.allOf(DefaultImmutability.class), EnumSet.allOf(SessionAttributeImmutability.class), loadedImmutability));
+        List<Immutability> loadedImmutabilities = new LinkedList<>();
+        for (Immutability loadedImmutability : ServiceLoader.load(Immutability.class, loader)) {
+            loadedImmutabilities.add(loadedImmutability);
+        }
+        Immutability immutability = new CompositeImmutability(new CompositeIterable<>(EnumSet.allOf(DefaultImmutability.class), EnumSet.allOf(SessionAttributeImmutability.class), loadedImmutabilities));
 
         HotRodSessionManagerFactoryConfiguration<HttpSession, ServletContext, HttpSessionActivationListener, LocalSessionContext> sessionManagerFactoryConfig = new HotRodSessionManagerFactoryConfiguration<>() {
             @Override
