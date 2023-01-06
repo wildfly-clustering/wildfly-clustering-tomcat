@@ -25,13 +25,17 @@ package org.wildfly.clustering.tomcat;
 import java.net.URI;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.hc.client5.http.classic.methods.HttpDelete;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpHead;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpStatus;
 import org.infinispan.protostream.SerializationContextInitializer;
 import org.infinispan.server.test.core.ServerRunMode;
@@ -81,34 +85,35 @@ public abstract class AbstractSmokeITCase {
         URI uri2 = ServletHandler.createURI(baseURL2);
 
         try (CloseableHttpClient client = HttpClients.createDefault()) {
-            String sessionId = null;
-            int value = 0;
+            AtomicReference<String> sessionId = new AtomicReference<>();
+            AtomicInteger value = new AtomicInteger(0);
             for (int i = 0; i < 4; i++) {
                 for (URI uri : Arrays.asList(uri1, uri2)) {
                     for (int j = 0; j < 4; j++) {
-                        try (CloseableHttpResponse response = client.execute(new HttpGet(uri))) {
+                        Map.Entry<String, String> result = client.execute(new HttpGet(uri), response -> {
                             Assert.assertEquals(HttpStatus.SC_OK, response.getCode());
-                            Assert.assertEquals(String.valueOf(value++), response.getFirstHeader(ServletHandler.VALUE).getValue());
-                            String requestSessionId = response.getFirstHeader(ServletHandler.SESSION_ID).getValue();
-                            if (sessionId == null) {
-                                sessionId = requestSessionId;
-                            } else {
-                                Assert.assertEquals(sessionId, requestSessionId);
-                            }
+                            return Map.entry(response.getFirstHeader(ServletHandler.SESSION_ID).getValue(), response.getFirstHeader(ServletHandler.VALUE).getValue());
+                        });
+                        Assert.assertEquals(String.valueOf(value.getAndIncrement()), result.getValue());
+                        String requestSessionId = result.getKey();
+                        if (!sessionId.compareAndSet(null, requestSessionId)) {
+                            Assert.assertEquals(sessionId.get(), requestSessionId);
                         }
                     }
                     // Grace time between failover requests
                     Thread.sleep(500);
                 }
             }
-            try (CloseableHttpResponse response = client.execute(new HttpDelete(uri1))) {
+            String requestSessionId = client.execute(new HttpDelete(uri1), response -> {
                 Assert.assertEquals(HttpStatus.SC_OK, response.getCode());
-                Assert.assertEquals(sessionId, response.getFirstHeader(ServletHandler.SESSION_ID).getValue());
-            }
-            try (CloseableHttpResponse response = client.execute(new HttpHead(uri2))) {
+                return response.getFirstHeader(ServletHandler.SESSION_ID).getValue();
+            });
+            Assert.assertEquals(sessionId.get(), requestSessionId);
+            requestSessionId = client.execute(new HttpHead(uri2), response -> {
                 Assert.assertEquals(HttpStatus.SC_OK, response.getCode());
-                Assert.assertFalse(response.containsHeader(ServletHandler.SESSION_ID));
-            }
+                return Optional.ofNullable(response.getFirstHeader(ServletHandler.SESSION_ID)).map(Header::getValue).orElse(null);
+            });
+            Assert.assertNull(requestSessionId);
         }
     }
 }
