@@ -49,7 +49,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.source>11</maven.compiler.source>
 
-        <version.jakarta.annotation>1.3.5</version.jakarta.annotation>
+        <version.jakarta.annotation>2.1.1</version.jakarta.annotation>
         <version.com.squareup.protoparser>4.0.3</version.com.squareup.protoparser>
         <version.net.jcip.annotations>1.0</version.net.jcip.annotations>
         <version.org.apache.httpcomponents>5.2.1</version.org.apache.httpcomponents>
