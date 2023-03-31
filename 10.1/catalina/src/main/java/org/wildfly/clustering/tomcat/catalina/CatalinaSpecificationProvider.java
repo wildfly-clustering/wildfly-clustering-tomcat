@@ -70,7 +70,7 @@ public enum CatalinaSpecificationProvider implements SpecificationProvider<HttpS
 
             @Override
             public int getMaxInactiveInterval() {
-                return (int) session.getMetaData().getMaxInactiveInterval().getSeconds();
+                return (int) session.getMetaData().getTimeout().getSeconds();
             }
 
             @Override
