@@ -29,13 +29,12 @@ import org.apache.catalina.Context;
 import org.wildfly.clustering.context.ContextClassLoaderReference;
 import org.wildfly.clustering.context.ContextReferenceExecutor;
 import org.wildfly.clustering.web.session.ImmutableSession;
-import org.wildfly.clustering.web.session.SessionExpirationListener;
 
 /**
  * Invokes following timeout of a session.
  * @author Paul Ferraro
  */
-public class CatalinaSessionExpirationListener implements SessionExpirationListener {
+public class CatalinaSessionExpirationListener implements Consumer<ImmutableSession> {
 
     private final Consumer<ImmutableSession> expireAction;
     private final Executor executor;
@@ -46,7 +45,7 @@ public class CatalinaSessionExpirationListener implements SessionExpirationListe
     }
 
     @Override
-    public void sessionExpired(ImmutableSession session) {
+    public void accept(ImmutableSession session) {
         this.executor.execute(() -> this.expireAction.accept(session));
     }
 }

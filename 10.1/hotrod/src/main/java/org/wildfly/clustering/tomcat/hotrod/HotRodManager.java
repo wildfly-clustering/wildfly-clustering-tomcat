@@ -31,7 +31,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpSession;
@@ -72,9 +74,9 @@ import org.wildfly.clustering.tomcat.catalina.LocalSessionContextFactory;
 import org.wildfly.clustering.web.LocalContextFactory;
 import org.wildfly.clustering.web.hotrod.session.HotRodSessionManagerFactory;
 import org.wildfly.clustering.web.hotrod.session.HotRodSessionManagerFactoryConfiguration;
+import org.wildfly.clustering.web.session.ImmutableSession;
 import org.wildfly.clustering.web.session.SessionAttributeImmutability;
 import org.wildfly.clustering.web.session.SessionAttributePersistenceStrategy;
-import org.wildfly.clustering.web.session.SessionExpirationListener;
 import org.wildfly.clustering.web.session.SessionManager;
 import org.wildfly.clustering.web.session.SessionManagerConfiguration;
 import org.wildfly.clustering.web.session.SessionManagerFactory;
@@ -87,6 +89,8 @@ import org.wildfly.security.manager.WildFlySecurityManager;
  * @author Paul Ferraro
  */
 public class HotRodManager extends ManagerBase {
+
+    static final ToIntFunction<ServletContext> SESSION_TIMEOUT_FUNCTION = ServletContext::getSessionTimeout;
 
     private final Properties properties = new Properties();
 
@@ -224,13 +228,18 @@ public class HotRodManager extends ManagerBase {
         this.managerFactory = new HotRodSessionManagerFactory<>(sessionManagerFactoryConfig);
 
         ServletContext servletContext = context.getServletContext();
-        SessionExpirationListener expirationListener = new CatalinaSessionExpirationListener(context);
+        Consumer<ImmutableSession> expirationListener = new CatalinaSessionExpirationListener(context);
         Supplier<String> identifierFactory = new CatalinaIdentifierFactory(this.getSessionIdGenerator());
 
-        SessionManagerConfiguration<ServletContext> sessionManagerConfiguration = new SessionManagerConfiguration<>() {
+        SessionManagerConfiguration<ServletContext> sessionManagerConfiguration = new org.wildfly.clustering.tomcat.SessionManagerConfiguration<>() {
             @Override
             public ServletContext getServletContext() {
                 return servletContext;
+            }
+
+            @Override
+            public ToIntFunction<ServletContext> getSessionTimeoutFunction() {
+                return SESSION_TIMEOUT_FUNCTION;
             }
 
             @Override
@@ -239,7 +248,7 @@ public class HotRodManager extends ManagerBase {
             }
 
             @Override
-            public SessionExpirationListener getExpirationListener() {
+            public Consumer<ImmutableSession> getExpirationListener() {
                 return expirationListener;
             }
         };

@@ -24,6 +24,7 @@ package org.wildfly.clustering.tomcat.hotrod;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Duration;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import javax.servlet.ServletContext;
@@ -72,9 +74,9 @@ import org.wildfly.clustering.tomcat.catalina.LocalSessionContextFactory;
 import org.wildfly.clustering.web.LocalContextFactory;
 import org.wildfly.clustering.web.hotrod.session.HotRodSessionManagerFactory;
 import org.wildfly.clustering.web.hotrod.session.HotRodSessionManagerFactoryConfiguration;
+import org.wildfly.clustering.web.session.ImmutableSession;
 import org.wildfly.clustering.web.session.SessionAttributeImmutability;
 import org.wildfly.clustering.web.session.SessionAttributePersistenceStrategy;
-import org.wildfly.clustering.web.session.SessionExpirationListener;
 import org.wildfly.clustering.web.session.SessionManager;
 import org.wildfly.clustering.web.session.SessionManagerConfiguration;
 import org.wildfly.clustering.web.session.SessionManagerFactory;
@@ -224,7 +226,7 @@ public class HotRodManager extends ManagerBase {
         this.managerFactory = new HotRodSessionManagerFactory<>(sessionManagerFactoryConfig);
 
         ServletContext servletContext = context.getServletContext();
-        SessionExpirationListener expirationListener = new CatalinaSessionExpirationListener(context);
+        Consumer<ImmutableSession> expirationListener = new CatalinaSessionExpirationListener(context);
         Supplier<String> identifierFactory = new CatalinaIdentifierFactory(this.getSessionIdGenerator());
 
         SessionManagerConfiguration<ServletContext> sessionManagerConfiguration = new SessionManagerConfiguration<>() {
@@ -234,12 +236,17 @@ public class HotRodManager extends ManagerBase {
             }
 
             @Override
+            public Duration getTimeout() {
+                return Duration.ofMinutes(context.getSessionTimeout());
+            }
+
+            @Override
             public Supplier<String> getIdentifierFactory() {
                 return identifierFactory;
             }
 
             @Override
-            public SessionExpirationListener getExpirationListener() {
+            public Consumer<ImmutableSession> getExpirationListener() {
                 return expirationListener;
             }
         };
