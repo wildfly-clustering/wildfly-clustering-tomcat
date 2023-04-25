@@ -23,7 +23,6 @@
 package org.wildfly.clustering.tomcat.catalina;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.StampedLock;
@@ -65,8 +64,6 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
         this.context = context;
         this.route = ((Engine) context.getParent().getParent()).getJvmRoute();
         this.invalidateAction = new CatalinaSessionDestroyAction(context);
-
-        this.manager.setDefaultMaxInactiveInterval(Duration.ofMinutes(context.getSessionTimeout()));
     }
 
     @Override
@@ -99,7 +96,6 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
     @Override
     public void start() {
         this.lifecycleStamp.ifPresent(stamp -> this.lifecycleLock.unlock(stamp));
-        this.manager.setDefaultMaxInactiveInterval(Duration.ofMinutes(this.context.getSessionTimeout()));
         this.manager.start();
     }
 
