@@ -36,20 +36,20 @@ import jakarta.servlet.http.HttpServletResponse;
  */
 @WebServlet(ServletHandler.SERVLET_PATH)
 public class SessionServlet extends HttpServlet implements ServletHandler<HttpServletRequest, HttpServletResponse> {
-    private static final long serialVersionUID = 2878267318695777395L;
+	private static final long serialVersionUID = 2878267318695777395L;
 
-    @Override
-    public void doHead(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        this.doHead(new TomcatService(request, response));
-    }
+	@Override
+	public void doHead(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		this.doHead(new TomcatService(request, response));
+	}
 
-    @Override
-    public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        this.doGet(new TomcatService(request, response));
-    }
+	@Override
+	public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		this.doGet(new TomcatService(request, response));
+	}
 
-    @Override
-    public void doDelete(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        this.doDelete(new TomcatService(request, response));
-    }
+	@Override
+	public void doDelete(HttpServletRequest request, HttpServletResponse response) throws IOException {
+		this.doDelete(new TomcatService(request, response));
+	}
 }

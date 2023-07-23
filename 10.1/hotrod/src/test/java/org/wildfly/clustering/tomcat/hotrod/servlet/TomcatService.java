@@ -36,27 +36,27 @@ import org.wildfly.clustering.tomcat.servlet.ServletSession;
  */
 public class TomcatService implements ServletService {
 
-    private final HttpServletRequest request;
-    private final HttpServletResponse response;
+	private final HttpServletRequest request;
+	private final HttpServletResponse response;
 
-    TomcatService(HttpServletRequest request, HttpServletResponse response) {
-        this.request = request;
-        this.response = response;
-    }
+	TomcatService(HttpServletRequest request, HttpServletResponse response) {
+		this.request = request;
+		this.response = response;
+	}
 
-    @Override
-    public ServletSession getSession(boolean create) {
-        HttpSession session = this.request.getSession(create);
-        return (session != null) ? new TomcatSession(session) : null;
-    }
+	@Override
+	public ServletSession getSession(boolean create) {
+		HttpSession session = this.request.getSession(create);
+		return (session != null) ? new TomcatSession(session) : null;
+	}
 
-    @Override
-    public void setHeader(String name, int value) throws IOException {
-        this.response.setIntHeader(name, value);
-    }
+	@Override
+	public void setHeader(String name, int value) throws IOException {
+		this.response.setIntHeader(name, value);
+	}
 
-    @Override
-    public void setHeader(String name, String value) throws IOException {
-        this.response.setHeader(name, value);
-    }
+	@Override
+	public void setHeader(String name, String value) throws IOException {
+		this.response.setHeader(name, value);
+	}
 }

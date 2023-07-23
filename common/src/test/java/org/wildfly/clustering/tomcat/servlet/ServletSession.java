@@ -26,8 +26,8 @@ package org.wildfly.clustering.tomcat.servlet;
  * @author Paul Ferraro
  */
 public interface ServletSession {
-    String getId();
-    Object getAttribute(String name);
-    void setAttribute(String name, Object value);
-    void invalidate();
+	String getId();
+	Object getAttribute(String name);
+	void setAttribute(String name, Object value);
+	void invalidate();
 }

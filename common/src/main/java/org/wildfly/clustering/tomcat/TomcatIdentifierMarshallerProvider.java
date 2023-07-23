@@ -36,8 +36,8 @@ import org.wildfly.clustering.web.IdentifierMarshallerProvider;
 @MetaInfServices(IdentifierMarshallerProvider.class)
 public class TomcatIdentifierMarshallerProvider implements IdentifierMarshallerProvider {
 
-    @Override
-    public Marshaller<String, ByteBuffer> getMarshaller() {
-        return IdentifierMarshaller.HEX;
-    }
+	@Override
+	public Marshaller<String, ByteBuffer> getMarshaller() {
+		return IdentifierMarshaller.HEX;
+	}
 }

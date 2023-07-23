@@ -28,11 +28,11 @@ import java.io.IOException;
  * @author Paul Ferraro
  */
 public interface ServletService {
-    default ServletSession getSession() {
-        return this.getSession(true);
-    }
-    ServletSession getSession(boolean create);
+	default ServletSession getSession() {
+		return this.getSession(true);
+	}
+	ServletSession getSession(boolean create);
 
-    void setHeader(String name, int value) throws IOException;
-    void setHeader(String name, String value) throws IOException;
+	void setHeader(String name, int value) throws IOException;
+	void setHeader(String name, String value) throws IOException;
 }

@@ -35,32 +35,32 @@ import org.apache.catalina.SessionListener;
  * @author Paul Ferraro
  */
 public class LocalSessionContext {
-    private final Map<String, Object> notes = new ConcurrentHashMap<>();
-    private final List<SessionListener> listeners = new CopyOnWriteArrayList<>();
-    private volatile String authType;
-    private volatile Principal principal;
+	private final Map<String, Object> notes = new ConcurrentHashMap<>();
+	private final List<SessionListener> listeners = new CopyOnWriteArrayList<>();
+	private volatile String authType;
+	private volatile Principal principal;
 
-    public String getAuthType() {
-        return this.authType;
-    }
+	public String getAuthType() {
+		return this.authType;
+	}
 
-    public void setAuthType(String authType) {
-        this.authType = authType;
-    }
+	public void setAuthType(String authType) {
+		this.authType = authType;
+	}
 
-    public Principal getPrincipal() {
-        return this.principal;
-    }
+	public Principal getPrincipal() {
+		return this.principal;
+	}
 
-    public void setPrincipal(Principal principal) {
-        this.principal = principal;
-    }
+	public void setPrincipal(Principal principal) {
+		this.principal = principal;
+	}
 
-    public Map<String, Object> getNotes() {
-        return this.notes;
-    }
+	public Map<String, Object> getNotes() {
+		return this.notes;
+	}
 
-    public List<SessionListener> getSessionListeners() {
-        return this.listeners;
-    }
+	public List<SessionListener> getSessionListeners() {
+		return this.listeners;
+	}
 }

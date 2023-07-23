@@ -42,170 +42,170 @@ import org.wildfly.clustering.web.session.SessionManager;
  */
 public interface CatalinaManager<B extends Batch> extends Manager, Lifecycle {
 
-    /**
-     * Returns underlying distributable session manager implementation.
-     * @return a session manager
-     */
-    SessionManager<LocalSessionContext, B> getSessionManager();
+	/**
+	 * Returns underlying distributable session manager implementation.
+	 * @return a session manager
+	 */
+	SessionManager<LocalSessionContext, B> getSessionManager();
 
-    /**
-     * Returns a mechanism for determining the marshallability of a session attribute.
-     * @return
-     */
-    Marshallability getMarshallability();
+	/**
+	 * Returns a mechanism for determining the marshallability of a session attribute.
+	 * @return
+	 */
+	Marshallability getMarshallability();
 
-    @Override
-    void start();
+	@Override
+	void start();
 
-    @Override
-    void stop();
+	@Override
+	void stop();
 
-    // We don't care about any of the methods below
+	// We don't care about any of the methods below
 
-    @Override
-    default void init() throws LifecycleException {
-    }
+	@Override
+	default void init() throws LifecycleException {
+	}
 
-    @Override
-    default void destroy() throws LifecycleException {
-    }
+	@Override
+	default void destroy() throws LifecycleException {
+	}
 
-    @Override
-    default void setContext(Context context) {
-    }
+	@Override
+	default void setContext(Context context) {
+	}
 
-    @Override
-    default SessionIdGenerator getSessionIdGenerator() {
-        return null;
-    }
+	@Override
+	default SessionIdGenerator getSessionIdGenerator() {
+		return null;
+	}
 
-    @Override
-    default void setSessionIdGenerator(SessionIdGenerator sessionIdGenerator) {
-    }
+	@Override
+	default void setSessionIdGenerator(SessionIdGenerator sessionIdGenerator) {
+	}
 
-    @Override
-    default long getSessionCounter() {
-        return 0;
-    }
+	@Override
+	default long getSessionCounter() {
+		return 0;
+	}
 
-    @Override
-    default void setSessionCounter(long sessionCounter) {
-    }
+	@Override
+	default void setSessionCounter(long sessionCounter) {
+	}
 
-    @Override
-    default int getMaxActive() {
-        return 0;
-    }
+	@Override
+	default int getMaxActive() {
+		return 0;
+	}
 
-    @Override
-    default void setMaxActive(int maxActive) {
-    }
+	@Override
+	default void setMaxActive(int maxActive) {
+	}
 
-    @Override
-    default int getActiveSessions() {
-        return 0;
-    }
+	@Override
+	default int getActiveSessions() {
+		return 0;
+	}
 
-    @Override
-    default long getExpiredSessions() {
-        return 0;
-    }
+	@Override
+	default long getExpiredSessions() {
+		return 0;
+	}
 
-    @Override
-    default void setExpiredSessions(long expiredSessions) {
-    }
+	@Override
+	default void setExpiredSessions(long expiredSessions) {
+	}
 
-    @Override
-    default int getRejectedSessions() {
-        return 0;
-    }
+	@Override
+	default int getRejectedSessions() {
+		return 0;
+	}
 
-    @Override
-    default int getSessionMaxAliveTime() {
-        return 0;
-    }
+	@Override
+	default int getSessionMaxAliveTime() {
+		return 0;
+	}
 
-    @Override
-    default void setSessionMaxAliveTime(int sessionMaxAliveTime) {
-    }
+	@Override
+	default void setSessionMaxAliveTime(int sessionMaxAliveTime) {
+	}
 
-    @Override
-    default int getSessionAverageAliveTime() {
-        return 0;
-    }
+	@Override
+	default int getSessionAverageAliveTime() {
+		return 0;
+	}
 
-    @Override
-    default int getSessionCreateRate() {
-        return 0;
-    }
+	@Override
+	default int getSessionCreateRate() {
+		return 0;
+	}
 
-    @Override
-    default int getSessionExpireRate() {
-        return 0;
-    }
+	@Override
+	default int getSessionExpireRate() {
+		return 0;
+	}
 
-    @Override
-    default void add(org.apache.catalina.Session session) {
-    }
+	@Override
+	default void add(org.apache.catalina.Session session) {
+	}
 
-    @Override
-    default void addPropertyChangeListener(PropertyChangeListener listener) {
-    }
+	@Override
+	default void addPropertyChangeListener(PropertyChangeListener listener) {
+	}
 
-    @Override
-    default org.apache.catalina.Session createEmptySession() {
-        return null;
-    }
+	@Override
+	default org.apache.catalina.Session createEmptySession() {
+		return null;
+	}
 
-    @Override
-    default org.apache.catalina.Session[] findSessions() {
-        return null;
-    }
+	@Override
+	default org.apache.catalina.Session[] findSessions() {
+		return null;
+	}
 
-    @Override
-    default void load() throws ClassNotFoundException, IOException {
-    }
+	@Override
+	default void load() throws ClassNotFoundException, IOException {
+	}
 
-    @Override
-    default void remove(org.apache.catalina.Session session) {
-    }
+	@Override
+	default void remove(org.apache.catalina.Session session) {
+	}
 
-    @Override
-    default void remove(org.apache.catalina.Session session, boolean update) {
-    }
+	@Override
+	default void remove(org.apache.catalina.Session session, boolean update) {
+	}
 
-    @Override
-    default void removePropertyChangeListener(PropertyChangeListener listener) {
-    }
+	@Override
+	default void removePropertyChangeListener(PropertyChangeListener listener) {
+	}
 
-    @Override
-    default void unload() throws IOException {
-    }
+	@Override
+	default void unload() throws IOException {
+	}
 
-    @Override
-    default void backgroundProcess() {
-    }
+	@Override
+	default void backgroundProcess() {
+	}
 
-    @Override
-    default void addLifecycleListener(LifecycleListener listener) {
-    }
+	@Override
+	default void addLifecycleListener(LifecycleListener listener) {
+	}
 
-    @Override
-    default LifecycleListener[] findLifecycleListeners() {
-        return null;
-    }
+	@Override
+	default LifecycleListener[] findLifecycleListeners() {
+		return null;
+	}
 
-    @Override
-    default void removeLifecycleListener(LifecycleListener listener) {
-    }
+	@Override
+	default void removeLifecycleListener(LifecycleListener listener) {
+	}
 
-    @Override
-    default LifecycleState getState() {
-        return null;
-    }
+	@Override
+	default LifecycleState getState() {
+		return null;
+	}
 
-    @Override
-    default String getStateName() {
-        return null;
-    }
+	@Override
+	default String getStateName() {
+		return null;
+	}
 }

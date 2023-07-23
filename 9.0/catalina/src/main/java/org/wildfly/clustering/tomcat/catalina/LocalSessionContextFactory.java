@@ -29,10 +29,10 @@ import org.wildfly.clustering.web.LocalContextFactory;
  * @author Paul Ferraro
  */
 public enum LocalSessionContextFactory implements LocalContextFactory<LocalSessionContext> {
-    INSTANCE;
+	INSTANCE;
 
-    @Override
-    public LocalSessionContext createLocalContext() {
-        return new LocalSessionContext();
-    }
+	@Override
+	public LocalSessionContext createLocalContext() {
+		return new LocalSessionContext();
+	}
 }

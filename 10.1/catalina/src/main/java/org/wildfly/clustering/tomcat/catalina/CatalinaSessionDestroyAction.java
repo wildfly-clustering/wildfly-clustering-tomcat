@@ -41,33 +41,33 @@ import jakarta.servlet.http.HttpSessionListener;
  * @author Paul Ferraro
  */
 public class CatalinaSessionDestroyAction implements Consumer<ImmutableSession> {
-    private final Context context;
+	private final Context context;
 
-    public CatalinaSessionDestroyAction(Context context) {
-        this.context = context;
-    }
+	public CatalinaSessionDestroyAction(Context context) {
+		this.context = context;
+	}
 
-    @Override
-    public void accept(ImmutableSession session) {
-        SessionAttributesFilter filter = new ImmutableSessionAttributesFilter(session);
-        HttpSessionEvent event = new HttpSessionEvent(CatalinaSpecificationProvider.INSTANCE.createHttpSession(session, this.context.getServletContext()));
-        Stream.of(this.context.getApplicationLifecycleListeners()).filter(HttpSessionListener.class::isInstance).map(HttpSessionListener.class::cast).forEach(listener -> {
-            try {
-                this.context.fireContainerEvent("beforeSessionDestroyed", listener);
-                listener.sessionDestroyed(event);
-            } catch (Throwable e) {
-                this.context.getLogger().warn(e.getMessage(), e);
-            } finally {
-                this.context.fireContainerEvent("afterSessionDestroyed", listener);
-            }
-        });
-        for (Map.Entry<String, HttpSessionBindingListener> entry : filter.getAttributes(HttpSessionBindingListener.class).entrySet()) {
-            HttpSessionBindingListener listener = entry.getValue();
-            try {
-                listener.valueUnbound(new HttpSessionBindingEvent(event.getSession(), entry.getKey(), listener));
-            } catch (Throwable e) {
-                this.context.getLogger().warn(e.getMessage(), e);
-            }
-        }
-    }
+	@Override
+	public void accept(ImmutableSession session) {
+		SessionAttributesFilter filter = new ImmutableSessionAttributesFilter(session);
+		HttpSessionEvent event = new HttpSessionEvent(CatalinaSpecificationProvider.INSTANCE.createHttpSession(session, this.context.getServletContext()));
+		Stream.of(this.context.getApplicationLifecycleListeners()).filter(HttpSessionListener.class::isInstance).map(HttpSessionListener.class::cast).forEach(listener -> {
+			try {
+				this.context.fireContainerEvent("beforeSessionDestroyed", listener);
+				listener.sessionDestroyed(event);
+			} catch (Throwable e) {
+				this.context.getLogger().warn(e.getMessage(), e);
+			} finally {
+				this.context.fireContainerEvent("afterSessionDestroyed", listener);
+			}
+		});
+		for (Map.Entry<String, HttpSessionBindingListener> entry : filter.getAttributes(HttpSessionBindingListener.class).entrySet()) {
+			HttpSessionBindingListener listener = entry.getValue();
+			try {
+				listener.valueUnbound(new HttpSessionBindingEvent(event.getSession(), entry.getKey(), listener));
+			} catch (Throwable e) {
+				this.context.getLogger().warn(e.getMessage(), e);
+			}
+		}
+	}
 }

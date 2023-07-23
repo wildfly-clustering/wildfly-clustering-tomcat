@@ -90,297 +90,297 @@ import org.wildfly.security.manager.WildFlySecurityManager;
  */
 public class HotRodManager extends ManagerBase {
 
-    private final Properties properties = new Properties();
+	private final Properties properties = new Properties();
 
-    private volatile RemoteCacheContainer container;
-    private volatile SessionManagerFactory<ServletContext, LocalSessionContext, TransactionBatch> managerFactory;
-    private volatile CatalinaManager<TransactionBatch> manager;
-    private volatile SessionAttributePersistenceStrategy persistenceStrategy = SessionAttributePersistenceStrategy.COARSE;
-    private volatile SessionMarshallerFactory marshallerFactory = SessionMarshallerFactory.JBOSS;
-    private volatile String templateName = DefaultTemplate.DIST_SYNC.getTemplateName();
-    private volatile URI uri = null;
+	private volatile RemoteCacheContainer container;
+	private volatile SessionManagerFactory<ServletContext, LocalSessionContext, TransactionBatch> managerFactory;
+	private volatile CatalinaManager<TransactionBatch> manager;
+	private volatile SessionAttributePersistenceStrategy persistenceStrategy = SessionAttributePersistenceStrategy.COARSE;
+	private volatile SessionMarshallerFactory marshallerFactory = SessionMarshallerFactory.JBOSS;
+	private volatile String templateName = DefaultTemplate.DIST_SYNC.getTemplateName();
+	private volatile URI uri = null;
 
-    public void setUri(String uri) {
-        this.uri = URI.create(uri);
-    }
+	public void setUri(String uri) {
+		this.uri = URI.create(uri);
+	}
 
-    public void setProperty(String name, String value) {
-        this.properties.setProperty("infinispan.client.hotrod." + name, value);
-    }
+	public void setProperty(String name, String value) {
+		this.properties.setProperty("infinispan.client.hotrod." + name, value);
+	}
 
-    public void setPersistenceStrategy(SessionAttributePersistenceStrategy strategy) {
-        this.persistenceStrategy = strategy;
-    }
+	public void setPersistenceStrategy(SessionAttributePersistenceStrategy strategy) {
+		this.persistenceStrategy = strategy;
+	}
 
-    public void setGranularity(SessionPersistenceGranularity granularity) {
-        this.setPersistenceStrategy(granularity.get());
-    }
+	public void setGranularity(SessionPersistenceGranularity granularity) {
+		this.setPersistenceStrategy(granularity.get());
+	}
 
-    public void setGranularity(String granularity) {
-        this.setGranularity(SessionPersistenceGranularity.valueOf(granularity));
-    }
+	public void setGranularity(String granularity) {
+		this.setGranularity(SessionPersistenceGranularity.valueOf(granularity));
+	}
 
-    public void setTemplate(String templateName) {
-        this.templateName = templateName;
-    }
+	public void setTemplate(String templateName) {
+		this.templateName = templateName;
+	}
 
-    public void setMarshallerFactory(SessionMarshallerFactory marshallerFactory) {
-        this.marshallerFactory = marshallerFactory;
-    }
+	public void setMarshallerFactory(SessionMarshallerFactory marshallerFactory) {
+		this.marshallerFactory = marshallerFactory;
+	}
 
-    public void setMarshaller(String marshallerFactory) {
-        this.setMarshallerFactory(SessionMarshallerFactory.valueOf(marshallerFactory));
-    }
+	public void setMarshaller(String marshallerFactory) {
+		this.setMarshallerFactory(SessionMarshallerFactory.valueOf(marshallerFactory));
+	}
 
-    @Deprecated
-    public void setPersistenceStrategy(String strategy) {
-        this.setPersistenceStrategy(SessionAttributePersistenceStrategy.valueOf(strategy));
-    }
+	@Deprecated
+	public void setPersistenceStrategy(String strategy) {
+		this.setPersistenceStrategy(SessionAttributePersistenceStrategy.valueOf(strategy));
+	}
 
-    @Deprecated
-    public void setConfigurationName(String configurationName) {
-        this.setTemplate(configurationName);
-    }
+	@Deprecated
+	public void setConfigurationName(String configurationName) {
+		this.setTemplate(configurationName);
+	}
 
-    @Override
-    protected void startInternal() throws LifecycleException {
-        super.startInternal();
+	@Override
+	protected void startInternal() throws LifecycleException {
+		super.startInternal();
 
-        Context context = this.getContext();
-        Host host = (Host) context.getParent();
-        Engine engine = (Engine) host.getParent();
-        // Deployment name = host name + context path + version
-        String deploymentName = host.getName() + context.getName();
-        Integer maxActiveSessions = (this.getMaxActiveSessions() >= 0) ? Integer.valueOf(this.getMaxActiveSessions()) : null;
-        SessionAttributePersistenceStrategy strategy = this.persistenceStrategy;
+		Context context = this.getContext();
+		Host host = (Host) context.getParent();
+		Engine engine = (Engine) host.getParent();
+		// Deployment name = host name + context path + version
+		String deploymentName = host.getName() + context.getName();
+		Integer maxActiveSessions = (this.getMaxActiveSessions() >= 0) ? Integer.valueOf(this.getMaxActiveSessions()) : null;
+		SessionAttributePersistenceStrategy strategy = this.persistenceStrategy;
 
-        ClassLoader containerLoader = WildFlySecurityManager.getClassLoaderPrivileged(HotRodSessionManagerFactory.class);
-        Configuration configuration = Optional.ofNullable(this.uri).map(HotRodURI::create).map(HotRodURI::toConfigurationBuilder).orElseGet(ConfigurationBuilder::new)
-                .withProperties(this.properties)
-                .marshaller(new ProtoStreamMarshaller(new SimpleClassLoaderMarshaller(containerLoader), builder -> builder.load(containerLoader)))
-                .classLoader(containerLoader)
-                .build();
+		ClassLoader containerLoader = WildFlySecurityManager.getClassLoaderPrivileged(HotRodSessionManagerFactory.class);
+		Configuration configuration = Optional.ofNullable(this.uri).map(HotRodURI::create).map(HotRodURI::toConfigurationBuilder).orElseGet(ConfigurationBuilder::new)
+				.withProperties(this.properties)
+				.marshaller(new ProtoStreamMarshaller(new SimpleClassLoaderMarshaller(containerLoader), builder -> builder.load(containerLoader)))
+				.classLoader(containerLoader)
+				.build();
 
-        configuration.addRemoteCache(deploymentName, builder -> builder.forceReturnValues(false).nearCacheMode(maxActiveSessions != null ? NearCacheMode.INVALIDATED : NearCacheMode.DISABLED).transactionMode(TransactionMode.NONE).templateName(this.templateName));
+		configuration.addRemoteCache(deploymentName, builder -> builder.forceReturnValues(false).nearCacheMode(maxActiveSessions != null ? NearCacheMode.INVALIDATED : NearCacheMode.DISABLED).transactionMode(TransactionMode.NONE).templateName(this.templateName));
 
-        RemoteCacheContainer container = new RemoteCacheManager(configuration);
-        container.start();
-        this.container = container;
+		RemoteCacheContainer container = new RemoteCacheManager(configuration);
+		container.start();
+		this.container = container;
 
-        ClassLoader loader = context.getLoader().getClassLoader();
-        ByteBufferMarshaller marshaller = this.marshallerFactory.apply(loader);
+		ClassLoader loader = context.getLoader().getClassLoader();
+		ByteBufferMarshaller marshaller = this.marshallerFactory.apply(loader);
 
-        List<Immutability> loadedImmutabilities = new LinkedList<>();
-        for (Immutability loadedImmutability : ServiceLoader.load(Immutability.class, loader)) {
-            loadedImmutabilities.add(loadedImmutability);
-        }
-        Immutability immutability = new CompositeImmutability(new CompositeIterable<>(EnumSet.allOf(DefaultImmutability.class), EnumSet.allOf(SessionAttributeImmutability.class), loadedImmutabilities));
+		List<Immutability> loadedImmutabilities = new LinkedList<>();
+		for (Immutability loadedImmutability : ServiceLoader.load(Immutability.class, loader)) {
+			loadedImmutabilities.add(loadedImmutability);
+		}
+		Immutability immutability = new CompositeImmutability(new CompositeIterable<>(EnumSet.allOf(DefaultImmutability.class), EnumSet.allOf(SessionAttributeImmutability.class), loadedImmutabilities));
 
-        HotRodSessionManagerFactoryConfiguration<HttpSession, ServletContext, HttpSessionActivationListener, LocalSessionContext> sessionManagerFactoryConfig = new HotRodSessionManagerFactoryConfiguration<>() {
-            @Override
-            public Integer getMaxActiveSessions() {
-                return maxActiveSessions;
-            }
+		HotRodSessionManagerFactoryConfiguration<HttpSession, ServletContext, HttpSessionActivationListener, LocalSessionContext> sessionManagerFactoryConfig = new HotRodSessionManagerFactoryConfiguration<>() {
+			@Override
+			public Integer getMaxActiveSessions() {
+				return maxActiveSessions;
+			}
 
-            @Override
-            public SessionAttributePersistenceStrategy getAttributePersistenceStrategy() {
-                return strategy;
-            }
+			@Override
+			public SessionAttributePersistenceStrategy getAttributePersistenceStrategy() {
+				return strategy;
+			}
 
-            @Override
-            public String getDeploymentName() {
-                return deploymentName;
-            }
+			@Override
+			public String getDeploymentName() {
+				return deploymentName;
+			}
 
-            @Override
-            public ByteBufferMarshaller getMarshaller() {
-                return marshaller;
-            }
+			@Override
+			public ByteBufferMarshaller getMarshaller() {
+				return marshaller;
+			}
 
-            @Override
-            public String getServerName() {
-                return engine.getService().getName();
-            }
+			@Override
+			public String getServerName() {
+				return engine.getService().getName();
+			}
 
-            @Override
-            public LocalContextFactory<LocalSessionContext> getLocalContextFactory() {
-                return LocalSessionContextFactory.INSTANCE;
-            }
+			@Override
+			public LocalContextFactory<LocalSessionContext> getLocalContextFactory() {
+				return LocalSessionContextFactory.INSTANCE;
+			}
 
-            @Override
-            public <K, V> RemoteCache<K, V> getCache() {
-                return container.getCache(this.getDeploymentName());
-            }
+			@Override
+			public <K, V> RemoteCache<K, V> getCache() {
+				return container.getCache(this.getDeploymentName());
+			}
 
-            @Override
-            public Immutability getImmutability() {
-                return immutability;
-            }
+			@Override
+			public Immutability getImmutability() {
+				return immutability;
+			}
 
-            @Override
-            public SpecificationProvider<HttpSession, ServletContext, HttpSessionActivationListener> getSpecificationProvider() {
-                return CatalinaSpecificationProvider.INSTANCE;
-            }
-        };
+			@Override
+			public SpecificationProvider<HttpSession, ServletContext, HttpSessionActivationListener> getSpecificationProvider() {
+				return CatalinaSpecificationProvider.INSTANCE;
+			}
+		};
 
-        this.managerFactory = new HotRodSessionManagerFactory<>(sessionManagerFactoryConfig);
+		this.managerFactory = new HotRodSessionManagerFactory<>(sessionManagerFactoryConfig);
 
-        ServletContext servletContext = context.getServletContext();
-        Consumer<ImmutableSession> expirationListener = new CatalinaSessionExpirationListener(context);
-        Supplier<String> identifierFactory = new CatalinaIdentifierFactory(this.getSessionIdGenerator());
+		ServletContext servletContext = context.getServletContext();
+		Consumer<ImmutableSession> expirationListener = new CatalinaSessionExpirationListener(context);
+		Supplier<String> identifierFactory = new CatalinaIdentifierFactory(this.getSessionIdGenerator());
 
-        SessionManagerConfiguration<ServletContext> sessionManagerConfiguration = new SessionManagerConfiguration<>() {
-            @Override
-            public ServletContext getServletContext() {
-                return servletContext;
-            }
+		SessionManagerConfiguration<ServletContext> sessionManagerConfiguration = new SessionManagerConfiguration<>() {
+			@Override
+			public ServletContext getServletContext() {
+				return servletContext;
+			}
 
-            @Override
-            public Duration getTimeout() {
-                return Duration.ofMinutes(context.getSessionTimeout());
-            }
+			@Override
+			public Duration getTimeout() {
+				return Duration.ofMinutes(context.getSessionTimeout());
+			}
 
-            @Override
-            public Supplier<String> getIdentifierFactory() {
-                return identifierFactory;
-            }
+			@Override
+			public Supplier<String> getIdentifierFactory() {
+				return identifierFactory;
+			}
 
-            @Override
-            public Consumer<ImmutableSession> getExpirationListener() {
-                return expirationListener;
-            }
-        };
-        SessionManager<LocalSessionContext, TransactionBatch> sessionManager = this.managerFactory.createSessionManager(sessionManagerConfiguration);
+			@Override
+			public Consumer<ImmutableSession> getExpirationListener() {
+				return expirationListener;
+			}
+		};
+		SessionManager<LocalSessionContext, TransactionBatch> sessionManager = this.managerFactory.createSessionManager(sessionManagerConfiguration);
 
-        this.manager = new DistributableManager<>(sessionManager, context, marshaller);
-        this.manager.start();
+		this.manager = new DistributableManager<>(sessionManager, context, marshaller);
+		this.manager.start();
 
-        this.setState(LifecycleState.STARTING);
-    }
+		this.setState(LifecycleState.STARTING);
+	}
 
-    @Override
-    protected void stopInternal() throws LifecycleException {
-        this.setState(LifecycleState.STOPPING);
+	@Override
+	protected void stopInternal() throws LifecycleException {
+		this.setState(LifecycleState.STOPPING);
 
-        Optional.ofNullable(this.manager).ifPresent(CatalinaManager::stop);
-        Optional.ofNullable(this.managerFactory).ifPresent(SessionManagerFactory::close);
-        Optional.ofNullable(this.container).ifPresent(RemoteCacheContainer::stop);
-    }
+		Optional.ofNullable(this.manager).ifPresent(CatalinaManager::stop);
+		Optional.ofNullable(this.managerFactory).ifPresent(SessionManagerFactory::close);
+		Optional.ofNullable(this.container).ifPresent(RemoteCacheContainer::stop);
+	}
 
-    @Override
-    public Session createSession(String sessionId) {
-        return this.manager.createSession(sessionId);
-    }
+	@Override
+	public Session createSession(String sessionId) {
+		return this.manager.createSession(sessionId);
+	}
 
-    @Override
-    public Session findSession(String id) throws IOException {
-        return this.manager.findSession(id);
-    }
+	@Override
+	public Session findSession(String id) throws IOException {
+		return this.manager.findSession(id);
+	}
 
-    @Override
-    public void changeSessionId(Session session) {
-        this.manager.changeSessionId(session);
-    }
+	@Override
+	public void changeSessionId(Session session) {
+		this.manager.changeSessionId(session);
+	}
 
-    @Override
-    public boolean willAttributeDistribute(String name, Object value) {
-        return this.manager.willAttributeDistribute(name, value);
-    }
+	@Override
+	public boolean willAttributeDistribute(String name, Object value) {
+		return this.manager.willAttributeDistribute(name, value);
+	}
 
-    @Override
-    public void load() throws ClassNotFoundException, IOException {
-        // Do nothing
-    }
+	@Override
+	public void load() throws ClassNotFoundException, IOException {
+		// Do nothing
+	}
 
-    @Override
-    public void unload() throws IOException {
-        // Do nothing
-    }
+	@Override
+	public void unload() throws IOException {
+		// Do nothing
+	}
 
-    @Override
-    public void backgroundProcess() {
-        // Do nothing
-    }
+	@Override
+	public void backgroundProcess() {
+		// Do nothing
+	}
 
-    @Override
-    public void processExpires() {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public void processExpires() {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public void add(Session session) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public void add(Session session) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public Session createEmptySession() {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public Session createEmptySession() {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public Session[] findSessions() {
-        // This would be super-expensive!!!
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public Session[] findSessions() {
+		// This would be super-expensive!!!
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public void remove(Session session) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public void remove(Session session) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public void remove(Session session, boolean update) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public void remove(Session session, boolean update) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public String listSessionIds() {
-        // This would be super-expensive
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public String listSessionIds() {
+		// This would be super-expensive
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public String getSessionAttribute(String sessionId, String key) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public String getSessionAttribute(String sessionId, String key) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public HashMap<String, String> getSession(String sessionId) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public HashMap<String, String> getSession(String sessionId) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public void expireSession(String sessionId) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public void expireSession(String sessionId) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public long getThisAccessedTimestamp(String sessionId) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public long getThisAccessedTimestamp(String sessionId) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public String getThisAccessedTime(String sessionId) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public String getThisAccessedTime(String sessionId) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public long getLastAccessedTimestamp(String sessionId) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public long getLastAccessedTimestamp(String sessionId) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public String getLastAccessedTime(String sessionId) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public String getLastAccessedTime(String sessionId) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public String getCreationTime(String sessionId) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public String getCreationTime(String sessionId) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public long getCreationTimestamp(String sessionId) {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public long getCreationTimestamp(String sessionId) {
+		throw new UnsupportedOperationException();
+	}
 }

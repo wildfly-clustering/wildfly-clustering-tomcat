@@ -36,16 +36,16 @@ import org.wildfly.clustering.web.session.ImmutableSession;
  */
 public class CatalinaSessionExpirationListener implements Consumer<ImmutableSession> {
 
-    private final Consumer<ImmutableSession> expireAction;
-    private final Executor executor;
+	private final Consumer<ImmutableSession> expireAction;
+	private final Executor executor;
 
-    public CatalinaSessionExpirationListener(Context context) {
-        this.expireAction = new CatalinaSessionDestroyAction(context);
-        this.executor = new ContextReferenceExecutor<>(context.getLoader().getClassLoader(), ContextClassLoaderReference.INSTANCE);
-    }
+	public CatalinaSessionExpirationListener(Context context) {
+		this.expireAction = new CatalinaSessionDestroyAction(context);
+		this.executor = new ContextReferenceExecutor<>(context.getLoader().getClassLoader(), ContextClassLoaderReference.INSTANCE);
+	}
 
-    @Override
-    public void accept(ImmutableSession session) {
-        this.executor.execute(() -> this.expireAction.accept(session));
-    }
+	@Override
+	public void accept(ImmutableSession session) {
+		this.executor.execute(() -> this.expireAction.accept(session));
+	}
 }

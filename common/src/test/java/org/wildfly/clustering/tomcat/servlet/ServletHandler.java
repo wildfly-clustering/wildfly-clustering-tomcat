@@ -31,46 +31,46 @@ import java.net.URL;
  * @author Paul Ferraro
  */
 public interface ServletHandler<REQUEST, RESPONSE> {
-    final String SERVLET_NAME = "session";
-    final String SERVLET_PATH = "/" + SERVLET_NAME;
-    final String VALUE = "value";
-    final String SESSION_ID = "session-id";
+	final String SERVLET_NAME = "session";
+	final String SERVLET_PATH = "/" + SERVLET_NAME;
+	final String VALUE = "value";
+	final String SESSION_ID = "session-id";
 
-    static URI createURI(URL baseURL) throws URISyntaxException {
-        return baseURL.toURI().resolve(SERVLET_NAME);
-    }
+	static URI createURI(URL baseURL) throws URISyntaxException {
+		return baseURL.toURI().resolve(SERVLET_NAME);
+	}
 
-    void doHead(REQUEST request, RESPONSE response) throws IOException;
-    void doGet(REQUEST request, RESPONSE response) throws IOException;
-    void doDelete(REQUEST request, RESPONSE response) throws IOException;
+	void doHead(REQUEST request, RESPONSE response) throws IOException;
+	void doGet(REQUEST request, RESPONSE response) throws IOException;
+	void doDelete(REQUEST request, RESPONSE response) throws IOException;
 
-    default void doHead(ServletService service) throws IOException {
-        ServletSession session = service.getSession(false);
-        if (session != null) {
-            service.setHeader(SESSION_ID, session.getId());
-        }
-    }
+	default void doHead(ServletService service) throws IOException {
+		ServletSession session = service.getSession(false);
+		if (session != null) {
+			service.setHeader(SESSION_ID, session.getId());
+		}
+	}
 
-    default void doGet(ServletService service) throws IOException {
-        ServletSession session = service.getSession();
-        service.setHeader(SESSION_ID, session.getId());
+	default void doGet(ServletService service) throws IOException {
+		ServletSession session = service.getSession();
+		service.setHeader(SESSION_ID, session.getId());
 
-        MutableInteger value = (MutableInteger) session.getAttribute(VALUE);
-        if (value == null) {
-            value = new MutableInteger(0);
-            session.setAttribute(VALUE, value);
-        } else {
-            value.accept(value.getAsInt() + 1);
-        }
+		MutableInteger value = (MutableInteger) session.getAttribute(VALUE);
+		if (value == null) {
+			value = new MutableInteger(0);
+			session.setAttribute(VALUE, value);
+		} else {
+			value.accept(value.getAsInt() + 1);
+		}
 
-        service.setHeader(VALUE, value.getAsInt());
-    }
+		service.setHeader(VALUE, value.getAsInt());
+	}
 
-    default void doDelete(ServletService service) throws IOException {
-        ServletSession session = service.getSession(false);
-        if (session != null) {
-            service.setHeader(SESSION_ID, session.getId());
-            session.invalidate();
-        }
-    }
+	default void doDelete(ServletService service) throws IOException {
+		ServletSession session = service.getSession(false);
+		if (session != null) {
+			service.setHeader(SESSION_ID, session.getId());
+			session.invalidate();
+		}
+	}
 }

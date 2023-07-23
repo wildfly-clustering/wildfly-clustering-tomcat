@@ -57,63 +57,63 @@ import org.wildfly.clustering.tomcat.servlet.TestSerializationContextInitializer
  */
 public abstract class AbstractSmokeITCase {
 
-    static final String INFINISPAN_SERVER_HOME = System.getProperty("infinispan.server.home");
-    static final String INFINISPAN_SERVER_PROFILE = System.getProperty("infinispan.server.profile");
-    static final String INFINISPAN_DRIVER_USERNAME = "testsuite-driver-user";
-    static final String INFINISPAN_DRIVER_PASSWORD = "testsuite-driver-password";
+	static final String INFINISPAN_SERVER_HOME = System.getProperty("infinispan.server.home");
+	static final String INFINISPAN_SERVER_PROFILE = System.getProperty("infinispan.server.profile");
+	static final String INFINISPAN_DRIVER_USERNAME = "testsuite-driver-user";
+	static final String INFINISPAN_DRIVER_PASSWORD = "testsuite-driver-password";
 
-    @ClassRule
-    public static final TestRule SERVERS = InfinispanServerRuleBuilder.config(INFINISPAN_SERVER_PROFILE)
-            .property(TestSystemPropertyNames.INFINISPAN_TEST_SERVER_DIR, INFINISPAN_SERVER_HOME)
-            .property("infinispan.client.rest.auth_username", INFINISPAN_DRIVER_USERNAME)
-            .property("infinispan.client.rest.auth_password", INFINISPAN_DRIVER_PASSWORD)
-            .runMode(ServerRunMode.FORKED)
-            .numServers(1)
-            .build();
+	@ClassRule
+	public static final TestRule SERVERS = InfinispanServerRuleBuilder.config(INFINISPAN_SERVER_PROFILE)
+			.property(TestSystemPropertyNames.INFINISPAN_TEST_SERVER_DIR, INFINISPAN_SERVER_HOME)
+			.property("infinispan.client.rest.auth_username", INFINISPAN_DRIVER_USERNAME)
+			.property("infinispan.client.rest.auth_password", INFINISPAN_DRIVER_PASSWORD)
+			.runMode(ServerRunMode.FORKED)
+			.numServers(1)
+			.build();
 
-    public static Archive<?> deployment(Class<? extends AbstractSmokeITCase> testClass, Class<? extends ServletHandler<?, ?>> servletClass) {
-        return ShrinkWrap.create(WebArchive.class, testClass.getSimpleName() + ".war")
-                .addPackage(ServletHandler.class.getPackage())
-                .addPackage(servletClass.getPackage())
-                .addAsServiceProvider(Externalizer.class, MutableIntegerExternalizer.class)
-                .addAsServiceProvider(SerializationContextInitializer.class.getName(), TestSerializationContextInitializer.class.getName() + "Impl")
-                ;
-    }
+	public static Archive<?> deployment(Class<? extends AbstractSmokeITCase> testClass, Class<? extends ServletHandler<?, ?>> servletClass) {
+		return ShrinkWrap.create(WebArchive.class, testClass.getSimpleName() + ".war")
+				.addPackage(ServletHandler.class.getPackage())
+				.addPackage(servletClass.getPackage())
+				.addAsServiceProvider(Externalizer.class, MutableIntegerExternalizer.class)
+				.addAsServiceProvider(SerializationContextInitializer.class.getName(), TestSerializationContextInitializer.class.getName() + "Impl")
+				;
+	}
 
-    protected void test(URL baseURL1, URL baseURL2) throws Exception {
-        URI uri1 = ServletHandler.createURI(baseURL1);
-        URI uri2 = ServletHandler.createURI(baseURL2);
+	protected void test(URL baseURL1, URL baseURL2) throws Exception {
+		URI uri1 = ServletHandler.createURI(baseURL1);
+		URI uri2 = ServletHandler.createURI(baseURL2);
 
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
-            AtomicReference<String> sessionId = new AtomicReference<>();
-            AtomicInteger value = new AtomicInteger(0);
-            for (int i = 0; i < 4; i++) {
-                for (URI uri : Arrays.asList(uri1, uri2)) {
-                    for (int j = 0; j < 4; j++) {
-                        Map.Entry<String, String> result = client.execute(new HttpGet(uri), response -> {
-                            Assert.assertEquals(HttpStatus.SC_OK, response.getCode());
-                            return Map.entry(response.getFirstHeader(ServletHandler.SESSION_ID).getValue(), response.getFirstHeader(ServletHandler.VALUE).getValue());
-                        });
-                        Assert.assertEquals(String.valueOf(value.getAndIncrement()), result.getValue());
-                        String requestSessionId = result.getKey();
-                        if (!sessionId.compareAndSet(null, requestSessionId)) {
-                            Assert.assertEquals(sessionId.get(), requestSessionId);
-                        }
-                    }
-                    // Grace time between failover requests
-                    Thread.sleep(500);
-                }
-            }
-            String requestSessionId = client.execute(new HttpDelete(uri1), response -> {
-                Assert.assertEquals(HttpStatus.SC_OK, response.getCode());
-                return response.getFirstHeader(ServletHandler.SESSION_ID).getValue();
-            });
-            Assert.assertEquals(sessionId.get(), requestSessionId);
-            requestSessionId = client.execute(new HttpHead(uri2), response -> {
-                Assert.assertEquals(HttpStatus.SC_OK, response.getCode());
-                return Optional.ofNullable(response.getFirstHeader(ServletHandler.SESSION_ID)).map(Header::getValue).orElse(null);
-            });
-            Assert.assertNull(requestSessionId);
-        }
-    }
+		try (CloseableHttpClient client = HttpClients.createDefault()) {
+			AtomicReference<String> sessionId = new AtomicReference<>();
+			AtomicInteger value = new AtomicInteger(0);
+			for (int i = 0; i < 4; i++) {
+				for (URI uri : Arrays.asList(uri1, uri2)) {
+					for (int j = 0; j < 4; j++) {
+						Map.Entry<String, String> result = client.execute(new HttpGet(uri), response -> {
+							Assert.assertEquals(HttpStatus.SC_OK, response.getCode());
+							return Map.entry(response.getFirstHeader(ServletHandler.SESSION_ID).getValue(), response.getFirstHeader(ServletHandler.VALUE).getValue());
+						});
+						Assert.assertEquals(String.valueOf(value.getAndIncrement()), result.getValue());
+						String requestSessionId = result.getKey();
+						if (!sessionId.compareAndSet(null, requestSessionId)) {
+							Assert.assertEquals(sessionId.get(), requestSessionId);
+						}
+					}
+					// Grace time between failover requests
+					Thread.sleep(500);
+				}
+			}
+			String requestSessionId = client.execute(new HttpDelete(uri1), response -> {
+				Assert.assertEquals(HttpStatus.SC_OK, response.getCode());
+				return response.getFirstHeader(ServletHandler.SESSION_ID).getValue();
+			});
+			Assert.assertEquals(sessionId.get(), requestSessionId);
+			requestSessionId = client.execute(new HttpHead(uri2), response -> {
+				Assert.assertEquals(HttpStatus.SC_OK, response.getCode());
+				return Optional.ofNullable(response.getFirstHeader(ServletHandler.SESSION_ID)).map(Header::getValue).orElse(null);
+			});
+			Assert.assertNull(requestSessionId);
+		}
+	}
 }

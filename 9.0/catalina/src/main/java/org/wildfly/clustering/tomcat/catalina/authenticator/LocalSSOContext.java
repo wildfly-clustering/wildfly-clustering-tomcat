@@ -29,13 +29,13 @@ import java.security.Principal;
  */
 public class LocalSSOContext {
 
-    private volatile Principal principal;
+	private volatile Principal principal;
 
-    public Principal getPrincipal() {
-        return this.principal;
-    }
+	public Principal getPrincipal() {
+		return this.principal;
+	}
 
-    public void setPrincipal(Principal principal) {
-        this.principal = principal;
-    }
+	public void setPrincipal(Principal principal) {
+		this.principal = principal;
+	}
 }

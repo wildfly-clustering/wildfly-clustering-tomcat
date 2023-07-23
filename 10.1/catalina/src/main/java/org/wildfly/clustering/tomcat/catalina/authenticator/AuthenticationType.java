@@ -30,20 +30,20 @@ import jakarta.servlet.http.HttpServletRequest;
  * @author Paul Ferraro
  */
 public enum AuthenticationType {
-    BASIC(HttpServletRequest.BASIC_AUTH),
-    CLIENT_CERT(HttpServletRequest.CLIENT_CERT_AUTH),
-    DIGEST(HttpServletRequest.DIGEST_AUTH),
-    FORM(HttpServletRequest.FORM_AUTH),
-    SPNEGO(Constants.SPNEGO_METHOD),
-    ;
-    private String name;
+	BASIC(HttpServletRequest.BASIC_AUTH),
+	CLIENT_CERT(HttpServletRequest.CLIENT_CERT_AUTH),
+	DIGEST(HttpServletRequest.DIGEST_AUTH),
+	FORM(HttpServletRequest.FORM_AUTH),
+	SPNEGO(Constants.SPNEGO_METHOD),
+	;
+	private String name;
 
-    AuthenticationType(String name) {
-        this.name = name;
-    }
+	AuthenticationType(String name) {
+		this.name = name;
+	}
 
-    @Override
-    public String toString() {
-        return this.name;
-    }
+	@Override
+	public String toString() {
+		return this.name;
+	}
 }

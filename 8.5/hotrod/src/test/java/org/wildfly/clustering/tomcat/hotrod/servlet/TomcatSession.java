@@ -31,29 +31,29 @@ import org.wildfly.clustering.tomcat.servlet.ServletSession;
  */
 public class TomcatSession implements ServletSession {
 
-    private final HttpSession session;
+	private final HttpSession session;
 
-    TomcatSession(HttpSession session) {
-        this.session = session;
-    }
+	TomcatSession(HttpSession session) {
+		this.session = session;
+	}
 
-    @Override
-    public String getId() {
-        return this.session.getId();
-    }
+	@Override
+	public String getId() {
+		return this.session.getId();
+	}
 
-    @Override
-    public Object getAttribute(String name) {
-        return this.session.getAttribute(name);
-    }
+	@Override
+	public Object getAttribute(String name) {
+		return this.session.getAttribute(name);
+	}
 
-    @Override
-    public void setAttribute(String name, Object value) {
-        this.session.setAttribute(name, value);
-    }
+	@Override
+	public void setAttribute(String name, Object value) {
+		this.session.setAttribute(name, value);
+	}
 
-    @Override
-    public void invalidate() {
-        this.session.invalidate();
-    }
+	@Override
+	public void invalidate() {
+		this.session.invalidate();
+	}
 }

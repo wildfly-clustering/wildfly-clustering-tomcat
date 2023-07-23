@@ -38,24 +38,24 @@ import org.wildfly.clustering.marshalling.spi.ValueExternalizer;
  */
 public enum SessionMarshallerFactory implements Function<ClassLoader, ByteBufferMarshaller> {
 
-    JAVA() {
-        @Override
-        public ByteBufferMarshaller apply(ClassLoader loader) {
-            return new JavaByteBufferMarshaller(new ValueExternalizer<>(loader));
-        }
-    },
-    JBOSS() {
-        @Override
-        public ByteBufferMarshaller apply(ClassLoader loader) {
-            return new JBossByteBufferMarshaller(new SimpleMarshallingConfigurationRepository(JBossMarshallingVersion.class, JBossMarshallingVersion.CURRENT, loader), loader);
-        }
-    },
-    PROTOSTREAM() {
-        @Override
-        public ByteBufferMarshaller apply(ClassLoader loader) {
-            SerializationContextBuilder builder = new SerializationContextBuilder(new SimpleClassLoaderMarshaller(loader)).load(loader);
-            return new ProtoStreamByteBufferMarshaller(builder.build());
-        }
-    },
-    ;
+	JAVA() {
+		@Override
+		public ByteBufferMarshaller apply(ClassLoader loader) {
+			return new JavaByteBufferMarshaller(new ValueExternalizer<>(loader));
+		}
+	},
+	JBOSS() {
+		@Override
+		public ByteBufferMarshaller apply(ClassLoader loader) {
+			return new JBossByteBufferMarshaller(new SimpleMarshallingConfigurationRepository(JBossMarshallingVersion.class, JBossMarshallingVersion.CURRENT, loader), loader);
+		}
+	},
+	PROTOSTREAM() {
+		@Override
+		public ByteBufferMarshaller apply(ClassLoader loader) {
+			SerializationContextBuilder builder = new SerializationContextBuilder(new SimpleClassLoaderMarshaller(loader)).load(loader);
+			return new ProtoStreamByteBufferMarshaller(builder.build());
+		}
+	},
+	;
 }

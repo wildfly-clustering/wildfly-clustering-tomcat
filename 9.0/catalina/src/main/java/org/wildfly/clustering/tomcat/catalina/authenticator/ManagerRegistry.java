@@ -28,10 +28,10 @@ import org.apache.catalina.Manager;
  * @author Paul Ferraro
  */
 public interface ManagerRegistry {
-    /**
-     * Returns the session manager for the specified deployment, or null if the deployment does not exist.
-     * @param deployment a deployment name
-     * @return a session manager
-     */
-    Manager getManager(String deployment);
+	/**
+	 * Returns the session manager for the specified deployment, or null if the deployment does not exist.
+	 * @param deployment a deployment name
+	 * @return a session manager
+	 */
+	Manager getManager(String deployment);
 }

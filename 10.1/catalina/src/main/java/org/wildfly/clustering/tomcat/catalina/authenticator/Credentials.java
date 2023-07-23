@@ -26,31 +26,31 @@ package org.wildfly.clustering.tomcat.catalina.authenticator;
  * @author Paul Ferraro
  */
 public class Credentials {
-    private volatile AuthenticationType authType;
-    private volatile String user;
-    private volatile String password;
+	private volatile AuthenticationType authType;
+	private volatile String user;
+	private volatile String password;
 
-    public AuthenticationType getAuthenticationType() {
-        return this.authType;
-    }
+	public AuthenticationType getAuthenticationType() {
+		return this.authType;
+	}
 
-    public void setAuthenticationType(AuthenticationType authType) {
-        this.authType = authType;
-    }
+	public void setAuthenticationType(AuthenticationType authType) {
+		this.authType = authType;
+	}
 
-    public String getUser() {
-        return this.user;
-    }
+	public String getUser() {
+		return this.user;
+	}
 
-    public void setUser(String user) {
-        this.user = user;
-    }
+	public void setUser(String user) {
+		this.user = user;
+	}
 
-    public String getPassword() {
-        return this.password;
-    }
+	public String getPassword() {
+		return this.password;
+	}
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
+	public void setPassword(String password) {
+		this.password = password;
+	}
 }

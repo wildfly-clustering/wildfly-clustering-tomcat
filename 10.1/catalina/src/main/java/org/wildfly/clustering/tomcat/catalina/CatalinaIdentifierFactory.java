@@ -32,16 +32,16 @@ import org.apache.catalina.SessionIdGenerator;
  */
 public class CatalinaIdentifierFactory implements Supplier<String> {
 
-    private final SessionIdGenerator generator;
+	private final SessionIdGenerator generator;
 
-    public CatalinaIdentifierFactory(SessionIdGenerator generator) {
-        this.generator = generator;
-        // Prevent Tomcat's session id generator from auto-appending the route
-        this.generator.setJvmRoute(null);
-    }
+	public CatalinaIdentifierFactory(SessionIdGenerator generator) {
+		this.generator = generator;
+		// Prevent Tomcat's session id generator from auto-appending the route
+		this.generator.setJvmRoute(null);
+	}
 
-    @Override
-    public String get() {
-        return this.generator.generateSessionId();
-    }
+	@Override
+	public String get() {
+		return this.generator.generateSessionId();
+	}
 }

@@ -33,26 +33,26 @@ import org.wildfly.clustering.marshalling.spi.EnumExternalizer;
  * @author Paul Ferraro
  */
 public class CredentialsExternalizer implements Externalizer<Credentials> {
-    private static final EnumExternalizer<AuthenticationType> AUTH_TYPE_EXTERNALIZER = new EnumExternalizer<>(AuthenticationType.class);
+	private static final EnumExternalizer<AuthenticationType> AUTH_TYPE_EXTERNALIZER = new EnumExternalizer<>(AuthenticationType.class);
 
-    @Override
-    public void writeObject(ObjectOutput output, Credentials credentials) throws IOException {
-        AUTH_TYPE_EXTERNALIZER.writeObject(output, credentials.getAuthenticationType());
-        output.writeUTF(credentials.getUser());
-        output.writeUTF(credentials.getPassword());
-    }
+	@Override
+	public void writeObject(ObjectOutput output, Credentials credentials) throws IOException {
+		AUTH_TYPE_EXTERNALIZER.writeObject(output, credentials.getAuthenticationType());
+		output.writeUTF(credentials.getUser());
+		output.writeUTF(credentials.getPassword());
+	}
 
-    @Override
-    public Credentials readObject(ObjectInput input) throws IOException, ClassNotFoundException {
-        Credentials credentials = new Credentials();
-        credentials.setAuthenticationType(AUTH_TYPE_EXTERNALIZER.readObject(input));
-        credentials.setUser(input.readUTF());
-        credentials.setPassword(input.readUTF());
-        return credentials;
-    }
+	@Override
+	public Credentials readObject(ObjectInput input) throws IOException, ClassNotFoundException {
+		Credentials credentials = new Credentials();
+		credentials.setAuthenticationType(AUTH_TYPE_EXTERNALIZER.readObject(input));
+		credentials.setUser(input.readUTF());
+		credentials.setPassword(input.readUTF());
+		return credentials;
+	}
 
-    @Override
-    public Class<Credentials> getTargetClass() {
-        return Credentials.class;
-    }
+	@Override
+	public Class<Credentials> getTargetClass() {
+		return Credentials.class;
+	}
 }

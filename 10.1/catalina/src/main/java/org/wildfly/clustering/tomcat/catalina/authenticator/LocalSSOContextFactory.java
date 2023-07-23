@@ -29,8 +29,8 @@ import org.wildfly.clustering.web.LocalContextFactory;
  */
 public class LocalSSOContextFactory implements LocalContextFactory<LocalSSOContext> {
 
-    @Override
-    public LocalSSOContext createLocalContext() {
-        return new LocalSSOContext();
-    }
+	@Override
+	public LocalSSOContext createLocalContext() {
+		return new LocalSSOContext();
+	}
 }

@@ -30,10 +30,10 @@ import java.util.function.ToIntFunction;
  */
 public interface SessionManagerConfiguration<SC> extends org.wildfly.clustering.web.session.SessionManagerConfiguration<SC> {
 
-    ToIntFunction<SC> getSessionTimeoutFunction();
+	ToIntFunction<SC> getSessionTimeoutFunction();
 
-    @Override
-    default Duration getTimeout() {
-        return Duration.ofMinutes(this.getSessionTimeoutFunction().applyAsInt(this.getServletContext()));
-    }
+	@Override
+	default Duration getTimeout() {
+		return Duration.ofMinutes(this.getSessionTimeoutFunction().applyAsInt(this.getServletContext()));
+	}
 }
