@@ -27,7 +27,7 @@
 	<parent>
 		<groupId>org.wildfly.clustering</groupId>
 		<artifactId>wildfly-clustering-tomcat-9.0</artifactId>
-		<version>19.0.0.Final</version>
+		<version>20.0.0.Beta1-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>wildfly-clustering-tomcat-9.0-hotrod</artifactId>
