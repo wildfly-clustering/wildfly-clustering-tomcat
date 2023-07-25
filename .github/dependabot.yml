@@ -25,14 +25,6 @@ updates:
         versions:
           - ">= 10"
   - package-ecosystem: "maven"
-    directory: "/10.0"
-    schedule:
-      interval: "daily"
-    ignore:
-      - dependency-name: org.apache.tomcat:tomcat-catalina
-        versions:
-          - ">= 10.1"
-  - package-ecosystem: "maven"
     directory: "/10.1"
     schedule:
       interval: "daily"
