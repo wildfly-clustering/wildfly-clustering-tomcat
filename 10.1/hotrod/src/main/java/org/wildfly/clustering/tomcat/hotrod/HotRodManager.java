@@ -70,8 +70,6 @@ import org.wildfly.clustering.tomcat.catalina.CatalinaSpecificationProvider;
 import org.wildfly.clustering.tomcat.catalina.DistributableManager;
 import org.wildfly.clustering.tomcat.catalina.CatalinaIdentifierFactory;
 import org.wildfly.clustering.tomcat.catalina.LocalSessionContext;
-import org.wildfly.clustering.tomcat.catalina.LocalSessionContextFactory;
-import org.wildfly.clustering.web.LocalContextFactory;
 import org.wildfly.clustering.web.hotrod.session.HotRodSessionManagerFactory;
 import org.wildfly.clustering.web.hotrod.session.HotRodSessionManagerFactoryConfiguration;
 import org.wildfly.clustering.web.session.ImmutableSession;
@@ -101,6 +99,7 @@ public class HotRodManager extends ManagerBase {
 	private volatile SessionMarshallerFactory marshallerFactory = SessionMarshallerFactory.JBOSS;
 	private volatile String templateName = DefaultTemplate.DIST_SYNC.getTemplateName();
 	private volatile URI uri = null;
+	private volatile int expirationThreadPoolSize = 16;
 
 	public void setUri(String uri) {
 		this.uri = URI.create(uri);
@@ -132,6 +131,10 @@ public class HotRodManager extends ManagerBase {
 
 	public void setMarshaller(String marshallerFactory) {
 		this.setMarshallerFactory(SessionMarshallerFactory.valueOf(marshallerFactory));
+	}
+
+	public void setExpirationThreadPoolSize(int size) {
+		this.expirationThreadPoolSize = size;
 	}
 
 	@Deprecated
@@ -177,6 +180,7 @@ public class HotRodManager extends ManagerBase {
 			loadedImmutabilities.add(loadedImmutability);
 		}
 		Immutability immutability = new CompositeImmutability(new CompositeIterable<>(EnumSet.allOf(DefaultImmutability.class), EnumSet.allOf(SessionAttributeImmutability.class), loadedImmutabilities));
+		int expirationThreadPoolSize = this.expirationThreadPoolSize;
 
 		HotRodSessionManagerFactoryConfiguration<HttpSession, ServletContext, HttpSessionActivationListener, LocalSessionContext> sessionManagerFactoryConfig = new HotRodSessionManagerFactoryConfiguration<>() {
 			@Override
@@ -205,8 +209,8 @@ public class HotRodManager extends ManagerBase {
 			}
 
 			@Override
-			public LocalContextFactory<LocalSessionContext> getLocalContextFactory() {
-				return LocalSessionContextFactory.INSTANCE;
+			public Supplier<LocalSessionContext> getLocalContextFactory() {
+				return LocalSessionContext::new;
 			}
 
 			@Override
@@ -222,6 +226,11 @@ public class HotRodManager extends ManagerBase {
 			@Override
 			public SpecificationProvider<HttpSession, ServletContext, HttpSessionActivationListener> getSpecificationProvider() {
 				return CatalinaSpecificationProvider.INSTANCE;
+			}
+
+			@Override
+			public int getExpirationThreadPoolSize() {
+				return expirationThreadPoolSize;
 			}
 		};
 

@@ -144,7 +144,7 @@ public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 	public void setMaxInactiveInterval(int interval) {
 		Session<LocalSessionContext> session = this.session.get();
 		try (BatchContext context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-			session.getMetaData().setMaxInactiveInterval((interval > 0) ? Duration.ofSeconds(interval) : Duration.ZERO);
+			session.getMetaData().setTimeout((interval > 0) ? Duration.ofSeconds(interval) : Duration.ZERO);
 		} catch (IllegalStateException e) {
 			this.closeIfInvalid.accept(session);
 			throw e;

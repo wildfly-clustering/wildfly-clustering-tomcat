@@ -27,8 +27,8 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.apache.catalina.Context;
-import org.wildfly.clustering.web.cache.session.ImmutableSessionAttributesFilter;
-import org.wildfly.clustering.web.cache.session.SessionAttributesFilter;
+import org.wildfly.clustering.web.cache.session.attributes.coarse.ImmutableSessionAttributesFilter;
+import org.wildfly.clustering.web.cache.session.attributes.coarse.SessionAttributesFilter;
 import org.wildfly.clustering.web.session.ImmutableSession;
 
 import jakarta.servlet.http.HttpSessionBindingEvent;

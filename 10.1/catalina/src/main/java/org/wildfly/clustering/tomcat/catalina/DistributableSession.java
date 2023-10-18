@@ -128,7 +128,7 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
 	public void setMaxInactiveInterval(int interval) {
 		Session<LocalSessionContext> session = this.session.get();
 		try (BatchContext context = this.resumeBatch()) {
-			session.getMetaData().setMaxInactiveInterval((interval > 0) ? Duration.ofSeconds(interval) : Duration.ZERO);
+			session.getMetaData().setTimeout((interval > 0) ? Duration.ofSeconds(interval) : Duration.ZERO);
 		} catch (IllegalStateException e) {
 			this.closeIfInvalid(session);
 			throw e;
@@ -232,7 +232,7 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
 				for (String name: oldSession.getAttributes().getAttributeNames()) {
 					newSession.getAttributes().setAttribute(name, oldSession.getAttributes().getAttribute(name));
 				}
-				newSession.getMetaData().setMaxInactiveInterval(oldSession.getMetaData().getTimeout());
+				newSession.getMetaData().setTimeout(oldSession.getMetaData().getTimeout());
 				newSession.getMetaData().setLastAccess(oldSession.getMetaData().getLastAccessStartTime(), oldSession.getMetaData().getLastAccessTime());
 				newSession.getLocalContext().setAuthType(oldSession.getLocalContext().getAuthType());
 				newSession.getLocalContext().setPrincipal(oldSession.getLocalContext().getPrincipal());
