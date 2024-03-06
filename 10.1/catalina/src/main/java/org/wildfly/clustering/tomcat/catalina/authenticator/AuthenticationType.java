@@ -22,9 +22,9 @@
 
 package org.wildfly.clustering.tomcat.catalina.authenticator;
 
-import org.apache.catalina.authenticator.Constants;
-
 import jakarta.servlet.http.HttpServletRequest;
+
+import org.apache.catalina.authenticator.Constants;
 
 /**
  * @author Paul Ferraro

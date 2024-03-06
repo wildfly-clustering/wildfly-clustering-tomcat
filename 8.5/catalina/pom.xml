@@ -33,7 +33,7 @@
 	<artifactId>wildfly-clustering-tomcat-8.5-catalina</artifactId>
 	<packaging>jar</packaging>
 
-	<name>Distributed session management for Tomcat 8.5: Catalina integration</name>
+	<name>WildFly Clustering: Tomcat 8.5: Catalina integration</name>
 
 	<dependencies>
 		<dependency>
@@ -49,12 +49,16 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.wildfly</groupId>
+			<groupId>org.wildfly.clustering</groupId>
 			<artifactId>wildfly-clustering-context</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.wildfly</groupId>
-			<artifactId>wildfly-clustering-web-cache</artifactId>
+			<groupId>org.wildfly.clustering</groupId>
+			<artifactId>wildfly-clustering-session-cache</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.wildfly.clustering</groupId>
+			<artifactId>wildfly-clustering-session-spec-servlet-3.1</artifactId>
 		</dependency>
 	</dependencies>
 

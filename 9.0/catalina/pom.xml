@@ -33,12 +33,12 @@
 	<artifactId>wildfly-clustering-tomcat-9.0-catalina</artifactId>
 	<packaging>jar</packaging>
 
-	<name>Distributed session management for Tomcat 9.0: Catalina integration</name>
+	<name>WildFly Clustering: Tomcat 9.0: Catalina integration</name>
 
 	<dependencies>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
-			<artifactId>wildfly-clustering-tomcat-common</artifactId>
+			<artifactId>wildfly-clustering-tomcat-spi</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 
@@ -49,12 +49,16 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.wildfly</groupId>
+			<groupId>org.wildfly.clustering</groupId>
 			<artifactId>wildfly-clustering-context</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.wildfly</groupId>
-			<artifactId>wildfly-clustering-web-cache</artifactId>
+			<groupId>org.wildfly.clustering</groupId>
+			<artifactId>wildfly-clustering-session-cache</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.wildfly.clustering</groupId>
+			<artifactId>wildfly-clustering-session-spec-servlet-4.0</artifactId>
 		</dependency>
 	</dependencies>
 

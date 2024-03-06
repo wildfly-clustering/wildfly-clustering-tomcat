@@ -22,10 +22,14 @@
 
 package org.wildfly.clustering.tomcat.catalina.authenticator;
 
+import java.io.Serializable;
+
 /**
  * @author Paul Ferraro
  */
-public class Credentials {
+public class Credentials implements Serializable {
+	private static final long serialVersionUID = 1672356165949721516L;
+
 	private volatile AuthenticationType authType;
 	private volatile String user;
 	private volatile String password;

@@ -1,41 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ JBoss, Home of Professional Open Source.
-  ~ Copyright 2016, Red Hat, Inc., and individual contributors
-  ~ as indicated by the @author tags. See the copyright.txt file in the
-  ~ distribution for a full listing of individual contributors.
-  ~
-  ~ This is free software; you can redistribute it and/or modify it
-  ~ under the terms of the GNU Lesser General Public License as
-  ~ published by the Free Software Foundation; either version 2.1 of
-  ~ the License, or (at your option) any later version.
-  ~
-  ~ This software is distributed in the hope that it will be useful,
-  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
-  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-  ~ Lesser General Public License for more details.
-  ~
-  ~ You should have received a copy of the GNU Lesser General Public
-  ~ License along with this software; if not, write to the Free
-  ~ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-  ~ 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-  -->
-
+	Copyright The WildFly Authors
+	SPDX-License-Identifier: Apache-2.0
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>org.jboss</groupId>
-		<artifactId>jboss-parent</artifactId>
-		<version>41</version>
+		<groupId>org.wildfly.clustering</groupId>
+		<artifactId>wildfly-clustering-tomcat-bom</artifactId>
+		<version>21.0.0.Final-SNAPSHOT</version>
+		<relativePath>bom</relativePath>
 	</parent>
 
-	<groupId>org.wildfly.clustering</groupId>
 	<artifactId>wildfly-clustering-tomcat</artifactId>
-	<version>21.0.0.Final-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
-	<name>Distributed session management for Tomcat</name>
+	<name>WildFly Clustering: Tomcat</name>
 
 	<scm>
 		<connection>scm:git:git://github.com:wildfly-clustering/wildfly-clustering-tomcat.git</connection>
@@ -49,22 +30,56 @@
 		<maven.compiler.target>11</maven.compiler.target>
 		<maven.compiler.source>11</maven.compiler.source>
 
-		<version.jakarta.annotation>2.1.1</version.jakarta.annotation>
-		<version.com.squareup.protoparser>4.0.3</version.com.squareup.protoparser>
+		<!-- Provided dependency versions -->
 		<version.net.jcip.annotations>1.0</version.net.jcip.annotations>
-		<version.org.apache.httpcomponents>5.2.1</version.org.apache.httpcomponents>
-		<version.org.infinispan>14.0.17.Final</version.org.infinispan>
-		<version.org.infinispan.protostream>4.6.5.Final</version.org.infinispan.protostream>
-		<version.org.infinispan.server>${version.org.infinispan}</version.org.infinispan.server>
+		<version.org.kohsuke.metainf-services>1.11</version.org.kohsuke.metainf-services>
+
+		<!-- Runtime dependency versions -->
+		<version.org.infinispan>14.0.25.Final</version.org.infinispan>
+		<version.org.jboss.marshalling>2.1.4.Final</version.org.jboss.marshalling>
+		<version.org.wildfly.clustering>1.0.9.Final-SNAPSHOT</version.org.wildfly.clustering>
+
+		<!-- Test dependency versions -->
 		<version.org.jboss.arquillian>1.8.0.Final</version.org.jboss.arquillian>
 		<version.org.jboss.arquillian.container.tomcat>1.1.0.Final</version.org.jboss.arquillian.container.tomcat>
-		<version.org.kohsuke.metainf-services>1.11</version.org.kohsuke.metainf-services>
-		<version.org.wildfly>30.0.0.Final</version.org.wildfly>
-		<version.junit>4.13.2</version.junit>
+		<version.org.junit>5.10.2</version.org.junit>
+		<version.org.mockito>5.11.0</version.org.mockito>
+		<version.org.testcontainers>1.19.7</version.org.testcontainers>
+
+		<!-- Plugin dependency version overrides -->
+		<version.surefire>3.2.5</version.surefire>
 	</properties>
 
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-checkstyle-plugin</artifactId>
+				<configuration>
+					<configLocation>checkstyle.xml</configLocation>
+					<logViolationsToConsole>true</logViolationsToConsole>
+					<sourceDirectories>
+						<sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+						<sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
+					</sourceDirectories>
+				</configuration>
+				<executions>
+					<execution>
+						<id>check-sources</id>
+						<phase>process-sources</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>check-test-sources</id>
+						<phase>process-test-sources</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
@@ -80,156 +95,122 @@
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>test-jar</goal>
+						</goals>
+						<configuration>
+							<skipIfEmpty>true</skipIfEmpty>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-release-plugin</artifactId>
 				<configuration>
+					<autoVersionSubmodules>true</autoVersionSubmodules>
 					<tagNameFormat>@{project.version}</tagNameFormat>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<argLine>${jdk.runtime.args}</argLine>
+				</configuration>
+			</plugin>
 		</plugins>
-		<pluginManagement>
-			<plugins>
-				<plugin>
-					<groupId>com.googlecode.maven-download-plugin</groupId>
-					<artifactId>download-maven-plugin</artifactId>
-					<version>1.7.1</version>
-				</plugin>
-				<plugin>
-					<groupId>com.coderplus.maven.plugins</groupId>
-					<artifactId>copy-rename-maven-plugin</artifactId>
-					<version>1.0.1</version>
-				</plugin>
-			</plugins>
-		</pluginManagement>
 	</build>
 
 	<dependencyManagement>
 		<dependencies>
-			<dependency>
-				<groupId>jakarta.annotation</groupId>
-				<artifactId>jakarta.annotation-api</artifactId>
-				<version>${version.jakarta.annotation}</version>
-			</dependency>
-			<dependency>
-				<groupId>com.squareup</groupId>
-				<artifactId>protoparser</artifactId>
-				<version>${version.com.squareup.protoparser}</version>
-			</dependency>
-			<dependency>
-				<groupId>net.jcip</groupId>
-				<artifactId>jcip-annotations</artifactId>
-				<version>${version.net.jcip.annotations}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.apache.httpcomponents.client5</groupId>
-				<artifactId>httpclient5</artifactId>
-				<version>${version.org.apache.httpcomponents}</version>
-			</dependency>
+			<!-- BOM dependencies -->
 			<dependency>
 				<groupId>org.infinispan</groupId>
-				<artifactId>infinispan-client-hotrod-jakarta</artifactId>
+				<artifactId>infinispan-bom</artifactId>
 				<version>${version.org.infinispan}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.infinispan</groupId>
-				<artifactId>infinispan-server-testdriver-junit4</artifactId>
-				<version>${version.org.infinispan.server}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.infinispan.protostream</groupId>
-				<artifactId>protostream</artifactId>
-				<version>${version.org.infinispan.protostream}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.infinispan.protostream</groupId>
-				<artifactId>protostream-processor</artifactId>
-				<version>${version.org.infinispan.protostream}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.jboss.arquillian</groupId>
-				<artifactId>arquillian-bom</artifactId>
-				<version>${version.org.jboss.arquillian}</version>
-				<scope>import</scope>
 				<type>pom</type>
+				<scope>import</scope>
 			</dependency>
+			<dependency>
+				<groupId>org.wildfly.clustering</groupId>
+				<artifactId>wildfly-clustering-bom</artifactId>
+				<version>${version.org.wildfly.clustering}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
+			<!-- External compile dependencies -->
+			<dependency>
+				<groupId>org.kohsuke.metainf-services</groupId>
+				<artifactId>metainf-services</artifactId>
+				<version>${version.org.kohsuke.metainf-services}</version>
+			</dependency>
+
+			<!-- Test BOM dependencies -->
+			<!-- Arquilliam BOM imports problematic ShrinkWrap BOMs -->
+			<!-- Import this last so it does not override our versions -->
+			<dependency>
+				<groupId>org.junit</groupId>
+				<artifactId>junit-bom</artifactId>
+				<version>${version.org.junit}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.mockito</groupId>
+				<artifactId>mockito-bom</artifactId>
+				<version>${version.org.mockito}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>testcontainers-bom</artifactId>
+				<version>${version.org.testcontainers}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+
+			<!-- Test dependencies -->
 			<dependency>
 				<groupId>org.jboss.arquillian.container</groupId>
 				<artifactId>arquillian-tomcat-managed-8</artifactId>
 				<version>${version.org.jboss.arquillian.container.tomcat}</version>
 			</dependency>
 			<dependency>
-				<groupId>org.kohsuke.metainf-services</groupId>
-				<artifactId>metainf-services</artifactId>
-				<version>${version.org.kohsuke.metainf-services}</version>
+				<groupId>org.jboss.marshalling</groupId>
+				<artifactId>jboss-marshalling-river</artifactId>
+				<version>${version.org.jboss.marshalling}</version>
 			</dependency>
+
+			<!-- Arquilliam BOM imports ShrinkWrap BOMs, which are unsafe for importing -->
+			<!-- Import this last so it does not override our versions -->
 			<dependency>
-				<groupId>org.wildfly</groupId>
-				<artifactId>wildfly-clustering-context</artifactId>
-				<version>${version.org.wildfly}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.wildfly</groupId>
-				<artifactId>wildfly-clustering-infinispan-marshalling</artifactId>
-				<version>${version.org.wildfly}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.wildfly</groupId>
-				<artifactId>wildfly-clustering-marshalling-api</artifactId>
-				<version>${version.org.wildfly}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.wildfly</groupId>
-				<artifactId>wildfly-clustering-marshalling-jboss</artifactId>
-				<version>${version.org.wildfly}</version>
-				<exclusions>
-					<exclusion>
-						<groupId>org.jboss.modules</groupId>
-						<artifactId>jboss-modules</artifactId>
-					</exclusion>
-				</exclusions>
-			</dependency>
-			<dependency>
-				<groupId>org.wildfly</groupId>
-				<artifactId>wildfly-clustering-marshalling-protostream</artifactId>
-				<version>${version.org.wildfly}</version>
-				<exclusions>
-					<exclusion>
-						<groupId>org.jboss.modules</groupId>
-						<artifactId>jboss-modules</artifactId>
-					</exclusion>
-				</exclusions>
-			</dependency>
-			<dependency>
-				<groupId>org.wildfly</groupId>
-				<artifactId>wildfly-clustering-marshalling-spi</artifactId>
-				<version>${version.org.wildfly}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.wildfly</groupId>
-				<artifactId>wildfly-clustering-web-api</artifactId>
-				<version>${version.org.wildfly}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.wildfly</groupId>
-				<artifactId>wildfly-clustering-web-cache</artifactId>
-				<version>${version.org.wildfly}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.wildfly</groupId>
-				<artifactId>wildfly-clustering-web-hotrod</artifactId>
-				<version>${version.org.wildfly}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.wildfly</groupId>
-				<artifactId>wildfly-clustering-web-spi</artifactId>
-				<version>${version.org.wildfly}</version>
-			</dependency>
-			<dependency>
-				<groupId>junit</groupId>
-				<artifactId>junit</artifactId>
-				<version>${version.junit}</version>
+				<groupId>org.jboss.arquillian</groupId>
+				<artifactId>arquillian-bom</artifactId>
+				<version>${version.org.jboss.arquillian}</version>
+				<type>pom</type>
+				<scope>import</scope>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
 
 	<profiles>
 		<profile>
@@ -240,7 +221,8 @@
 				</property>
 			</activation>
 			<modules>
-				<module>common</module>
+				<module>bom</module>
+				<module>spi</module>
 				<module>10.1</module>
 				<module>9.0</module>
 				<module>8.5</module>
@@ -255,7 +237,8 @@
 				</property>
 			</activation>
 			<modules>
-				<module>common</module>
+				<module>bom</module>
+				<module>spi</module>
 				<module>10.1</module>
 			</modules>
 		</profile>
@@ -268,7 +251,8 @@
 				</property>
 			</activation>
 			<modules>
-				<module>common</module>
+				<module>bom</module>
+				<module>spi</module>
 				<module>9.0</module>
 			</modules>
 		</profile>
@@ -281,7 +265,8 @@
 				</property>
 			</activation>
 			<modules>
-				<module>common</module>
+				<module>bom</module>
+				<module>spi</module>
 				<module>8.5</module>
 			</modules>
 		</profile>
