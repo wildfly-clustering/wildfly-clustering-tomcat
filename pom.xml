@@ -271,4 +271,32 @@
 			</modules>
 		</profile>
 	</profiles>
+
+	<repositories>
+		<repository>
+			<id>${jboss.releases.repo.id}</id>
+			<url>${jboss.releases.repo.url}}</url>
+			<layout>default</layout>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>never</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+				<updatePolicy>never</updatePolicy>
+			</snapshots>
+		</repository>
+	</repositories>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>${jboss.releases.repo.id}</id>
+			<url>${jboss.releases.repo.url}</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</pluginRepository>
+	</pluginRepositories>
 </project>
