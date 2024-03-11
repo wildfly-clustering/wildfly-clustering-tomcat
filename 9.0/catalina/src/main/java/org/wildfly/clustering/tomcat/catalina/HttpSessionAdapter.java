@@ -30,7 +30,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import javax.servlet.ServletContext;
@@ -86,14 +85,12 @@ public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 	private final CatalinaManager<B> manager;
 	private final B batch;
 	private final Runnable invalidateAction;
-	private final Consumer<Session<CatalinaSessionContext>> closeIfInvalid;
 
-	public HttpSessionAdapter(AtomicReference<Session<CatalinaSessionContext>> session, CatalinaManager<B> manager, B batch, Runnable invalidateAction, Consumer<Session<CatalinaSessionContext>> closeIfInvalid) {
+	public HttpSessionAdapter(AtomicReference<Session<CatalinaSessionContext>> session, CatalinaManager<B> manager, B batch, Runnable invalidateAction) {
 		this.session = session;
 		this.manager = manager;
 		this.batch = batch;
 		this.invalidateAction = invalidateAction;
-		this.closeIfInvalid = closeIfInvalid;
 	}
 
 	@Override
@@ -102,7 +99,10 @@ public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 		try {
 			return session.getMetaData().isNew();
 		} catch (IllegalStateException e) {
-			this.closeIfInvalid.accept(session);
+			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
+			if (!session.isValid()) {
+				session.close();
+			}
 			throw e;
 		}
 	}
@@ -113,7 +113,10 @@ public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 		try {
 			return session.getMetaData().getCreationTime().toEpochMilli();
 		} catch (IllegalStateException e) {
-			this.closeIfInvalid.accept(session);
+			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
+			if (!session.isValid()) {
+				session.close();
+			}
 			throw e;
 		}
 	}
@@ -124,7 +127,10 @@ public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 		try {
 			return session.getMetaData().getLastAccessStartTime().toEpochMilli();
 		} catch (IllegalStateException e) {
-			this.closeIfInvalid.accept(session);
+			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
+			if (!session.isValid()) {
+				session.close();
+			}
 			throw e;
 		}
 	}
@@ -135,7 +141,10 @@ public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 		try {
 			return (int) session.getMetaData().getTimeout().getSeconds();
 		} catch (IllegalStateException e) {
-			this.closeIfInvalid.accept(session);
+			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
+			if (!session.isValid()) {
+				session.close();
+			}
 			throw e;
 		}
 	}
@@ -146,7 +155,10 @@ public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 		try {
 			session.getMetaData().setTimeout((interval > 0) ? Duration.ofSeconds(interval) : Duration.ZERO);
 		} catch (IllegalStateException e) {
-			this.closeIfInvalid.accept(session);
+			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
+			if (!session.isValid()) {
+				session.close();
+			}
 			throw e;
 		}
 	}
@@ -158,10 +170,13 @@ public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 		try (BatchContext<B> context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
 			try (B batch = context.getBatch()) {
 				session.invalidate();
-				this.closeIfInvalid.accept(session);
+				session.close();
 			}
 		} catch (IllegalStateException e) {
-			this.closeIfInvalid.accept(session);
+			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
+			if (!session.isValid()) {
+				session.close();
+			}
 			throw e;
 		}
 	}
@@ -175,7 +190,10 @@ public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 		try {
 			return session.getAttributes().get(name);
 		} catch (IllegalStateException e) {
-			this.closeIfInvalid.accept(session);
+			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
+			if (!session.isValid()) {
+				session.close();
+			}
 			throw e;
 		}
 	}
@@ -186,7 +204,10 @@ public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 		try {
 			return Collections.enumeration(session.getAttributes().keySet());
 		} catch (IllegalStateException e) {
-			this.closeIfInvalid.accept(session);
+			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
+			if (!session.isValid()) {
+				session.close();
+			}
 			throw e;
 		}
 	}
@@ -204,7 +225,10 @@ public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 						this.notifySessionAttributeListeners(name, old, value);
 					}
 				} catch (IllegalStateException e) {
-					this.closeIfInvalid.accept(session);
+					// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
+					if (!session.isValid()) {
+						session.close();
+					}
 					throw e;
 				}
 			}
@@ -225,7 +249,10 @@ public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 					this.notifySessionAttributeListeners(name, value, null);
 				}
 			} catch (IllegalStateException e) {
-				this.closeIfInvalid.accept(session);
+				// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
+				if (!session.isValid()) {
+					session.close();
+				}
 				throw e;
 			}
 		}

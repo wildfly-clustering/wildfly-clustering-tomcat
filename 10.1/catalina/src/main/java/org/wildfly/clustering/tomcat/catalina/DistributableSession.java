@@ -52,16 +52,14 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
 	private final String internalId;
 	private final B batch;
 	private final Runnable invalidateAction;
-	private final Runnable closeTask;
 	private final Instant startTime;
 
-	public DistributableSession(CatalinaManager<B> manager, Session<CatalinaSessionContext> session, String internalId, B batch, Runnable invalidateAction, Runnable closeTask) {
+	public DistributableSession(CatalinaManager<B> manager, Session<CatalinaSessionContext> session, String internalId, B batch, Runnable invalidateAction) {
 		this.manager = manager;
 		this.session = new AtomicReference<>(session);
 		this.internalId = internalId;
 		this.batch = batch;
 		this.invalidateAction = invalidateAction;
-		this.closeTask = closeTask;
 		this.startTime = session.getMetaData().isNew() ? session.getMetaData().getCreationTime() : Instant.now();
 	}
 
@@ -81,7 +79,10 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
 		try {
 			return session.getMetaData().getCreationTime().toEpochMilli();
 		} catch (IllegalStateException e) {
-			this.closeIfInvalid(session);
+			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
+			if (!session.isValid()) {
+				session.close();
+			}
 			throw e;
 		}
 	}
@@ -102,7 +103,10 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
 		try {
 			return session.getMetaData().getLastAccessStartTime().toEpochMilli();
 		} catch (IllegalStateException e) {
-			this.closeIfInvalid(session);
+			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
+			if (!session.isValid()) {
+				session.close();
+			}
 			throw e;
 		}
 	}
@@ -118,7 +122,10 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
 		try {
 			return (int) session.getMetaData().getTimeout().getSeconds();
 		} catch (IllegalStateException e) {
-			this.closeIfInvalid(session);
+			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
+			if (!session.isValid()) {
+				session.close();
+			}
 			throw e;
 		}
 	}
@@ -129,7 +136,10 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
 		try {
 			session.getMetaData().setTimeout((interval > 0) ? Duration.ofSeconds(interval) : Duration.ZERO);
 		} catch (IllegalStateException e) {
-			this.closeIfInvalid(session);
+			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
+			if (!session.isValid()) {
+				session.close();
+			}
 			throw e;
 		}
 	}
@@ -146,7 +156,7 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
 
 	@Override
 	public HttpSession getSession() {
-		return new HttpSessionAdapter<>(this.session, this.manager, this.batch, this.invalidateAction, this::closeIfInvalid);
+		return new HttpSessionAdapter<>(this.session, this.manager, this.batch, this.invalidateAction);
 	}
 
 	@Override
@@ -175,8 +185,6 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
 		} catch (Throwable e) {
 			// Don't propagate exceptions at the stage, since response was already committed
 			this.manager.getContext().getLogger().warn(e.getLocalizedMessage(), e);
-		} finally {
-			this.closeTask.run();
 		}
 	}
 
@@ -228,7 +236,10 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
 					this.session.set(newSession);
 					oldSession.invalidate();
 				} catch (IllegalStateException e) {
-					this.closeIfInvalid(oldSession);
+					if (!oldSession.isValid()) {
+						// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
+						oldSession.close();
+					}
 					newSession.invalidate();
 				}
 			}
@@ -256,17 +267,5 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
 	@Override
 	public boolean isAttributeDistributable(String name, Object value) {
 		return this.manager.getMarshallability().isMarshallable(value);
-	}
-
-	private void closeIfInvalid(Session<CatalinaSessionContext> session) {
-		if (!session.isValid()) {
-			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
-			try {
-				session.close();
-			} finally {
-				// Ensure close task is run
-				this.closeTask.run();
-			}
-		}
 	}
 }

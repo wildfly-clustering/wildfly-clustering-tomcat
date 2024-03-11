@@ -22,27 +22,16 @@
 
 package org.wildfly.clustering.tomcat.infinispan.remote;
 
-import org.jboss.arquillian.container.test.api.RunAsClient;
-import org.jboss.shrinkwrap.api.Archive;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.wildfly.clustering.session.spec.container.servlet.SessionServlet;
 import org.wildfly.clustering.tomcat.AbstractHotRodSessionManagerITCase;
-import org.wildfly.clustering.tomcat.SessionManagementParameters;
 
 /**
  * @author Paul Ferraro
  */
 public class HotRodSessionManagerITCase extends AbstractHotRodSessionManagerITCase {
 
-	@ParameterizedTest(name = ParameterizedTest.ARGUMENTS_PLACEHOLDER)
-	@ArgumentsSource(HotRodSessionManagerArgumentsProvider.class)
-	@RunAsClient
-	public void test(SessionManagementParameters parameters) throws Exception {
-		Archive<?> archive = AbstractHotRodSessionManagerITCase.deployment(HotRodSessionManagerITCase.class, HotRodManager.class, parameters)
-				.addPackage(this.getEndpointClass().getPackage())
-				;
-		this.accept(archive);
+	public HotRodSessionManagerITCase() {
+		super(HotRodManager.class);
 	}
 
 	@Override

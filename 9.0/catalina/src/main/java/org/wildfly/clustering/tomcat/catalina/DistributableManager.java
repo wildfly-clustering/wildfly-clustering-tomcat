@@ -24,7 +24,6 @@ package org.wildfly.clustering.tomcat.catalina;
 
 import java.io.IOException;
 import java.util.OptionalLong;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -88,10 +87,10 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
 	/**
 	 * Appends routing information to session identifier.
 	 */
-	private org.apache.catalina.Session getSession(Session<CatalinaSessionContext> session, Runnable closeTask) {
+	private org.apache.catalina.Session getSession(Session<CatalinaSessionContext> session) {
 		String id = session.getId();
 		String internalId = (this.route != null) ? new StringBuilder(id.length() + this.route.length() + 1).append(id).append(ROUTE_DELIMITER).append(this.route).toString() : id;
-		return new DistributableSession<>(this, session, internalId, this.manager.getBatcher().suspendBatch(), () -> this.invalidateAction.accept(session), closeTask);
+		return new DistributableSession<>(this, session, internalId, this.manager.getBatcher().suspendBatch(), () -> this.invalidateAction.accept(session));
 	}
 
 	@Override
@@ -115,39 +114,32 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
 	@Override
 	public org.apache.catalina.Session createSession(String sessionId) {
 		String id = (sessionId != null) ? parseSessionId(sessionId) : this.manager.getIdentifierFactory().get();
-		Runnable closeTask = this.getSessionCloseTask();
 		boolean close = true;
+		Batcher<B> batcher = this.manager.getBatcher();
+		// Batch will be closed by Session.close();
+		B batch = batcher.createBatch();
 		try {
-			Batcher<B> batcher = this.manager.getBatcher();
-			// Batch will be closed by Session.close();
-			B batch = batcher.createBatch();
-			try {
-				Session<CatalinaSessionContext> session = this.manager.createSession(id);
-				HttpSessionEvent event = new HttpSessionEvent(HttpSessionProvider.INSTANCE.asSession(session, this.context.getServletContext()));
-				Stream.of(this.context.getApplicationLifecycleListeners()).filter(HttpSessionListener.class::isInstance).map(HttpSessionListener.class::cast).forEach(listener -> {
-					try {
-						this.context.fireContainerEvent("beforeSessionCreated", listener);
-						listener.sessionCreated(event);
-					} catch (Throwable e) {
-						this.context.getLogger().warn(e.getMessage(), e);
-					} finally {
-						this.context.fireContainerEvent("afterSessionCreated", listener);
-					}
-				});
-				org.apache.catalina.Session result = this.getSession(session, closeTask);
-				close = false;
-				return result;
-			} catch (RuntimeException | Error e) {
-				batch.discard();
-				throw e;
-			} finally {
-				if (close) {
-					batch.close();
+			Session<CatalinaSessionContext> session = this.manager.createSession(id);
+			HttpSessionEvent event = new HttpSessionEvent(HttpSessionProvider.INSTANCE.asSession(session, this.context.getServletContext()));
+			Stream.of(this.context.getApplicationLifecycleListeners()).filter(HttpSessionListener.class::isInstance).map(HttpSessionListener.class::cast).forEach(listener -> {
+				try {
+					this.context.fireContainerEvent("beforeSessionCreated", listener);
+					listener.sessionCreated(event);
+				} catch (Throwable e) {
+					this.context.getLogger().warn(e.getMessage(), e);
+				} finally {
+					this.context.fireContainerEvent("afterSessionCreated", listener);
 				}
-			}
+			});
+			org.apache.catalina.Session result = this.getSession(session);
+			close = false;
+			return result;
+		} catch (RuntimeException | Error e) {
+			batch.discard();
+			throw e;
 		} finally {
 			if (close) {
-				closeTask.run();
+				batch.close();
 			}
 		}
 	}
@@ -155,52 +147,26 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
 	@Override
 	public org.apache.catalina.Session findSession(String sessionId) throws IOException {
 		String id = parseSessionId(sessionId);
-		Runnable closeTask = this.getSessionCloseTask();
 		boolean close = true;
+		Batcher<B> batcher = this.manager.getBatcher();
+		// Batch will be closed by Session.close();
+		B batch = batcher.createBatch();
 		try {
-			Batcher<B> batcher = this.manager.getBatcher();
-			// Batch will be closed by Session.close();
-			B batch = batcher.createBatch();
-			try {
-				Session<CatalinaSessionContext> session = this.manager.findSession(id);
-				if (session == null) {
-					return null;
-				}
-				org.apache.catalina.Session result = this.getSession(session, closeTask);
-				close = false;
-				return result;
-			} catch (RuntimeException | Error e) {
-				batch.discard();
-				throw e;
-			} finally {
-				if (close) {
-					batch.close();
-				}
+			Session<CatalinaSessionContext> session = this.manager.findSession(id);
+			if (session == null) {
+				return null;
 			}
+			org.apache.catalina.Session result = this.getSession(session);
+			close = false;
+			return result;
+		} catch (RuntimeException | Error e) {
+			batch.discard();
+			throw e;
 		} finally {
 			if (close) {
-				closeTask.run();
+				batch.close();
 			}
 		}
-	}
-
-	private Runnable getSessionCloseTask() {
-		StampedLock lock = this.lifecycleLock;
-		long stamp = this.lifecycleLock.tryReadLock();
-		if (stamp == 0L) {
-			throw new IllegalStateException("Session manager was stopped");
-		}
-		AtomicLong stampRef = new AtomicLong(stamp);
-		return new Runnable() {
-			@Override
-			public void run() {
-				// Ensure we only unlock once.
-				long stamp = stampRef.getAndSet(0L);
-				if (stamp != 0L) {
-					lock.unlock(stamp);
-				}
-			}
-		};
 	}
 
 	@Override

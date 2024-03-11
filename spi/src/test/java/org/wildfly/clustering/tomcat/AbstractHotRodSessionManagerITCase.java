@@ -11,18 +11,19 @@ import java.util.stream.Stream;
 
 import org.infinispan.client.hotrod.DefaultTemplate;
 import org.infinispan.client.hotrod.configuration.ClientIntelligence;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.wildfly.clustering.cache.ContainerProvider;
 import org.wildfly.clustering.cache.infinispan.remote.InfinispanServerContainer;
 import org.wildfly.clustering.cache.infinispan.remote.InfinispanServerExtension;
 import org.wildfly.clustering.session.container.AbstractSessionManagerITCase;
-import org.wildfly.clustering.session.container.SessionManagementEndpointConfiguration;
 
 /**
  * @author Paul Ferraro
@@ -37,12 +38,21 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 	@RegisterExtension
 	static final ContainerProvider<InfinispanServerContainer> INFINISPAN = new InfinispanServerExtension();
 
-	protected static WebArchive deployment(Class<? extends AbstractHotRodSessionManagerITCase> testClass, Class<?> managerClass, SessionManagementParameters testParameters) {
+	private final Class<?> managerClass;
+
+	protected AbstractHotRodSessionManagerITCase(Class<?> managerClass) {
+		this.managerClass = managerClass;
+	}
+
+	@ParameterizedTest(name = ParameterizedTest.ARGUMENTS_PLACEHOLDER)
+	@ArgumentsSource(HotRodSessionManagerArgumentsProvider.class)
+	@RunAsClient
+	public void test(SessionManagementParameters parameters) throws Exception {
 		InfinispanServerContainer container = INFINISPAN.getContainer();
-		Object[] parameters = new Object[] {
-				managerClass.getName(),
-				testParameters.getSessionPersistenceGranularity(),
-				testParameters.getSessionMarshallerFactory(),
+		Object[] values = new Object[] {
+				this.managerClass.getName(),
+				parameters.getSessionPersistenceGranularity(),
+				parameters.getSessionMarshallerFactory(),
 				DefaultTemplate.LOCAL.getTemplateName(),
 				container.getUsername(),
 				String.valueOf(container.getPassword()),
@@ -51,10 +61,8 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 				// TODO Figure out how to configure HASH_DISTRIBUTION_AWARE w/bridge networking
 				container.isPortMapping() ? ClientIntelligence.BASIC : ClientIntelligence.HASH_DISTRIBUTION_AWARE,
 		};
-		return ShrinkWrap.create(WebArchive.class, testClass.getSimpleName() + ".war")
-				.addClasses(SessionManagementEndpointConfiguration.class)
-				.addAsManifestResource(new StringAsset(String.format(CONTEXT_XML, parameters)), "context.xml")
-				;
+		WebArchive archive = this.get().addAsManifestResource(new StringAsset(String.format(CONTEXT_XML, values)), "context.xml");
+		this.accept(archive);
 	}
 
 	public static class HotRodSessionManagerArgumentsProvider implements ArgumentsProvider {
