@@ -33,11 +33,11 @@
 	<artifactId>wildfly-clustering-tomcat-9.0</artifactId>
 	<packaging>pom</packaging>
 
-	<name>Distributed session management for Tomcat 9.0</name>
+	<name>WildFly Clustering: Tomcat 9.0</name>
 
 	<modules>
 		<module>catalina</module>
-		<module>hotrod</module>
+		<module>infinispan</module>
 	</modules>
 
 	<properties>
@@ -50,11 +50,6 @@
 				<groupId>org.apache.tomcat</groupId>
 				<artifactId>tomcat-catalina</artifactId>
 				<version>${version.org.apache.tomcat}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.jboss.arquillian.container</groupId>
-				<artifactId>arquillian-tomcat-managed-8</artifactId>
-				<version>${version.org.jboss.arquillian.container.tomcat}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

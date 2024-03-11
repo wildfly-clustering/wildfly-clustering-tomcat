@@ -32,9 +32,9 @@ import org.apache.catalina.LifecycleListener;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Manager;
 import org.apache.catalina.SessionIdGenerator;
-import org.wildfly.clustering.ee.Batch;
-import org.wildfly.clustering.marshalling.spi.Marshallability;
-import org.wildfly.clustering.web.session.SessionManager;
+import org.wildfly.clustering.cache.batch.Batch;
+import org.wildfly.clustering.marshalling.Marshallability;
+import org.wildfly.clustering.session.SessionManager;
 
 /**
  * Enhances Tomcat's Manager interface, providing default implementations for deprecated methods and methods we currently ignore.
@@ -46,11 +46,11 @@ public interface CatalinaManager<B extends Batch> extends Manager, Lifecycle {
 	 * Returns underlying distributable session manager implementation.
 	 * @return a session manager
 	 */
-	SessionManager<LocalSessionContext, B> getSessionManager();
+	SessionManager<CatalinaSessionContext, B> getSessionManager();
 
 	/**
 	 * Returns a mechanism for determining the marshallability of a session attribute.
-	 * @return
+	 * @return the mechanism for determining marshallability.
 	 */
 	Marshallability getMarshallability();
 

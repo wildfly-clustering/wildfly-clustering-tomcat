@@ -39,9 +39,9 @@ import org.apache.catalina.Session;
 import org.apache.catalina.authenticator.SingleSignOn;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.connector.Response;
-import org.wildfly.clustering.ee.Batch;
-import org.wildfly.clustering.web.sso.SSO;
-import org.wildfly.clustering.web.sso.SSOManager;
+import org.wildfly.clustering.cache.batch.Batch;
+import org.wildfly.clustering.session.user.User;
+import org.wildfly.clustering.session.user.UserManager;
 
 /**
  * @author Paul Ferraro
@@ -49,9 +49,9 @@ import org.wildfly.clustering.web.sso.SSOManager;
 public class DistributableSingleSignOn extends SingleSignOn implements ManagerRegistry, LifecycleListener {
 
 	private final ConcurrentMap<String, Manager> managers = new ConcurrentHashMap<>();
-	private final SSOManager<Credentials, String, String, LocalSSOContext, Batch> manager;
+	private final UserManager<Credentials, LocalSSOContext, String, String, Batch> manager;
 
-	public DistributableSingleSignOn(SSOManager<Credentials, String, String, LocalSSOContext, Batch> manager) {
+	public DistributableSingleSignOn(UserManager<Credentials, LocalSSOContext, String, String, Batch> manager) {
 		this.manager = manager;
 	}
 
@@ -81,11 +81,11 @@ public class DistributableSingleSignOn extends SingleSignOn implements ManagerRe
 */
 	@Override
 	protected void removeSession(String ssoId, Session session) {
-		SSO<Credentials, String, String, LocalSSOContext> sso = this.manager.findSSO(ssoId);
-		if (sso != null) {
-			sso.getSessions().removeSession(getDeployment(session.getManager()));
-			if (sso.getSessions().getDeployments().isEmpty()) {
-				sso.invalidate();
+		User<Credentials, LocalSSOContext, String, String> user = this.manager.findUser(ssoId);
+		if (user != null) {
+			user.getSessions().removeSession(getDeployment(session.getManager()));
+			if (user.getSessions().getDeployments().isEmpty()) {
+				user.invalidate();
 			}
 		}
 	}
@@ -94,14 +94,14 @@ public class DistributableSingleSignOn extends SingleSignOn implements ManagerRe
 	public boolean associate(String ssoId, Session session) {
 		Manager manager = session.getManager();
 		String deployment = getDeployment(manager);
-		SSO<Credentials, String, String, LocalSSOContext> sso = this.manager.findSSO(ssoId);
-		if (sso != null) {
-			sso.getSessions().addSession(deployment, session.getId());
+		User<Credentials, LocalSSOContext, String, String> user = this.manager.findUser(ssoId);
+		if (user != null) {
+			user.getSessions().addSession(deployment, session.getId());
 		}
 		if (this.managers.putIfAbsent(deployment, manager) == null) {
 			((Lifecycle) manager).addLifecycleListener(this);
 		}
-		return (sso != null);
+		return (user != null);
 	}
 
 	@Override
@@ -118,9 +118,9 @@ public class DistributableSingleSignOn extends SingleSignOn implements ManagerRe
 
 	@Override
 	public void deregister(String ssoId) {
-		SSO<Credentials, String, String, LocalSSOContext> sso = this.manager.findSSO(ssoId);
-		if (sso != null) {
-			sso.invalidate();
+		User<Credentials, LocalSSOContext, String, String> user = this.manager.findUser(ssoId);
+		if (user != null) {
+			user.invalidate();
 		}
 	}
 
@@ -130,16 +130,16 @@ public class DistributableSingleSignOn extends SingleSignOn implements ManagerRe
 		credentials.setAuthenticationType(AuthenticationType.valueOf(authType));
 		credentials.setUser(username);
 		credentials.setPassword(password);
-		SSO<Credentials, String, String, LocalSSOContext> sso = this.manager.createSSO(ssoId, credentials);
-		sso.getLocalContext().setPrincipal(principal);
+		User<Credentials, LocalSSOContext, String, String> user = this.manager.createUser(ssoId, credentials);
+		user.getTransientContext().setPrincipal(principal);
 	}
 
 	@Override
 	public boolean update(String ssoId, Principal principal, String authType, String username, String password) {
-		SSO<Credentials, String, String, LocalSSOContext> sso = this.manager.findSSO(ssoId);
-		if (sso == null) return false;
-		sso.getLocalContext().setPrincipal(principal);
-		Credentials credentials = sso.getAuthentication();
+		User<Credentials, LocalSSOContext, String, String> user = this.manager.findUser(ssoId);
+		if (user == null) return false;
+		user.getTransientContext().setPrincipal(principal);
+		Credentials credentials = user.getPersistentContext();
 		credentials.setAuthenticationType(AuthenticationType.valueOf(authType));
 		credentials.setUser(username);
 		credentials.setPassword(password);

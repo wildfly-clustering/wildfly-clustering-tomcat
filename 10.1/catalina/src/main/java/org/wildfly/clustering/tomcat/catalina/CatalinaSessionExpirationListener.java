@@ -27,8 +27,8 @@ import java.util.function.Consumer;
 
 import org.apache.catalina.Context;
 import org.wildfly.clustering.context.ContextClassLoaderReference;
-import org.wildfly.clustering.context.ContextReferenceExecutor;
-import org.wildfly.clustering.web.session.ImmutableSession;
+import org.wildfly.clustering.context.ContextualExecutor;
+import org.wildfly.clustering.session.ImmutableSession;
 
 /**
  * Invokes following timeout of a session.
@@ -41,7 +41,7 @@ public class CatalinaSessionExpirationListener implements Consumer<ImmutableSess
 
 	public CatalinaSessionExpirationListener(Context context) {
 		this.expireAction = new CatalinaSessionDestroyAction(context);
-		this.executor = new ContextReferenceExecutor<>(context.getLoader().getClassLoader(), ContextClassLoaderReference.INSTANCE);
+		this.executor = ContextualExecutor.withContext(context.getLoader().getClassLoader(), ContextClassLoaderReference.INSTANCE);
 	}
 
 	@Override
