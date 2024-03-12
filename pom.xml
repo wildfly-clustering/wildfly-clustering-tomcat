@@ -282,8 +282,8 @@
 
 	<repositories>
 		<repository>
-			<id>${jboss.releases.repo.id}</id>
-			<url>${jboss.releases.repo.url}}</url>
+			<id>default</id>
+			<url>${maven.repository.url}</url>
 			<layout>default</layout>
 			<releases>
 				<enabled>true</enabled>
@@ -297,8 +297,8 @@
 	</repositories>
 	<pluginRepositories>
 		<pluginRepository>
-			<id>${jboss.releases.repo.id}</id>
-			<url>${jboss.releases.repo.url}</url>
+			<id>default</id>
+			<url>${maven.repository.url}</url>
 			<releases>
 				<enabled>true</enabled>
 			</releases>
