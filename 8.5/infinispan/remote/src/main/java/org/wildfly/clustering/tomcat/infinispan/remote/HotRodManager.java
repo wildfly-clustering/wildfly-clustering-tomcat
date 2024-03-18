@@ -145,7 +145,6 @@ public class HotRodManager extends ManagerBase {
 		Configuration configuration = Optional.ofNullable(this.uri).map(HotRodURI::create).map(HotRodURI::toConfigurationBuilder).orElseGet(ConfigurationBuilder::new)
 				.withProperties(this.properties)
 				.marshaller(new ProtoStreamMarshaller(ClassLoaderMarshaller.of(containerLoader), builder -> builder.load(containerLoader)))
-				.classLoader(containerLoader)
 				.build();
 
 		configuration.addRemoteCache(deploymentName, builder -> builder.forceReturnValues(false).nearCacheMode(maxActiveSessions.isPresent() ? NearCacheMode.INVALIDATED : NearCacheMode.DISABLED).transactionMode(TransactionMode.NONE).templateName(this.templateName));
