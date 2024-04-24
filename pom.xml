@@ -233,7 +233,6 @@
 				<module>spi</module>
 				<module>10.1</module>
 				<module>9.0</module>
-				<module>8.5</module>
 			</modules>
 		</profile>
 		<profile>
@@ -262,20 +261,6 @@
 				<module>bom</module>
 				<module>spi</module>
 				<module>9.0</module>
-			</modules>
-		</profile>
-		<profile>
-			<id>8.5</id>
-			<activation>
-				<property>
-					<name>tomcat.version</name>
-					<value>8.5</value>
-				</property>
-			</activation>
-			<modules>
-				<module>bom</module>
-				<module>spi</module>
-				<module>8.5</module>
 			</modules>
 		</profile>
 	</profiles>
