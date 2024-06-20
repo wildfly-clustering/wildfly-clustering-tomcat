@@ -47,16 +47,6 @@
 				<artifactId>wildfly-clustering-tomcat-9.0-infinispan-remote</artifactId>
 				<version>${project.version}</version>
 			</dependency>
-			<dependency>
-				<groupId>${project.groupId}</groupId>
-				<artifactId>wildfly-clustering-tomcat-8.5-catalina</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>${project.groupId}</groupId>
-				<artifactId>wildfly-clustering-tomcat-8.5-infinispan-remote</artifactId>
-				<version>${project.version}</version>
-			</dependency>
 
 			<dependency>
 				<groupId>${project.groupId}</groupId>
