@@ -34,7 +34,6 @@ import javax.servlet.http.HttpSessionListener;
 import org.apache.catalina.Context;
 import org.apache.catalina.Engine;
 import org.wildfly.clustering.cache.batch.Batch;
-import org.wildfly.clustering.cache.batch.Batcher;
 import org.wildfly.clustering.marshalling.Marshallability;
 import org.wildfly.clustering.session.ImmutableSession;
 import org.wildfly.clustering.session.Session;
@@ -45,10 +44,10 @@ import org.wildfly.clustering.session.spec.servlet.HttpSessionProvider;
  * Adapts a WildFly distributable SessionManager to Tomcat's Manager interface.
  * @author Paul Ferraro
  */
-public class DistributableManager<B extends Batch> implements CatalinaManager<B> {
+public class DistributableManager implements CatalinaManager {
 	private static final char ROUTE_DELIMITER = '.';
 
-	private final SessionManager<CatalinaSessionContext, B> manager;
+	private final SessionManager<CatalinaSessionContext> manager;
 	private final Context context;
 	private final Consumer<ImmutableSession> invalidateAction;
 	private final Marshallability marshallability;
@@ -58,7 +57,7 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
 	// Guarded by this
 	private OptionalLong lifecycleStamp = OptionalLong.empty();
 
-	public DistributableManager(SessionManager<CatalinaSessionContext, B> manager, Context context, Marshallability marshallability) {
+	public DistributableManager(SessionManager<CatalinaSessionContext> manager, Context context, Marshallability marshallability) {
 		this.manager = manager;
 		this.marshallability = marshallability;
 		this.context = context;
@@ -67,7 +66,7 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
 	}
 
 	@Override
-	public SessionManager<CatalinaSessionContext, B> getSessionManager() {
+	public SessionManager<CatalinaSessionContext> getSessionManager() {
 		return this.manager;
 	}
 
@@ -87,10 +86,10 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
 	/**
 	 * Appends routing information to session identifier.
 	 */
-	private org.apache.catalina.Session getSession(Session<CatalinaSessionContext> session) {
+	private org.apache.catalina.Session getSession(Session<CatalinaSessionContext> session, Batch batch) {
 		String id = session.getId();
 		String internalId = (this.route != null) ? new StringBuilder(id.length() + this.route.length() + 1).append(id).append(ROUTE_DELIMITER).append(this.route).toString() : id;
-		return new DistributableSession<>(this, session, internalId, this.manager.getBatcher().suspendBatch(), () -> this.invalidateAction.accept(session));
+		return new DistributableSession(this, session, internalId, batch.suspend(), () -> this.invalidateAction.accept(session));
 	}
 
 	@Override
@@ -115,9 +114,8 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
 	public org.apache.catalina.Session createSession(String sessionId) {
 		String id = (sessionId != null) ? parseSessionId(sessionId) : this.manager.getIdentifierFactory().get();
 		boolean close = true;
-		Batcher<B> batcher = this.manager.getBatcher();
 		// Batch will be closed by Session.close();
-		B batch = batcher.createBatch();
+		Batch batch = this.manager.getBatchFactory().get();
 		try {
 			Session<CatalinaSessionContext> session = this.manager.createSession(id);
 			HttpSessionEvent event = new HttpSessionEvent(HttpSessionProvider.INSTANCE.asSession(session, this.context.getServletContext()));
@@ -131,7 +129,7 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
 					this.context.fireContainerEvent("afterSessionCreated", listener);
 				}
 			});
-			org.apache.catalina.Session result = this.getSession(session);
+			org.apache.catalina.Session result = this.getSession(session, batch);
 			close = false;
 			return result;
 		} catch (RuntimeException | Error e) {
@@ -148,15 +146,14 @@ public class DistributableManager<B extends Batch> implements CatalinaManager<B>
 	public org.apache.catalina.Session findSession(String sessionId) throws IOException {
 		String id = parseSessionId(sessionId);
 		boolean close = true;
-		Batcher<B> batcher = this.manager.getBatcher();
 		// Batch will be closed by Session.close();
-		B batch = batcher.createBatch();
+		Batch batch = this.manager.getBatchFactory().get();
 		try {
 			Session<CatalinaSessionContext> session = this.manager.findSession(id);
 			if (session == null) {
 				return null;
 			}
-			org.apache.catalina.Session result = this.getSession(session);
+			org.apache.catalina.Session result = this.getSession(session, batch);
 			close = false;
 			return result;
 		} catch (RuntimeException | Error e) {

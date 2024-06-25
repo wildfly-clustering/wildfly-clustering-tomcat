@@ -49,15 +49,15 @@ import org.wildfly.clustering.session.user.UserManager;
 public class DistributableSingleSignOn extends SingleSignOn implements ManagerRegistry, LifecycleListener {
 
 	private final ConcurrentMap<String, Manager> managers = new ConcurrentHashMap<>();
-	private final UserManager<Credentials, TransientUserContext, String, String, Batch> manager;
+	private final UserManager<Credentials, TransientUserContext, String, String> manager;
 
-	public DistributableSingleSignOn(UserManager<Credentials, TransientUserContext, String, String, Batch> manager) {
+	public DistributableSingleSignOn(UserManager<Credentials, TransientUserContext, String, String> manager) {
 		this.manager = manager;
 	}
 
 	@Override
 	public void invoke(Request request, Response response) throws IOException, ServletException {
-		try (Batch batch = this.manager.getBatcher().createBatch()) {
+		try (Batch batch = this.manager.getBatchFactory().get()) {
 			super.invoke(request, response);
 		}
 	}

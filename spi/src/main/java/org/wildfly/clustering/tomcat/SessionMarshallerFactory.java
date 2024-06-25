@@ -28,7 +28,6 @@ import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 
 import org.wildfly.clustering.marshalling.ByteBufferMarshaller;
-import org.wildfly.clustering.marshalling.Serializer;
 import org.wildfly.clustering.marshalling.java.JavaByteBufferMarshaller;
 import org.wildfly.clustering.marshalling.jboss.JBossByteBufferMarshaller;
 import org.wildfly.clustering.marshalling.jboss.MarshallingConfigurationRepository;
@@ -45,7 +44,7 @@ public enum SessionMarshallerFactory implements BiFunction<UnaryOperator<String>
 		@Override
 		public ByteBufferMarshaller apply(UnaryOperator<String> properties, ClassLoader loader) {
 			ObjectInputFilter filter = Optional.ofNullable(properties.apply("jdk.serialFilter")).map(ObjectInputFilter.Config::createFilter).orElse(null);
-			return new JavaByteBufferMarshaller(Serializer.of(loader), filter);
+			return new JavaByteBufferMarshaller(loader, filter);
 		}
 	},
 	JBOSS() {
@@ -57,8 +56,7 @@ public enum SessionMarshallerFactory implements BiFunction<UnaryOperator<String>
 	PROTOSTREAM() {
 		@Override
 		public ByteBufferMarshaller apply(UnaryOperator<String> properties, ClassLoader loader) {
-			SerializationContextBuilder builder = SerializationContextBuilder.newInstance(ClassLoaderMarshaller.of(loader)).load(loader);
-			return new ProtoStreamByteBufferMarshaller(builder.build());
+			return new ProtoStreamByteBufferMarshaller(SerializationContextBuilder.newInstance(ClassLoaderMarshaller.of(loader)).load(loader).build());
 		}
 	},
 	;

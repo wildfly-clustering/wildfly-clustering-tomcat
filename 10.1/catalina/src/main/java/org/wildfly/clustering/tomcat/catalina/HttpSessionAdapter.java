@@ -40,7 +40,7 @@ import jakarta.servlet.http.HttpSessionBindingListener;
 import org.apache.catalina.Context;
 import org.apache.catalina.Globals;
 import org.wildfly.clustering.cache.batch.Batch;
-import org.wildfly.clustering.cache.batch.BatchContext;
+import org.wildfly.clustering.cache.batch.SuspendedBatch;
 import org.wildfly.clustering.session.Session;
 
 /**
@@ -82,11 +82,11 @@ public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 	}
 
 	private final AtomicReference<Session<CatalinaSessionContext>> session;
-	private final CatalinaManager<B> manager;
-	private final B batch;
+	private final CatalinaManager manager;
+	private final SuspendedBatch batch;
 	private final Runnable invalidateAction;
 
-	public HttpSessionAdapter(AtomicReference<Session<CatalinaSessionContext>> session, CatalinaManager<B> manager, B batch, Runnable invalidateAction) {
+	public HttpSessionAdapter(AtomicReference<Session<CatalinaSessionContext>> session, CatalinaManager manager, SuspendedBatch batch, Runnable invalidateAction) {
 		this.session = session;
 		this.manager = manager;
 		this.batch = batch;
@@ -167,11 +167,9 @@ public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 	public void invalidate() {
 		this.invalidateAction.run();
 		Session<CatalinaSessionContext> session = this.session.get();
-		try (BatchContext<B> context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-			try (B batch = context.getBatch()) {
-				session.invalidate();
-				session.close();
-			}
+		try (Batch batch = this.batch.resume()) {
+			session.invalidate();
+			session.close();
 		} catch (IllegalStateException e) {
 			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
 			if (!session.isValid()) {

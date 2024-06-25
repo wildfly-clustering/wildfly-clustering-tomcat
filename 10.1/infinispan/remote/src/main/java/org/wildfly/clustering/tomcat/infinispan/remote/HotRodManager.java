@@ -58,11 +58,13 @@ import org.infinispan.client.hotrod.configuration.NearCacheMode;
 import org.infinispan.client.hotrod.configuration.TransactionMode;
 import org.infinispan.client.hotrod.impl.HotRodURI;
 import org.wildfly.clustering.cache.function.IntPredicates;
-import org.wildfly.clustering.cache.infinispan.batch.TransactionBatch;
-import org.wildfly.clustering.cache.infinispan.marshalling.protostream.ProtoStreamMarshaller;
+import org.wildfly.clustering.cache.infinispan.marshalling.MediaTypes;
+import org.wildfly.clustering.cache.infinispan.marshalling.UserMarshaller;
 import org.wildfly.clustering.cache.infinispan.remote.RemoteCacheConfiguration;
 import org.wildfly.clustering.marshalling.ByteBufferMarshaller;
 import org.wildfly.clustering.marshalling.protostream.ClassLoaderMarshaller;
+import org.wildfly.clustering.marshalling.protostream.ProtoStreamByteBufferMarshaller;
+import org.wildfly.clustering.marshalling.protostream.SerializationContextBuilder;
 import org.wildfly.clustering.server.immutable.Immutability;
 import org.wildfly.clustering.session.ImmutableSession;
 import org.wildfly.clustering.session.SessionAttributePersistenceStrategy;
@@ -92,7 +94,7 @@ public class HotRodManager extends ManagerBase {
 	private final Properties properties = new Properties();
 	private final List<Runnable> stopTasks = new LinkedList<>();
 
-	private volatile CatalinaManager<TransactionBatch> manager;
+	private volatile CatalinaManager manager;
 	private volatile SessionAttributePersistenceStrategy persistenceStrategy = SessionPersistenceGranularity.SESSION.get();
 	private volatile SessionMarshallerFactory marshallerFactory = SessionMarshallerFactory.JBOSS;
 	private volatile String templateName = DefaultTemplate.DIST_SYNC.getTemplateName();
@@ -146,7 +148,7 @@ public class HotRodManager extends ManagerBase {
 		ClassLoader containerLoader = HotRodSessionManagerFactory.class.getClassLoader();
 		Configuration configuration = Optional.ofNullable(this.uri).map(HotRodURI::create).map(HotRodURI::toConfigurationBuilder).orElseGet(ConfigurationBuilder::new)
 				.withProperties(this.properties)
-				.marshaller(new ProtoStreamMarshaller(ClassLoaderMarshaller.of(containerLoader), builder -> builder.load(containerLoader)))
+				.marshaller(new UserMarshaller(MediaTypes.WILDFLY_PROTOSTREAM, new ProtoStreamByteBufferMarshaller(SerializationContextBuilder.newInstance(ClassLoaderMarshaller.of(containerLoader)).load(containerLoader).build())))
 				.build();
 
 		configuration.addRemoteCache(deploymentName, builder -> builder.forceReturnValues(false).nearCacheMode(maxActiveSessions.isPresent() ? NearCacheMode.INVALIDATED : NearCacheMode.DISABLED).transactionMode(TransactionMode.NONE).templateName(this.templateName));
@@ -214,7 +216,7 @@ public class HotRodManager extends ManagerBase {
 			}
 		};
 
-		SessionManagerFactory<ServletContext, CatalinaSessionContext, TransactionBatch> managerFactory = new HotRodSessionManagerFactory<>(sessionManagerFactoryConfig, HttpSessionProvider.INSTANCE, HttpSessionActivationListenerProvider.INSTANCE, hotrod);
+		SessionManagerFactory<ServletContext, CatalinaSessionContext> managerFactory = new HotRodSessionManagerFactory<>(sessionManagerFactoryConfig, HttpSessionProvider.INSTANCE, HttpSessionActivationListenerProvider.INSTANCE, hotrod);
 		this.stopTasks.add(managerFactory::close);
 
 		Consumer<ImmutableSession> expirationListener = new CatalinaSessionExpirationListener(context);
@@ -241,9 +243,9 @@ public class HotRodManager extends ManagerBase {
 				return expirationListener;
 			}
 		};
-		SessionManager<CatalinaSessionContext, TransactionBatch> sessionManager = managerFactory.createSessionManager(sessionManagerConfiguration);
+		SessionManager<CatalinaSessionContext> sessionManager = managerFactory.createSessionManager(sessionManagerConfiguration);
 
-		this.manager = new DistributableManager<>(sessionManager, context, marshaller);
+		this.manager = new DistributableManager(sessionManager, context, marshaller);
 		this.manager.start();
 
 		this.setState(LifecycleState.STARTING);
