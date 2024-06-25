@@ -39,22 +39,23 @@ import org.apache.catalina.Manager;
 import org.apache.catalina.SessionListener;
 import org.wildfly.clustering.cache.batch.Batch;
 import org.wildfly.clustering.cache.batch.BatchContext;
+import org.wildfly.clustering.cache.batch.SuspendedBatch;
 import org.wildfly.clustering.session.Session;
 
 /**
  * Adapts a WildFly distributable Session to Tomcat's Session interface.
  * @author Paul Ferraro
  */
-public class DistributableSession<B extends Batch> implements CatalinaSession {
+public class DistributableSession implements CatalinaSession {
 
-	private final CatalinaManager<B> manager;
+	private final CatalinaManager manager;
 	private final AtomicReference<Session<CatalinaSessionContext>> session;
 	private final String internalId;
-	private final B batch;
+	private final SuspendedBatch batch;
 	private final Runnable invalidateAction;
 	private final Instant startTime;
 
-	public DistributableSession(CatalinaManager<B> manager, Session<CatalinaSessionContext> session, String internalId, B batch, Runnable invalidateAction) {
+	public DistributableSession(CatalinaManager manager, Session<CatalinaSessionContext> session, String internalId, SuspendedBatch batch, Runnable invalidateAction) {
 		this.manager = manager;
 		this.session = new AtomicReference<>(session);
 		this.internalId = internalId;
@@ -156,7 +157,7 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
 
 	@Override
 	public HttpSession getSession() {
-		return new HttpSessionAdapter<>(this.session, this.manager, this.batch, this.invalidateAction);
+		return new HttpSessionAdapter(this.session, this.manager, this.batch, this.invalidateAction);
 	}
 
 	@Override
@@ -171,15 +172,13 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
 
 	@Override
 	public void endAccess() {
-		try (BatchContext<B> context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-			try (B batch = context.getBatch()) {
-				try (Session<CatalinaSessionContext> session = this.session.get()) {
-					if (session.isValid()) {
-						// According to §7.6 of the servlet specification:
-						// The session is considered to be accessed when a request that is part of the session is first handled
-						// by the servlet container.
-						session.getMetaData().setLastAccess(this.startTime, Instant.now());
-					}
+		try (Batch batch = this.batch.resume()) {
+			try (Session<CatalinaSessionContext> session = this.session.get()) {
+				if (session.isValid()) {
+					// According to §7.6 of the servlet specification:
+					// The session is considered to be accessed when a request that is part of the session is first handled
+					// by the servlet container.
+					session.getMetaData().setLastAccess(this.startTime, Instant.now());
 				}
 			}
 		} catch (Throwable e) {
@@ -221,25 +220,23 @@ public class DistributableSession<B extends Batch> implements CatalinaSession {
 
 	@Override
 	public void tellChangedSessionId(String newId, String oldId, boolean notifySessionListeners, boolean notifyContainerListeners) {
-		try (BatchContext<B> context = this.manager.getSessionManager().getBatcher().resumeBatch(this.batch)) {
-			try (B batch = context.getBatch()) {
-				Session<CatalinaSessionContext> oldSession = this.session.get();
-				Session<CatalinaSessionContext> newSession = this.manager.getSessionManager().createSession(newId);
-				try {
-					for (Map.Entry<String, Object> entry : oldSession.getAttributes().entrySet()) {
-						newSession.getAttributes().put(entry.getKey(), entry.getValue());
-					}
-					newSession.getMetaData().setTimeout(oldSession.getMetaData().getTimeout());
-					newSession.getMetaData().setLastAccess(oldSession.getMetaData().getLastAccessStartTime(), oldSession.getMetaData().getLastAccessTime());
-					newSession.getContext().setAuthType(oldSession.getContext().getAuthType());
-					newSession.getContext().setPrincipal(oldSession.getContext().getPrincipal());
-					this.session.set(newSession);
-					oldSession.invalidate();
-				} catch (IllegalStateException e) {
-					// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
-					if (!oldSession.isValid()) {
-						oldSession.close();
-					}
+		try (BatchContext<Batch> context = this.batch.resumeWithContext()) {
+			Session<CatalinaSessionContext> oldSession = this.session.get();
+			Session<CatalinaSessionContext> newSession = this.manager.getSessionManager().createSession(newId);
+			try {
+				for (Map.Entry<String, Object> entry : oldSession.getAttributes().entrySet()) {
+					newSession.getAttributes().put(entry.getKey(), entry.getValue());
+				}
+				newSession.getMetaData().setTimeout(oldSession.getMetaData().getTimeout());
+				newSession.getMetaData().setLastAccess(oldSession.getMetaData().getLastAccessStartTime(), oldSession.getMetaData().getLastAccessTime());
+				newSession.getContext().setAuthType(oldSession.getContext().getAuthType());
+				newSession.getContext().setPrincipal(oldSession.getContext().getPrincipal());
+				this.session.set(newSession);
+				oldSession.invalidate();
+			} catch (IllegalStateException e) {
+				// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
+				if (!oldSession.isValid()) {
+					oldSession.close();
 				}
 			}
 		}

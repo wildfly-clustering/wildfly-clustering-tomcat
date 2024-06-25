@@ -41,7 +41,7 @@ public class CatalinaSessionExpirationListener implements Consumer<ImmutableSess
 
 	public CatalinaSessionExpirationListener(Context context) {
 		this.expireAction = new CatalinaSessionDestroyAction(context);
-		this.executor = ContextualExecutor.withContext(context.getLoader().getClassLoader(), ContextClassLoaderReference.INSTANCE);
+		this.executor = ContextualExecutor.withContextProvider(ContextClassLoaderReference.INSTANCE.provide(context.getLoader().getClassLoader()));
 	}
 
 	@Override
