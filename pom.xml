@@ -38,7 +38,7 @@
 		<!-- Runtime dependency versions -->
 		<version.org.infinispan>15.0.6.Final</version.org.infinispan>
 		<version.org.jboss.marshalling>2.1.4.Final</version.org.jboss.marshalling>
-		<version.org.wildfly.clustering>3.0.0.Final</version.org.wildfly.clustering>
+		<version.org.wildfly.clustering>3.0.1.Final</version.org.wildfly.clustering>
 
 		<!-- Test dependency versions -->
 		<version.org.jboss.arquillian>1.9.0.Final</version.org.jboss.arquillian>
