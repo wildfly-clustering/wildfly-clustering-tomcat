@@ -36,7 +36,7 @@
 		<version.org.kohsuke.metainf-services>1.11</version.org.kohsuke.metainf-services>
 
 		<!-- Runtime dependency versions -->
-		<version.org.infinispan>15.0.6.Final</version.org.infinispan>
+		<version.org.infinispan>15.0.7.Final</version.org.infinispan>
 		<version.org.jboss.marshalling>2.1.4.Final</version.org.jboss.marshalling>
 		<version.org.wildfly.clustering>3.0.1.Final</version.org.wildfly.clustering>
 
