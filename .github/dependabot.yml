@@ -6,29 +6,25 @@ updates:
       interval: "daily"
     ignore:
       - dependency-name: jakarta.annotation:jakarta.annotation-api
-        versions:
-          - ">= 2"
+        versions: "[2.0,)"
   - package-ecosystem: "maven"
     directory: "/8.5"
     schedule:
       interval: "daily"
     ignore:
       - dependency-name: org.apache.tomcat:tomcat-catalina
-        versions:
-          - ">= 9"
+        versions: "[9.0,)"
   - package-ecosystem: "maven"
     directory: "/9.0"
     schedule:
       interval: "daily"
     ignore:
       - dependency-name: org.apache.tomcat:tomcat-catalina
-        versions:
-          - ">= 10"
+        versions: "[10.0,)"
   - package-ecosystem: "maven"
     directory: "/10.1"
     schedule:
       interval: "daily"
     ignore:
       - dependency-name: org.apache.tomcat:tomcat-catalina
-        versions:
-          - ">= 10.2"
+        versions: "[10.2,)"
