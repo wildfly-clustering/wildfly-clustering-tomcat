@@ -231,8 +231,23 @@
 			<modules>
 				<module>bom</module>
 				<module>spi</module>
+				<module>11.0</module>
 				<module>10.1</module>
 				<module>9.0</module>
+			</modules>
+		</profile>
+		<profile>
+			<id>11.0</id>
+			<activation>
+				<property>
+					<name>tomcat.version</name>
+					<value>11.0</value>
+				</property>
+			</activation>
+			<modules>
+				<module>bom</module>
+				<module>spi</module>
+				<module>11.0</module>
 			</modules>
 		</profile>
 		<profile>
