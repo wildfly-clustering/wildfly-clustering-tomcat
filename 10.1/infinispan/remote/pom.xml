@@ -27,7 +27,7 @@
 	<parent>
 		<groupId>org.wildfly.clustering</groupId>
 		<artifactId>wildfly-clustering-tomcat-10.1-infinispan</artifactId>
-		<version>24.0.0.Final</version>
+		<version>25.0.0.Beta1-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>wildfly-clustering-tomcat-10.1-infinispan-remote</artifactId>
