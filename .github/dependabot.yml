@@ -6,28 +6,28 @@ updates:
       interval: "daily"
     ignore:
       - dependency-name: jakarta.annotation:jakarta.annotation-api
-        versions: "[2.0,)"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.apache.tomcat:tomcat-catalina
       - dependency-name: org.infinispan:infinispan-bom
-        versions: "[15.1,)"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
   - package-ecosystem: "maven"
     directory: "/8.5"
     schedule:
       interval: "daily"
     ignore:
       - dependency-name: org.apache.tomcat:tomcat-catalina
-        versions: "[9.0,)"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
   - package-ecosystem: "maven"
     directory: "/9.0"
     schedule:
       interval: "daily"
     ignore:
       - dependency-name: org.apache.tomcat:tomcat-catalina
-        versions: "[10.0,)"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
   - package-ecosystem: "maven"
     directory: "/10.1"
     schedule:
       interval: "daily"
     ignore:
       - dependency-name: org.apache.tomcat:tomcat-catalina
-        versions: "[10.2,)"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
