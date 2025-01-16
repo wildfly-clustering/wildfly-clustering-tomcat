@@ -31,11 +31,6 @@ import org.wildfly.clustering.tomcat.AbstractHotRodSessionManagerITCase;
 public class HotRodSessionManagerITCase extends AbstractHotRodSessionManagerITCase {
 
 	public HotRodSessionManagerITCase() {
-		super(HotRodManager.class);
-	}
-
-	@Override
-	public Class<?> getEndpointClass() {
-		return SessionServlet.class;
+		super(HotRodManager.class, SessionServlet.class);
 	}
 }

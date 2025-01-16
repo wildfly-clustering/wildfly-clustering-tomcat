@@ -38,9 +38,10 @@
 		<!-- Runtime dependency versions -->
 		<version.org.infinispan>15.0.11.Final</version.org.infinispan>
 		<version.org.jboss.marshalling>2.2.2.Final</version.org.jboss.marshalling>
-		<version.org.wildfly.clustering>4.0.0.Final</version.org.wildfly.clustering>
+		<version.org.wildfly.clustering>5.0.7.Final</version.org.wildfly.clustering>
 
 		<!-- Test dependency versions -->
+		<version.org.assertj>3.27.2</version.org.assertj>
 		<version.org.jboss.arquillian>1.9.3.Final</version.org.jboss.arquillian>
 		<version.org.jboss.arquillian.container.tomcat>1.1.0.Final</version.org.jboss.arquillian.container.tomcat>
 		<version.org.jboss.shrinkwrap>1.2.6</version.org.jboss.shrinkwrap>
@@ -75,6 +76,13 @@
 			</dependency>
 
 			<!-- Test BOM dependencies -->
+			<dependency>
+				<groupId>org.assertj</groupId>
+				<artifactId>assertj-bom</artifactId>
+				<version>${version.org.assertj}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
 			<dependency>
 				<groupId>org.jboss.arquillian</groupId>
 				<artifactId>arquillian-bom</artifactId>
