@@ -24,6 +24,7 @@ import org.wildfly.clustering.cache.ContainerProvider;
 import org.wildfly.clustering.cache.infinispan.remote.InfinispanServerContainer;
 import org.wildfly.clustering.cache.infinispan.remote.InfinispanServerExtension;
 import org.wildfly.clustering.session.container.AbstractSessionManagerITCase;
+import org.wildfly.clustering.session.container.SessionManagementTesterConfiguration;
 
 /**
  * @author Paul Ferraro
@@ -40,19 +41,33 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 
 	private final Class<?> managerClass;
 
-	protected AbstractHotRodSessionManagerITCase(Class<?> managerClass) {
+	protected AbstractHotRodSessionManagerITCase(Class<?> managerClass, Class<?> endpointClass) {
+		super(new SessionManagementTesterConfiguration() {
+			@Override
+			public Class<?> getEndpointClass() {
+				return endpointClass;
+			}
+		});
 		this.managerClass = managerClass;
 	}
+
+	private SessionManagementParameters parameters;
 
 	@ParameterizedTest(name = ParameterizedTest.ARGUMENTS_PLACEHOLDER)
 	@ArgumentsSource(HotRodSessionManagerArgumentsProvider.class)
 	@RunAsClient
 	public void test(SessionManagementParameters parameters) throws Exception {
+		this.parameters = parameters;
+		this.run();
+	}
+
+	@Override
+	public WebArchive createArchive(SessionManagementTesterConfiguration configuration) {
 		InfinispanServerContainer container = INFINISPAN.getContainer();
 		Object[] values = new Object[] {
 				this.managerClass.getName(),
-				parameters.getSessionPersistenceGranularity(),
-				parameters.getSessionMarshallerFactory(),
+				this.parameters.getSessionPersistenceGranularity(),
+				this.parameters.getSessionMarshallerFactory(),
 				DefaultTemplate.LOCAL.getTemplateName(),
 				container.getUsername(),
 				String.valueOf(container.getPassword()),
@@ -61,8 +76,7 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 				// TODO Figure out how to configure HASH_DISTRIBUTION_AWARE w/bridge networking
 				container.isPortMapping() ? ClientIntelligence.BASIC : ClientIntelligence.HASH_DISTRIBUTION_AWARE,
 		};
-		WebArchive archive = this.get().addAsManifestResource(new StringAsset(String.format(CONTEXT_XML, values)), "context.xml");
-		this.accept(archive);
+		return super.createArchive(configuration).addAsManifestResource(new StringAsset(String.format(CONTEXT_XML, values)), "context.xml");
 	}
 
 	public static class HotRodSessionManagerArgumentsProvider implements ArgumentsProvider {
