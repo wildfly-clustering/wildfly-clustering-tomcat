@@ -23,16 +23,14 @@
 package org.wildfly.clustering.tomcat.catalina;
 
 import java.io.IOException;
-import java.util.OptionalLong;
-import java.util.concurrent.locks.StampedLock;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
 
 import org.apache.catalina.Context;
-import org.apache.catalina.Engine;
 import org.wildfly.clustering.cache.batch.Batch;
 import org.wildfly.clustering.marshalling.Marshallability;
 import org.wildfly.clustering.session.ImmutableSession;
@@ -48,20 +46,16 @@ public class DistributableManager implements CatalinaManager {
 	private static final char ROUTE_DELIMITER = '.';
 
 	private final SessionManager<CatalinaSessionContext> manager;
+	private final UnaryOperator<String> affinity;
 	private final Context context;
 	private final Consumer<ImmutableSession> invalidateAction;
 	private final Marshallability marshallability;
-	private final String route;
-	private final StampedLock lifecycleLock = new StampedLock();
 
-	// Guarded by this
-	private OptionalLong lifecycleStamp = OptionalLong.empty();
-
-	public DistributableManager(SessionManager<CatalinaSessionContext> manager, Context context, Marshallability marshallability) {
+	public DistributableManager(SessionManager<CatalinaSessionContext> manager, UnaryOperator<String> affinity, Context context, Marshallability marshallability) {
 		this.manager = manager;
+		this.affinity = affinity;
 		this.marshallability = marshallability;
 		this.context = context;
-		this.route = ((Engine) context.getParent().getParent()).getJvmRoute();
 		this.invalidateAction = new CatalinaSessionDestroyAction(context);
 	}
 
@@ -88,26 +82,19 @@ public class DistributableManager implements CatalinaManager {
 	 */
 	private org.apache.catalina.Session getSession(Session<CatalinaSessionContext> session, Batch batch) {
 		String id = session.getId();
-		String internalId = (this.route != null) ? new StringBuilder(id.length() + this.route.length() + 1).append(id).append(ROUTE_DELIMITER).append(this.route).toString() : id;
+		String route = this.affinity.apply(id);
+		String internalId = new StringBuilder(id.length() + route.length() + 1).append(id).append(ROUTE_DELIMITER).append(route).toString();
 		return new DistributableSession(this, session, internalId, batch.suspend(), () -> this.invalidateAction.accept(session));
 	}
 
 	@Override
 	public void start() {
-		this.lifecycleStamp.ifPresent(stamp -> this.lifecycleLock.unlock(stamp));
 		this.manager.start();
 	}
 
 	@Override
 	public void stop() {
-		if (!this.lifecycleStamp.isPresent()) {
-			try {
-				this.lifecycleStamp = OptionalLong.of(this.lifecycleLock.writeLockInterruptibly());
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-			this.manager.stop();
-		}
+		this.manager.stop();
 	}
 
 	@Override

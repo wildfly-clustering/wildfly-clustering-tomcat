@@ -60,5 +60,4 @@
 			<artifactId>wildfly-clustering-session-spec-servlet-6.0</artifactId>
 		</dependency>
 	</dependencies>
-
 </project>

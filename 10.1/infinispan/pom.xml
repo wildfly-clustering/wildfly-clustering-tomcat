@@ -36,6 +36,7 @@
 	<name>WildFly Clustering: Tomcat 10.1: Infinispan modules</name>
 
 	<modules>
+		<module>embedded</module>
 		<module>remote</module>
 	</modules>
 

@@ -24,8 +24,10 @@ package org.wildfly.clustering.tomcat.catalina;
 
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
+import java.util.Set;
 
 import org.apache.catalina.Context;
+import org.apache.catalina.DistributedManager;
 import org.apache.catalina.Lifecycle;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleListener;
@@ -39,7 +41,7 @@ import org.wildfly.clustering.session.SessionManager;
  * Enhances Tomcat's Manager interface, providing default implementations for deprecated methods and methods we currently ignore.
  * @author Paul Ferraro
  */
-public interface CatalinaManager extends Manager, Lifecycle {
+public interface CatalinaManager extends Manager, Lifecycle, DistributedManager {
 
 	/**
 	 * Returns underlying distributable session manager implementation.
@@ -52,6 +54,16 @@ public interface CatalinaManager extends Manager, Lifecycle {
 	 * @return the mechanism for determining marshallability.
 	 */
 	Marshallability getMarshallability();
+
+	@Override
+	default int getActiveSessionsFull() {
+		return (int) this.getSessionManager().getStatistics().getActiveSessionCount();
+	}
+
+	@Override
+	default Set<String> getSessionIdsFull() {
+		return this.getSessionManager().getStatistics().getActiveSessions();
+	}
 
 	@Override
 	void start();
