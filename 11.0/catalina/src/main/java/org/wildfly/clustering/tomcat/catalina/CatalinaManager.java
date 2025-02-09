@@ -1,31 +1,15 @@
 /*
- * JBoss, Home of Professional Open Source.
- * Copyright 2016, Red Hat, Inc., and individual contributors
- * as indicated by the @author tags. See the copyright.txt file in the
- * distribution for a full listing of individual contributors.
- *
- * This is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * This software is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this software; if not, write to the Free
- * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
- * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ * Copyright The WildFly Authors
+ * SPDX-License-Identifier: Apache-2.0
  */
-
 package org.wildfly.clustering.tomcat.catalina;
 
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
+import java.util.Set;
 
 import org.apache.catalina.Context;
+import org.apache.catalina.DistributedManager;
 import org.apache.catalina.Lifecycle;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleListener;
@@ -39,7 +23,7 @@ import org.wildfly.clustering.session.SessionManager;
  * Enhances Tomcat's Manager interface, providing default implementations for deprecated methods and methods we currently ignore.
  * @author Paul Ferraro
  */
-public interface CatalinaManager extends Manager, Lifecycle {
+public interface CatalinaManager extends Manager, Lifecycle, DistributedManager {
 
 	/**
 	 * Returns underlying distributable session manager implementation.
@@ -52,6 +36,16 @@ public interface CatalinaManager extends Manager, Lifecycle {
 	 * @return the mechanism for determining marshallability.
 	 */
 	Marshallability getMarshallability();
+
+	@Override
+	default int getActiveSessionsFull() {
+		return (int) this.getSessionManager().getStatistics().getActiveSessionCount();
+	}
+
+	@Override
+	default Set<String> getSessionIdsFull() {
+		return this.getSessionManager().getStatistics().getActiveSessions();
+	}
 
 	@Override
 	void start();

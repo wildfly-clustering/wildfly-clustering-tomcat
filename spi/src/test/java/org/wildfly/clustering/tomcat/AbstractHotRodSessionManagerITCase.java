@@ -2,7 +2,6 @@
  * Copyright The WildFly Authors
  * SPDX-License-Identifier: Apache-2.0
  */
-
 package org.wildfly.clustering.tomcat;
 
 import java.util.EnumSet;
@@ -31,10 +30,11 @@ import org.wildfly.clustering.session.container.SessionManagementTesterConfigura
  */
 public abstract class AbstractHotRodSessionManagerITCase extends AbstractSessionManagerITCase {
 
-	private static final String CONTEXT_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-			+ "<Context>\n"
-			+ "\t<Manager className=\"%s\" granularity=\"%s\" marshaller=\"%s\" template=\"%s\" uri=\"hotrod://%s:%s@%s:%s?client_intelligence=%s\" tcp_no_delay=\"true\"/>\n"
-			+ "</Context>\n";
+	private static final String CONTEXT_XML = """
+			<?xml version="1.0" encoding="UTF-8"?>
+			<Context>
+				<Manager className="%s" granularity="%s" marshaller="%s" template="%s" uri="hotrod://%s:%s@%s:%s?client_intelligence=%s" tcp_no_delay="true"/>
+			</Context>""";
 
 	@RegisterExtension
 	static final ContainerProvider<InfinispanServerContainer> INFINISPAN = new InfinispanServerExtension();

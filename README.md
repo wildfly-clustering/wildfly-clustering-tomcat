@@ -4,58 +4,109 @@
 
 # wildfly-clustering-tomcat
 
-A high-availability session manager for Tomcat based on WildFly's distributed session management and Infinispan server.
-
+High-availability session manager implementations for Tomcat based on WildFly's distributed session management using either an embedded Infinispan cache or a remote Infinispan server.
 
 ## Building
 
-1.	Clone this repository and build for a specific Tomcat version using Java 11+ and a standard maven build.
+1.	Clone this repository and build for a specific Tomcat version using Java 17+ and a standard maven build.
 
 		$ git clone git@github.com:wildfly-clustering/wildfly-clustering-tomcat.git
 		$ cd wildfly-clustering-tomcat
-		$ mvn clean install -Dtomcat.version=10.1 -DskipTests=true
+		$ mvn clean install -P quickly -Dtomcat.version=11.0
+
+> [!NOTE]
+> The following Tomcat versions are supported:
+>
+> * 11.0 (Jakarta Servlet 6.1)
+> * 10.1 (Jakarta Servlet 6.0)
+> * 9.0 (Jakarta Servlet 4.0)
 
 ## Installation
 
-1.	Copy the releveant maven artifact to Tomcat's lib directory:
+1.	Copy the maven artifact containing the desired `Manager` implementation to Tomcat's `lib` directory:
 
-		$ mvn --projects 10.1/hotrod dependency:copy -DoutputDirectory=$CATALINA_HOME/lib
+		$ mvn --projects 11.0/infinispan/embedded dependency:copy -DoutputDirectory=$CATALINA_HOME/lib
+	or:
 
-1.	Copy the relevant runtime dependencies to Tomcat's lib directory:
+		$ mvn --projects 11.0/infinispan/remote dependency:copy -DoutputDirectory=$CATALINA_HOME/lib
 
-		$ mvn --projects 10.1/hotrod dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=$CATALINA_HOME/lib
+1.	Copy the runtime dependencies of the desired `Manager` implementation to Tomcat's `lib` directory:
+
+		$ mvn --projects 11.0/infinispan/embedded dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=$CATALINA_HOME/lib
+	or:
+
+		$ mvn --projects 11.0/infinispan/remote dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=$CATALINA_HOME/lib
 
 ## Configuration
 
-Define the distributed Manager implementation either within the global `$CATALINA_HOME/conf/context.xml`, or within the `/WEB-INF/context.xml` of a web application:
+1. Define the distributed `<Manager/>` via its implementation class either within the global `$CATALINA_HOME/conf/context.xml`, or within the `/WEB-INF/context.xml` of a web application.
+2. Ensure that your `<Engine/>` defines a `jvmRoute` attribute.[^1]  This is require to enable session affinity in Tomcat for use with load balancing.
 
-	<Manager className="org.wildfly.clustering.tomcat.hotrod.HotRodManager"/>
+[^1]: https://tomcat.apache.org/tomcat-11.0-doc/config/engine.html#Common_Attributes
+
+### Embedded Infinispan Manager
+
+	<Manager className="org.wildfly.clustering.tomcat.infinispan.embedded.InfinispanManager" .../>
+
+### Remote Infinispan Manager
+
+	<Manager className="org.wildfly.clustering.tomcat.infinispan.remote.HotRodManager" .../>
 
 ### Configuration Properties
 
-#### Implementation specific properties
-
 |Property|Description|
 |:---|:---|
-|uri|Defines a HotRod URI, which includes a list of infinispan server instances and any authentication details. For details, see: https://infinispan.org/blog/2020/05/26/hotrod-uri/|
-|template|Defines the server-side configuration template from which a deployment cache is created on the server. Default is `org.infinispan.DIST_SYNC`.|
 |granularity|Defines how a session is mapped to entries in the cache. "SESSION" will store all attributes of a session in a single cache entry.  "ATTRIBUTE" will store each session attribute in a separate cache entry.  Default is "SESSION".|
-|maxActiveSessions|Defines the maximum number of sessions to retain in the near cache. Default is limitless. A value of 0 will disable the near cache.|
 |marshaller|Specifies the marshaller used to serialize and deserialize session attributes.  Supported marshallers include: JAVA, JBOSS, PROTOSTREAM.  Default marshaller is "JBOSS".|
-
-#### HotRod properties
-
-These are configured without their "infinispan.client.hotrod." prefix:
-
-https://github.com/infinispan/infinispan/blob/13.0.x/client/hotrod-client/src/main/java/org/infinispan/client/hotrod/impl/ConfigurationProperties.java
+|maxActiveSessions|Defines the maximum number of sessions to retain in local heap, after which the least recently used sessions will be evicted. The default behavior is implementation specific, see implementation specific properties for details.|
 
 #### Common Manager properties
 
-https://tomcat.apache.org/tomcat-10.1-doc/config/cluster-manager.html#Common_Attributes
+https://tomcat.apache.org/tomcat-11.0-doc/config/manager.html#Common_Attributes
 
-#### Example
+#### Implementation specific properties
 
-	<Manager className="org.wildfly.clustering.tomcat.hotrod.HotRodManager"
+##### Embedded Infinispan Manager properties
+
+|Property|Description|
+|:---|:---|
+|resource|Defines the location of the Infinispan configuration XML file, either as a classpath resource or as a filesystem path. Defaults to `infinispan.xml`|
+|template|Defines the cache configuration from which a deployment cache will be created. By default, the default cache configuration will be used.|
+|maxActiveSessions|Defines the maximum number of sessions to retain in local heap, after which the least recently used sessions will be evicted. When specified, this requires the use of a cache configuration with store configured for passivation[^2].  By default, local heap is unbounded.|
+
+[^2]: https://infinispan.org/docs/stable/titles/configuring/configuring.html#passivation_persistence
+
+##### Example
+
+	<Manager className="org.wildfly.clustering.tomcat.infinispan.embedded.InfinispanManager"
+	         resource="/path/to/infinispan.xml"
+	         granularity="ATTRIBUTE"
+	         marshaller="PROTOSTREAM"
+	         maxActiveSessions="1000"
+	         tcp_keep_alive="true"/>
+
+##### Remote Infinispan Manager properties
+
+|Property|Description|
+|:---|:---|
+|uri|Defines a HotRod URI, which includes a list of infinispan server instances and any authentication details.[^3]|
+|template|Defines the server-side configuration template from which a deployment cache is created on the server. Default is `org.infinispan.DIST_SYNC`.|
+|granularity|Defines how a session is mapped to entries in the cache. "SESSION" will store all attributes of a session in a single cache entry.  "ATTRIBUTE" will store each session attribute in a separate cache entry.  Default is "SESSION".|
+|marshaller|Specifies the marshaller used to serialize and deserialize session attributes.  Supported marshallers include: JAVA, JBOSS, PROTOSTREAM.  Default marshaller is "JBOSS".|
+|maxActiveSessions|Defines the maximum number of sessions to retain in the near cache, after which the least recently used sessions will be evicted. Near cache is disabled by default.|
+
+[^3]: https://infinispan.org/blog/2020/05/26/hotrod-uri/
+
+###### HotRod properties
+
+These are configured without their "infinispan.client.hotrod." prefix:
+
+https://github.com/infinispan/infinispan/blob/15.0.x/client/hotrod-client/src/main/java/org/infinispan/client/hotrod/impl/ConfigurationProperties.java
+
+
+##### Example
+
+	<Manager className="org.wildfly.clustering.tomcat.infinispan.remote.HotRodManager"
 	         uri="hotrod://127.0.0.1:11222"
 	         template="transactional"
 	         granularity="ATTRIBUTE"

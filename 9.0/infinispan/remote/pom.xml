@@ -1,26 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ JBoss, Home of Professional Open Source.
-  ~ Copyright 2016, Red Hat, Inc., and individual contributors
-  ~ as indicated by the @author tags. See the copyright.txt file in the
-  ~ distribution for a full listing of individual contributors.
-  ~
-  ~ This is free software; you can redistribute it and/or modify it
-  ~ under the terms of the GNU Lesser General Public License as
-  ~ published by the Free Software Foundation; either version 2.1 of
-  ~ the License, or (at your option) any later version.
-  ~
-  ~ This software is distributed in the hope that it will be useful,
-  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
-  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-  ~ Lesser General Public License for more details.
-  ~
-  ~ You should have received a copy of the GNU Lesser General Public
-  ~ License along with this software; if not, write to the Free
-  ~ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-  ~ 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-  -->
-
+	Copyright The WildFly Authors
+	SPDX-License-Identifier: Apache-2.0
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
@@ -138,12 +120,37 @@
 				<directory>src/test/resources/tomcat</directory>
 				<targetPath>${catalina.home}/conf</targetPath>
 				<includes>
-					<include>*</include>
+					<include>*.xml</include>
 				</includes>
-				<filtering>true</filtering>
 			</testResource>
 		</testResources>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-clean-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>clean-tomcat-webapps</id>
+						<phase>pre-integration-test</phase>
+						<goals>
+							<goal>clean</goal>
+						</goals>
+						<configuration>
+							<excludeDefaultDirectories>true</excludeDefaultDirectories>
+							<filesets>
+								<fileset>
+									<directory>${catalina.home}/webapps</directory>
+									<includes>
+										<include>ROOT/**</include>
+										<include>docs/**</include>
+										<include>examples/**</include>
+									</includes>
+								</fileset>
+							</filesets>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
@@ -168,30 +175,16 @@
 							</artifactItems>
 						</configuration>
 					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-clean-plugin</artifactId>
-				<executions>
 					<execution>
-						<id>clean-tomcat-webapps</id>
+						<id>configure-tomcat</id>
 						<phase>pre-integration-test</phase>
 						<goals>
-							<goal>clean</goal>
+							<goal>copy</goal>
+							<goal>copy-dependencies</goal>
 						</goals>
 						<configuration>
-							<excludeDefaultDirectories>true</excludeDefaultDirectories>
-							<filesets>
-								<fileset>
-									<directory>${catalina.home}/webapps</directory>
-									<includes>
-										<include>ROOT/**</include>
-										<include>docs/**</include>
-										<include>examples/**</include>
-									</includes>
-								</fileset>
-							</filesets>
+							<outputDirectory>${catalina.home}/lib/</outputDirectory>
+							<includeScope>runtime</includeScope>
 						</configuration>
 					</execution>
 				</executions>
@@ -232,61 +225,10 @@
 					</execution>
 				</executions>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-failsafe-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>smoke-test</id>
-						<phase>integration-test</phase>
-						<goals>
-							<goal>integration-test</goal>
-							<goal>verify</goal>
-						</goals>
-						<configuration>
-							<trimStackTrace>false</trimStackTrace>
-							<systemPropertyVariables>
-								<infinispan.server.home>${infinispan.server.home}</infinispan.server.home>
-								<infinispan.server.profile>${infinispan.server.profile}</infinispan.server.profile>
-							</systemPropertyVariables>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
 		</plugins>
 	</build>
 
 	<profiles>
-		<profile>
-			<id>default-dependencies</id>
-			<activation>
-				<property>
-					<name>!uberjar.override</name>
-				</property>
-			</activation>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-dependency-plugin</artifactId>
-						<executions>
-							<execution>
-								<id>configure-tomcat</id>
-								<phase>pre-integration-test</phase>
-								<goals>
-									<goal>copy</goal>
-									<goal>copy-dependencies</goal>
-								</goals>
-								<configuration>
-									<outputDirectory>${catalina.home}/lib/</outputDirectory>
-									<includeScope>runtime</includeScope>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
 		<profile>
 			<id>custom-tomcat</id>
 			<activation>
@@ -317,6 +259,7 @@
 						</executions>
 					</plugin>
 					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-resources-plugin</artifactId>
 						<executions>
 							<!-- Copy over tomcat distribution from custom path -->
@@ -335,35 +278,6 @@
 											<filtering>false</filtering>
 										</resource>
 									</resources>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-		<profile>
-			<id>custom-dependencies</id>
-			<activation>
-				<property>
-					<name>uberjar.override</name>
-				</property>
-			</activation>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>com.coderplus.maven.plugins</groupId>
-						<artifactId>copy-rename-maven-plugin</artifactId>
-						<executions>
-							<execution>
-								<id>copy-uberjar</id>
-								<phase>generate-test-resources</phase>
-								<goals>
-									<goal>copy</goal>
-								</goals>
-								<configuration>
-									<sourceFile>${uberjar.override}</sourceFile>
-									<destinationFile>${catalina.home}/lib/${project.artifactId}.jar</destinationFile>
 								</configuration>
 							</execution>
 						</executions>

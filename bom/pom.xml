@@ -34,6 +34,11 @@
 			</dependency>
 			<dependency>
 				<groupId>${project.groupId}</groupId>
+				<artifactId>wildfly-clustering-tomcat-11.0-infinispan-embedded</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>${project.groupId}</groupId>
 				<artifactId>wildfly-clustering-tomcat-11.0-infinispan-remote</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -44,12 +49,22 @@
 			</dependency>
 			<dependency>
 				<groupId>${project.groupId}</groupId>
+				<artifactId>wildfly-clustering-tomcat-10.1-infinispan-embedded</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>${project.groupId}</groupId>
 				<artifactId>wildfly-clustering-tomcat-10.1-infinispan-remote</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>${project.groupId}</groupId>
 				<artifactId>wildfly-clustering-tomcat-9.0-catalina</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>${project.groupId}</groupId>
+				<artifactId>wildfly-clustering-tomcat-9.0-infinispan-embedded</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
