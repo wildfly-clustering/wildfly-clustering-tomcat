@@ -15,7 +15,7 @@
 
 	<groupId>org.wildfly.clustering</groupId>
 	<artifactId>wildfly-clustering-tomcat-bom</artifactId>
-	<version>26.0.0.Beta1</version>
+	<version>26.0.0.Beta2-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<name>WildFly Clustering: Tomcat: BOM</name>
@@ -81,8 +81,4 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
-
-  <scm>
-    <tag>26.0.0.Beta1</tag>
-  </scm>
 </project>
