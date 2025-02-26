@@ -38,7 +38,7 @@
 		<version.org.infinispan>15.0.13.Final</version.org.infinispan>
 		<version.org.jboss.logging.slf4j>1.2.1.Final</version.org.jboss.logging.slf4j>
 		<version.org.jboss.marshalling>2.2.2.Final</version.org.jboss.marshalling>
-		<version.org.slf4j.jdk14>2.0.16</version.org.slf4j.jdk14>
+		<version.org.slf4j.jdk14>2.0.17</version.org.slf4j.jdk14>
 		<version.org.wildfly.clustering>5.0.7.Final</version.org.wildfly.clustering>
 
 		<!-- Test dependency versions -->
