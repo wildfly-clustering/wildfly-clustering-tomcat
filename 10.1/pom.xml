@@ -23,7 +23,7 @@
 	</modules>
 
 	<properties>
-		<version.org.apache.tomcat>10.1.36</version.org.apache.tomcat>
+		<version.org.apache.tomcat>10.1.39</version.org.apache.tomcat>
 	</properties>
 
 	<dependencyManagement>
