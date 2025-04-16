@@ -4,8 +4,10 @@
  */
 package org.wildfly.clustering.tomcat;
 
+import java.time.Duration;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.infinispan.client.hotrod.DefaultTemplate;
@@ -28,13 +30,13 @@ import org.wildfly.clustering.session.container.SessionManagementTesterConfigura
 /**
  * @author Paul Ferraro
  */
-public abstract class AbstractHotRodSessionManagerITCase extends AbstractSessionManagerITCase {
+public abstract class AbstractHotRodSessionManagerITCase extends AbstractSessionManagerITCase<WebArchive> {
 
 	private static final String CONTEXT_XML = """
-			<?xml version="1.0" encoding="UTF-8"?>
 			<Context>
 				<Manager className="%s" granularity="%s" marshaller="%s" template="%s" uri="hotrod://%s:%s@%s:%s?client_intelligence=%s" tcp_no_delay="true"/>
-			</Context>""";
+			</Context>
+	""";
 
 	@RegisterExtension
 	static final ContainerProvider<InfinispanServerContainer> INFINISPAN = new InfinispanServerExtension();
@@ -47,7 +49,12 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 			public Class<?> getEndpointClass() {
 				return endpointClass;
 			}
-		});
+
+			@Override
+			public Optional<Duration> getFailoverGracePeriod() {
+				return Optional.of(Duration.ofSeconds(2));
+			}
+		}, WebArchive.class);
 		this.managerClass = managerClass;
 	}
 

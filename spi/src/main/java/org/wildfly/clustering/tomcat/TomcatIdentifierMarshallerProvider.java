@@ -20,6 +20,6 @@ public class TomcatIdentifierMarshallerProvider implements IdentifierMarshallerP
 
 	@Override
 	public Marshaller<String, ByteBuffer> getMarshaller() {
-		return IdentifierMarshaller.HEX;
+		return IdentifierMarshaller.HEX_UPPER;
 	}
 }
