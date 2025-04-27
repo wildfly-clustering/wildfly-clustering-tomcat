@@ -139,6 +139,11 @@ public abstract class AbstractManager extends ManagerBase implements Distributed
 			public Immutability getImmutability() {
 				return immutability;
 			}
+
+			@Override
+			public ClassLoader getClassLoader() {
+				return loader;
+			}
 		};
 
 		Map.Entry<SessionManagerFactory<ServletContext, CatalinaSessionContext>, UnaryOperator<String>> entry = this.createSessionManagerFactory(sessionManagerFactoryConfig, Objects.requireNonNull(engine.getJvmRoute()), stopTasks);

@@ -22,13 +22,13 @@ import org.wildfly.clustering.session.container.SessionManagementTesterConfigura
 /**
  * @author Paul Ferraro
  */
-public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSessionManagerITCase {
+public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSessionManagerITCase<WebArchive> {
 
 	private static final String CONTEXT_XML = """
-			<?xml version="1.0" encoding="UTF-8"?>
 			<Context>
 				<Manager className="%s" granularity="%s" marshaller="%s"/>
-			</Context>""";
+			</Context>
+	""";
 
 	private final Class<?> managerClass;
 
@@ -38,7 +38,7 @@ public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSes
 			public Class<?> getEndpointClass() {
 				return endpointClass;
 			}
-		});
+		}, WebArchive.class);
 		this.managerClass = managerClass;
 	}
 
