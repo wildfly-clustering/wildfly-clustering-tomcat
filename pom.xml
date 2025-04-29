@@ -256,7 +256,7 @@
 					<autoVersionSubmodules>true</autoVersionSubmodules>
 					<tagNameFormat>@{project.version}</tagNameFormat>
 					<preparationProfiles>jboss-release</preparationProfiles>
-					<releaseProfiles>quickly,jboss-release</releaseProfiles>
+					<releaseProfiles>quickly,gpg-sign,jboss-release</releaseProfiles>
 				</configuration>
 			</plugin>
 			<plugin>
