@@ -261,6 +261,21 @@
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>test-jar</goal>
+						</goals>
+						<configuration>
+							<!-- Default classifier is not consistent with default classifier of jar:test-jar -->
+							<classifier>tests-sources</classifier>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<argLine>${jdk.runtime.args}</argLine>
@@ -358,7 +373,8 @@
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-javadoc-plugin</artifactId>
 						<configuration>
-							<detectJavaApiLink>true</detectJavaApiLink>
+							<!-- Default classifier not consistent with default classifier of jar:test-jar -->
+							<testClassifier>tests-javadoc</testClassifier>
 						</configuration>
 						<executions>
 							<execution>
