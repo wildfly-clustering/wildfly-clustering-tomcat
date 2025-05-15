@@ -7,7 +7,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>org.wildfly.clustering</groupId>
+		<groupId>org.wildfly.clustering.tomcat</groupId>
 		<artifactId>wildfly-clustering-tomcat</artifactId>
 		<version>27.0.0.Final-SNAPSHOT</version>
 	</parent>

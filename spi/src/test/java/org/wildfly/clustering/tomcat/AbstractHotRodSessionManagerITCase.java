@@ -4,13 +4,18 @@
  */
 package org.wildfly.clustering.tomcat;
 
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import org.infinispan.client.hotrod.DefaultTemplate;
+import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamWriter;
+
 import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -31,12 +36,6 @@ import org.wildfly.clustering.session.container.SessionManagementTesterConfigura
  * @author Paul Ferraro
  */
 public abstract class AbstractHotRodSessionManagerITCase extends AbstractSessionManagerITCase<WebArchive> {
-
-	private static final String CONTEXT_XML = """
-			<Context>
-				<Manager className="%s" granularity="%s" marshaller="%s" template="%s" uri="hotrod://%s:%s@%s:%s?client_intelligence=%s" tcp_no_delay="true"/>
-			</Context>
-	""";
 
 	@RegisterExtension
 	static final ContainerProvider<InfinispanServerContainer> INFINISPAN = new InfinispanServerExtension();
@@ -71,19 +70,30 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 	@Override
 	public WebArchive createArchive(SessionManagementTesterConfiguration configuration) {
 		InfinispanServerContainer container = INFINISPAN.getContainer();
-		Object[] values = new Object[] {
-				this.managerClass.getName(),
-				this.parameters.getSessionPersistenceGranularity(),
-				this.parameters.getSessionMarshallerFactory(),
-				DefaultTemplate.LOCAL.getTemplateName(),
-				container.getUsername(),
-				String.valueOf(container.getPassword()),
-				container.getHost(),
-				container.getPort(),
+		XMLOutputFactory factory = XMLOutputFactory.newFactory();
+		StringWriter stringWriter = new StringWriter();
+		try {
+			XMLStreamWriter writer = factory.createXMLStreamWriter(stringWriter);
+			writer.writeStartDocument(StandardCharsets.UTF_8.displayName(), "1.0");
+			writer.writeStartElement("Context");
+			{
+				writer.writeStartElement("Manager");
+				writer.writeAttribute("className", this.managerClass.getName());
+				writer.writeAttribute("granularity", this.parameters.getSessionPersistenceGranularity().toString());
+				writer.writeAttribute("marshaller", this.parameters.getSessionMarshallerFactory().toString());
+				writer.writeAttribute("configuration", """
+{ "local-cache" : { "statistics": "true" } }""");
 				// TODO Figure out how to configure HASH_DISTRIBUTION_AWARE w/bridge networking
-				container.isPortMapping() ? ClientIntelligence.BASIC : ClientIntelligence.HASH_DISTRIBUTION_AWARE,
-		};
-		return super.createArchive(configuration).addAsManifestResource(new StringAsset(String.format(CONTEXT_XML, values)), "context.xml");
+				writer.writeAttribute("uri", String.format("hotrod://%s:%s@%s:%s?client_intelligence=%s", container.getUsername(), String.valueOf(container.getPassword()), container.getHost(), container.getPort(), container.isPortMapping() ? ClientIntelligence.BASIC : ClientIntelligence.HASH_DISTRIBUTION_AWARE));
+				writer.writeEndElement();
+			}
+			writer.writeEndElement();
+			writer.writeEndDocument();
+			writer.close();
+		} catch (XMLStreamException e) {
+			throw new IllegalStateException(e);
+		}
+		return super.createArchive(configuration).addAsManifestResource(new StringAsset(stringWriter.toString()), "context.xml");
 	}
 
 	public static class HotRodSessionManagerArgumentsProvider implements ArgumentsProvider {

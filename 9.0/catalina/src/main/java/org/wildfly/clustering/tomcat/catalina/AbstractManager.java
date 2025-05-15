@@ -33,7 +33,7 @@ import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Session;
 import org.apache.catalina.session.ManagerBase;
-import org.wildfly.clustering.cache.function.IntPredicates;
+import org.wildfly.clustering.function.IntPredicate;
 import org.wildfly.clustering.marshalling.ByteBufferMarshaller;
 import org.wildfly.clustering.server.immutable.Immutability;
 import org.wildfly.clustering.session.ImmutableSession;
@@ -92,7 +92,7 @@ public abstract class AbstractManager extends ManagerBase implements Distributed
 		ServletContext servletContext = context.getServletContext();
 		// Deployment name = host name + context path + version
 		String deploymentName = host.getName() + context.getName();
-		OptionalInt maxActiveSessions = IntStream.of(this.getMaxActiveSessions()).filter(IntPredicates.POSITIVE).findFirst();
+		OptionalInt maxActiveSessions = IntStream.of(this.getMaxActiveSessions()).filter(IntPredicate.POSITIVE).findFirst();
 		SessionAttributePersistenceStrategy strategy = this.persistenceStrategy;
 
 		ClassLoader loader = context.getLoader().getClassLoader();

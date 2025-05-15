@@ -9,23 +9,22 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.function.Consumer;
-import java.util.function.UnaryOperator;
 
 import javax.servlet.ServletContext;
 
-import org.infinispan.client.hotrod.DefaultTemplate;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheContainer;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.configuration.NearCacheMode;
+import org.infinispan.client.hotrod.configuration.RemoteCacheConfigurationBuilder;
 import org.infinispan.client.hotrod.configuration.TransactionMode;
 import org.infinispan.client.hotrod.impl.HotRodURI;
-import org.wildfly.clustering.cache.function.Functions;
 import org.wildfly.clustering.cache.infinispan.marshalling.MediaTypes;
 import org.wildfly.clustering.cache.infinispan.marshalling.UserMarshaller;
 import org.wildfly.clustering.cache.infinispan.remote.RemoteCacheConfiguration;
+import org.wildfly.clustering.function.UnaryOperator;
 import org.wildfly.clustering.marshalling.protostream.ClassLoaderMarshaller;
 import org.wildfly.clustering.marshalling.protostream.ProtoStreamByteBufferMarshaller;
 import org.wildfly.clustering.marshalling.protostream.SerializationContextBuilder;
@@ -45,7 +44,9 @@ public class HotRodManager extends AbstractManager {
 
 	private final Properties properties = new Properties();
 
-	private volatile String templateName = DefaultTemplate.DIST_SYNC.getTemplateName();
+	private volatile String templateName = null;
+	private volatile String configuration = """
+{ "distributed-cache" : { "mode" : "SYNC", "statistics": "true" } }""";
 	private volatile URI uri = null;
 
 	public void setUri(String uri) {
@@ -60,15 +61,20 @@ public class HotRodManager extends AbstractManager {
 		this.templateName = templateName;
 	}
 
+	public void setConfiguration(String configuration) {
+		this.configuration = configuration;
+	}
+
 	@Override
-	protected Map.Entry<SessionManagerFactory<ServletContext, CatalinaSessionContext>, UnaryOperator<String>> createSessionManagerFactory(SessionManagerFactoryConfiguration<CatalinaSessionContext> config, String localRoute, Consumer<Runnable> stopTasks) {
+	protected Map.Entry<SessionManagerFactory<ServletContext, CatalinaSessionContext>, java.util.function.UnaryOperator<String>> createSessionManagerFactory(SessionManagerFactoryConfiguration<CatalinaSessionContext> config, String localRoute, Consumer<Runnable> stopTasks) {
 		ClassLoader containerLoader = HotRodSessionManagerFactory.class.getClassLoader();
 		Configuration configuration = Optional.ofNullable(this.uri).map(HotRodURI::create).map(HotRodURI::toConfigurationBuilder).orElseGet(ConfigurationBuilder::new)
 				.withProperties(this.properties)
 				.marshaller(new UserMarshaller(MediaTypes.WILDFLY_PROTOSTREAM, new ProtoStreamByteBufferMarshaller(SerializationContextBuilder.newInstance(ClassLoaderMarshaller.of(containerLoader)).load(containerLoader).build())))
 				.build();
 
-		configuration.addRemoteCache(config.getDeploymentName(), builder -> builder.forceReturnValues(false).nearCacheMode(config.getMaxActiveSessions().isPresent() ? NearCacheMode.INVALIDATED : NearCacheMode.DISABLED).transactionMode(TransactionMode.NONE).templateName(this.templateName));
+		Consumer<RemoteCacheConfigurationBuilder> configurator = builder -> builder.forceReturnValues(false).nearCacheMode(config.getMaxActiveSessions().isPresent() ? NearCacheMode.INVALIDATED : NearCacheMode.DISABLED).transactionMode(TransactionMode.NONE);
+		configuration.addRemoteCache(config.getDeploymentName(), configurator.andThen((this.templateName != null) ? builder -> builder.templateName(this.templateName) : builder -> builder.configuration(this.configuration)));
 
 		@SuppressWarnings("resource")
 		RemoteCacheContainer container = new RemoteCacheManager(configuration);
@@ -87,6 +93,6 @@ public class HotRodManager extends AbstractManager {
 			}
 		};
 
-		return Map.entry(new HotRodSessionManagerFactory<>(config, HttpSessionProvider.INSTANCE, HttpSessionActivationListenerProvider.INSTANCE, hotrod), Functions.constantOperator(localRoute));
+		return Map.entry(new HotRodSessionManagerFactory<>(config, HttpSessionProvider.INSTANCE, HttpSessionActivationListenerProvider.INSTANCE, hotrod), UnaryOperator.of(localRoute));
 	}
 }
