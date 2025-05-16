@@ -10,6 +10,7 @@
 	<cache-container name="default" default-cache="sessions">
 		<transport/>
 		<distributed-cache-configuration name="sessions">
+			<locking isolation="REPEATABLE_READ"/>
 			<transaction mode="BATCH" locking="PESSIMISTIC"/>
 		</distributed-cache-configuration>
 	</cache-container>

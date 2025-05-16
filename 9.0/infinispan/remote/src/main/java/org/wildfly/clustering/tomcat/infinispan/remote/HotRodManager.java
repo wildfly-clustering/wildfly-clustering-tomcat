@@ -45,8 +45,17 @@ public class HotRodManager extends AbstractManager {
 	private final Properties properties = new Properties();
 
 	private volatile String templateName = null;
-	private volatile String configuration = """
-{ "distributed-cache" : { "mode" : "SYNC", "statistics": "true" } }""";
+	private String configuration = """
+{
+	"distributed-cache" : {
+		"mode" : "SYNC",
+		"statistics" : "true",
+		"transaction" : {
+			"mode" : "BATCH",
+			"locking" : "PESSIMISTIC"
+		}
+	}
+}""";
 	private volatile URI uri = null;
 
 	public void setUri(String uri) {
