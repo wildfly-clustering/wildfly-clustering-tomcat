@@ -48,7 +48,6 @@ import org.infinispan.transaction.TransactionMode;
 import org.infinispan.transaction.tm.EmbeddedTransactionManager;
 import org.infinispan.util.concurrent.BlockingManager;
 import org.infinispan.util.concurrent.NonBlockingManager;
-import org.jboss.logging.Logger;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.jmx.JmxConfigurator;
@@ -87,7 +86,7 @@ import org.wildfly.clustering.tomcat.catalina.CatalinaSessionContext;
  * @author Paul Ferraro
  */
 public class InfinispanManager extends AbstractManager {
-	static final Logger LOGGER = Logger.getLogger(InfinispanManager.class);
+	static final System.Logger LOGGER = System.getLogger(InfinispanManager.class.getPackageName());
 	private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
 	private volatile String resourceName = "infinispan.xml";
@@ -124,7 +123,7 @@ public class InfinispanManager extends AbstractManager {
 					throw new IllegalArgumentException(this.resourceName);
 				}
 			}
-			LOGGER.debugf("Configuring Infinispan from %s", url);
+			LOGGER.log(System.Logger.Level.DEBUG, "Configuring Infinispan from {0}", url);
 
 			ConfigurationBuilderHolder holder = new ParserRegistry(loader, false, System.getProperties()).parse(url);
 			GlobalConfigurationBuilder global = holder.getGlobalConfigurationBuilder();
@@ -136,14 +135,14 @@ public class InfinispanManager extends AbstractManager {
 			if (channel != null) {
 				channel.setName(transport.nodeName());
 				channel.setDiscardOwnMessages(true);
-				LOGGER.debugf("Connecting %s to %s", transport.nodeName(), transport.clusterName());
+				LOGGER.log(System.Logger.Level.DEBUG, "Connecting {0} to {1}", transport.nodeName(), transport.clusterName());
 				channel.connect(transport.clusterName());
-				LOGGER.debugf("Connected %s to %s with view: %s", channel.getName(), channel.getClusterName(), channel.view().getMembers());
+				LOGGER.log(System.Logger.Level.DEBUG, "Connected {0} to {1} with view: {2}", channel.getName(), channel.getClusterName(), channel.view().getMembers());
 				stopTasks.accept(() -> {
-					LOGGER.debugf("Disconnecting %s from %s with view: %s", channel.getName(), channel.getClusterName(), channel.view().getMembers());
+					LOGGER.log(System.Logger.Level.DEBUG, "Disconnecting {0} from {1} with view: {2}", channel.getName(), channel.getClusterName(), channel.view().getMembers());
 					try {
 						channel.disconnect();
-						LOGGER.debugf("Disconnected %s from %s", transport.nodeName(), transport.clusterName());
+						LOGGER.log(System.Logger.Level.DEBUG, "Disconnected {0} from {1}", transport.nodeName(), transport.clusterName());
 					} finally {
 						channel.close();
 					}
@@ -157,7 +156,7 @@ public class InfinispanManager extends AbstractManager {
 						try {
 							JmxConfigurator.unregisterChannel(channel, ManagementFactory.getPlatformMBeanServer(), prefix, transport.clusterName());
 						} catch (Exception e) {
-							LOGGER.warn(e.getLocalizedMessage(), e);
+							LOGGER.log(System.Logger.Level.WARNING, e.getLocalizedMessage(), e);
 						}
 					});
 				}
