@@ -35,11 +35,8 @@
 		<version.org.kohsuke.metainf-services>1.11</version.org.kohsuke.metainf-services>
 
 		<!-- Runtime dependency versions -->
-		<version.org.infinispan>15.2.1.Final</version.org.infinispan>
 		<version.org.jboss.logging.slf4j>1.2.1.Final</version.org.jboss.logging.slf4j>
-		<version.org.jboss.marshalling>2.2.3.Final</version.org.jboss.marshalling>
 		<version.org.slf4j.jdk14>2.0.17</version.org.slf4j.jdk14>
-		<version.org.wildfly.clustering>6.0.4.Final</version.org.wildfly.clustering>
 		<version.org.wildfly.clustering>7.0.0.Final</version.org.wildfly.clustering>
 
 		<!-- Test dependency versions -->
@@ -55,13 +52,6 @@
 	<dependencyManagement>
 		<dependencies>
 			<!-- BOM dependencies -->
-			<dependency>
-				<groupId>org.infinispan</groupId>
-				<artifactId>infinispan-bom</artifactId>
-				<version>${version.org.infinispan}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
 			<dependency>
 				<groupId>org.wildfly.clustering</groupId>
 				<artifactId>wildfly-clustering-bom</artifactId>
@@ -138,11 +128,6 @@
 				<groupId>org.jboss.arquillian.container</groupId>
 				<artifactId>arquillian-tomcat-managed-8</artifactId>
 				<version>${version.org.jboss.arquillian.container.tomcat}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.jboss.marshalling</groupId>
-				<artifactId>jboss-marshalling-river</artifactId>
-				<version>${version.org.jboss.marshalling}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>

@@ -57,11 +57,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.infinispan</groupId>
-			<artifactId>infinispan-client-hotrod</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
 			<groupId>org.wildfly.clustering</groupId>
 			<artifactId>wildfly-clustering-cache-infinispan-remote</artifactId>
 			<classifier>tests</classifier>
