@@ -4,9 +4,15 @@
  */
 package org.wildfly.clustering.tomcat;
 
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.stream.Stream;
+
+import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamWriter;
 
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -23,12 +29,6 @@ import org.wildfly.clustering.session.container.SessionManagementTesterConfigura
  * @author Paul Ferraro
  */
 public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSessionManagerITCase<WebArchive> {
-
-	private static final String CONTEXT_XML = """
-			<Context>
-				<Manager className="%s" granularity="%s" marshaller="%s"/>
-			</Context>
-	""";
 
 	private final Class<?> managerClass;
 
@@ -54,14 +54,28 @@ public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSes
 
 	@Override
 	public WebArchive createArchive(SessionManagementTesterConfiguration configuration) {
-		Object[] values = new Object[] {
-				this.managerClass.getName(),
-				this.parameters.getSessionPersistenceGranularity(),
-				this.parameters.getSessionMarshallerFactory(),
-		};
+		XMLOutputFactory factory = XMLOutputFactory.newFactory();
+		StringWriter stringWriter = new StringWriter();
+		try {
+			XMLStreamWriter writer = factory.createXMLStreamWriter(stringWriter);
+			writer.writeStartDocument(StandardCharsets.UTF_8.displayName(), "1.0");
+			writer.writeStartElement("Context");
+			{
+				writer.writeStartElement("Manager");
+				writer.writeAttribute("className", this.managerClass.getName());
+				writer.writeAttribute("granularity", this.parameters.getSessionPersistenceGranularity().toString());
+				writer.writeAttribute("marshaller", this.parameters.getSessionMarshallerFactory().toString());
+				writer.writeEndElement();
+			}
+			writer.writeEndElement();
+			writer.writeEndDocument();
+			writer.close();
+		} catch (XMLStreamException e) {
+			throw new IllegalStateException(e);
+		}
 		return super.createArchive(configuration)
 				.addAsResource("infinispan.xml")
-				.addAsManifestResource(new StringAsset(String.format(CONTEXT_XML, values)), "context.xml");
+				.addAsManifestResource(new StringAsset(stringWriter.toString()), "context.xml");
 	}
 
 	public static class InfinispanSessionManagerArgumentsProvider implements ArgumentsProvider {

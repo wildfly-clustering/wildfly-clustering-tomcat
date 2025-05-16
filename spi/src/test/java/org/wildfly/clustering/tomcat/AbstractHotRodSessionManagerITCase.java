@@ -82,7 +82,20 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 				writer.writeAttribute("granularity", this.parameters.getSessionPersistenceGranularity().toString());
 				writer.writeAttribute("marshaller", this.parameters.getSessionMarshallerFactory().toString());
 				writer.writeAttribute("configuration", """
-{ "local-cache" : { "statistics": "true" } }""");
+{
+	"local-cache" : {
+		"expiration" : {
+			"interval" : 1000
+		},
+		"locking" : {
+			"isolation" : "REPEATABLE_READ"
+		},
+		"transaction" : {
+			"mode" : "BATCH",
+			"locking" : "PESSIMISTIC"
+		}
+	}
+}""");
 				// TODO Figure out how to configure HASH_DISTRIBUTION_AWARE w/bridge networking
 				writer.writeAttribute("uri", String.format("hotrod://%s:%s@%s:%s?client_intelligence=%s", container.getUsername(), String.valueOf(container.getPassword()), container.getHost(), container.getPort(), container.isPortMapping() ? ClientIntelligence.BASIC : ClientIntelligence.HASH_DISTRIBUTION_AWARE));
 				writer.writeEndElement();
