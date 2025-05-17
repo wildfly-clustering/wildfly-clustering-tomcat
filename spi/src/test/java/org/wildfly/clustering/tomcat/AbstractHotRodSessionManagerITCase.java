@@ -87,9 +87,6 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 		"expiration" : {
 			"interval" : 1000
 		},
-		"locking" : {
-			"isolation" : "REPEATABLE_READ"
-		},
 		"transaction" : {
 			"mode" : "BATCH",
 			"locking" : "PESSIMISTIC"
