@@ -37,7 +37,7 @@
 		<!-- Runtime dependency versions -->
 		<version.org.jboss.logging.slf4j>1.2.1.Final</version.org.jboss.logging.slf4j>
 		<version.org.slf4j.jdk14>2.0.17</version.org.slf4j.jdk14>
-		<version.org.wildfly.clustering>7.0.0.Final</version.org.wildfly.clustering>
+		<version.org.wildfly.clustering>7.0.1.Final</version.org.wildfly.clustering>
 
 		<!-- Test dependency versions -->
 		<version.org.assertj>3.27.3</version.org.assertj>
