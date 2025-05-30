@@ -20,6 +20,10 @@
 
 	<name>WildFly Clustering: Tomcat: BOM</name>
 
+	<properties>
+		<maven.repository.url>https://repository.jboss.org/nexus/content/groups/public/</maven.repository.url>
+	</properties>
+
 	<scm>
 		<connection>scm:git:git://github.com:wildfly-clustering/wildfly-clustering-tomcat.git</connection>
 		<developerConnection>scm:git:git@github.com:wildfly-clustering/wildfly-clustering-tomcat.git</developerConnection>
@@ -88,4 +92,32 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
+
+	<repositories>
+		<repository>
+			<id>default</id>
+			<url>${maven.repository.url}</url>
+			<layout>default</layout>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>never</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+				<updatePolicy>never</updatePolicy>
+			</snapshots>
+		</repository>
+	</repositories>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>default</id>
+			<url>${maven.repository.url}</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</pluginRepository>
+	</pluginRepositories>
 </project>

@@ -9,20 +9,16 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
-import java.util.stream.Stream;
 
 import javax.servlet.http.HttpSessionEvent;
-import javax.servlet.http.HttpSessionListener;
 
 import org.apache.catalina.Context;
 import org.wildfly.clustering.cache.batch.Batch;
 import org.wildfly.clustering.cache.batch.BatchContext;
 import org.wildfly.clustering.cache.batch.SuspendedBatch;
 import org.wildfly.clustering.marshalling.Marshallability;
-import org.wildfly.clustering.session.ImmutableSession;
 import org.wildfly.clustering.session.Session;
 import org.wildfly.clustering.session.SessionManager;
 import org.wildfly.clustering.session.spec.servlet.HttpSessionProvider;
@@ -38,7 +34,6 @@ public class DistributableManager implements CatalinaManager {
 	private final SessionManager<CatalinaSessionContext> manager;
 	private final UnaryOperator<String> affinity;
 	private final Context context;
-	private final Consumer<ImmutableSession> invalidateAction;
 	private final Marshallability marshallability;
 	private final StampedLock lifecycleLock = new StampedLock();
 	private final AtomicLong lifecycleStamp = new AtomicLong();
@@ -48,7 +43,6 @@ public class DistributableManager implements CatalinaManager {
 		this.affinity = affinity;
 		this.marshallability = marshallability;
 		this.context = context;
-		this.invalidateAction = new CatalinaSessionDestroyAction(context);
 	}
 
 	@Override
@@ -111,22 +105,13 @@ public class DistributableManager implements CatalinaManager {
 				return null;
 			}
 			if (session.getMetaData().isNew()) {
-				HttpSessionEvent event = new HttpSessionEvent(HttpSessionProvider.INSTANCE.asSession(session, this.context.getServletContext()));
-				Stream.of(this.context.getApplicationLifecycleListeners()).filter(HttpSessionListener.class::isInstance).map(HttpSessionListener.class::cast).forEach(listener -> {
-					try {
-						this.context.fireContainerEvent("beforeSessionCreated", listener);
-						listener.sessionCreated(event);
-					} catch (Throwable e) {
-						this.context.getLogger().warn(e.getMessage(), e);
-					} finally {
-						this.context.fireContainerEvent("afterSessionCreated", listener);
-					}
-				});
+				HttpSessionEvent event = new HttpSessionEvent(HttpSessionProvider.INSTANCE.asSession(session, this.getContext().getServletContext()));
+				CatalinaSessionEventNotifier.Lifecycle.CREATE.accept(this, event);
 			}
 			String route = this.affinity.apply(id);
 			// Append route to session identifier.
 			String internalId = new StringBuilder(id.length() + route.length() + 1).append(id).append(ROUTE_DELIMITER).append(route).toString();
-			return new DistributableSession(this, session, internalId, suspendedBatch, () -> this.invalidateAction.accept(session), closeTask);
+			return new DistributableSession(this, session, internalId, suspendedBatch, closeTask);
 		} catch (RuntimeException | Error e) {
 			rollback(suspendedBatch::resume, closeTask);
 			throw e;

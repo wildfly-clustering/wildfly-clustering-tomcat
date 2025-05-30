@@ -44,7 +44,18 @@ public class ForkChannelConfigurator implements JGroupsChannelConfigurator {
 
 	@Override
 	public JChannel createChannel(String name) throws Exception {
-		return new ForkChannel(this.channel, this.channel.getClusterName(), this.forkName);
+		// Silence log messages when Infinispan calls ForkChannel.setName(...)
+		return new ForkChannel(this.channel, this.channel.getClusterName(), this.forkName) {
+			@Override
+			public ForkChannel setName(String name) {
+				return this;
+			}
+
+			@Override
+			public JChannel name(String name) {
+				return this;
+			}
+		};
 	}
 
 	@Override

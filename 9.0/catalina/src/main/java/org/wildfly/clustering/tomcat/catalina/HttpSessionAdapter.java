@@ -9,19 +9,17 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-import java.util.stream.Stream;
 
 import javax.servlet.ServletContext;
-import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingEvent;
 import javax.servlet.http.HttpSessionBindingListener;
+import javax.servlet.http.HttpSessionEvent;
 
-import org.apache.catalina.Context;
 import org.apache.catalina.Globals;
 import org.wildfly.clustering.cache.batch.Batch;
 import org.wildfly.clustering.cache.batch.SuspendedBatch;
 import org.wildfly.clustering.session.Session;
+import org.wildfly.clustering.session.spec.servlet.HttpSessionProvider;
 
 /**
  * Adapts a WildFly distributable Session to an HttpSession.
@@ -31,47 +29,15 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 
 	private static final Set<String> EXCLUDED_ATTRIBUTES = Set.of(Globals.GSS_CREDENTIAL_ATTR, org.apache.catalina.valves.CrawlerSessionManagerValve.class.getName());
 
-	enum AttributeEventType implements BiConsumer<Context, HttpSessionBindingEvent> {
-		ADDED("beforeSessionAttributeAdded", "afterSessionAttributeAdded", (listener, event) -> listener.attributeAdded(event)),
-		REMOVED("beforeSessionAttributeRemoved", "afterSessionAttributeRemoved", (listener, event) -> listener.attributeRemoved(event)),
-		REPLACED("beforeSessionAttributeReplaced", "afterSessionAttributeReplaced", (listener, event) -> listener.attributeReplaced(event)),
-		;
-		private final String beforeEvent;
-		private final String afterEvent;
-		private final BiConsumer<HttpSessionAttributeListener, HttpSessionBindingEvent> trigger;
-
-		AttributeEventType(String beforeEvent, String afterEvent, BiConsumer<HttpSessionAttributeListener, HttpSessionBindingEvent> trigger) {
-			this.beforeEvent = beforeEvent;
-			this.afterEvent = afterEvent;
-			this.trigger = trigger;
-		}
-
-		@Override
-		public void accept(Context context, HttpSessionBindingEvent event) {
-			Stream.of(context.getApplicationEventListeners()).filter(HttpSessionAttributeListener.class::isInstance).map(HttpSessionAttributeListener.class::cast).forEach(listener -> {
-				try {
-					context.fireContainerEvent(this.beforeEvent, listener);
-					this.trigger.accept(listener, event);
-				} catch (Throwable e) {
-					context.getLogger().warn(e.getMessage(), e);
-				} finally {
-					context.fireContainerEvent(this.afterEvent, listener);
-				}
-			});
-		}
-	}
-
 	private final AtomicReference<Session<CatalinaSessionContext>> session;
 	private final CatalinaManager manager;
 	private final SuspendedBatch batch;
-	private final Runnable invalidateTask;
 	private final Runnable closeTask;
 
-	public HttpSessionAdapter(AtomicReference<Session<CatalinaSessionContext>> session, CatalinaManager manager, SuspendedBatch batch, Runnable invalidateTask, Runnable closeTask) {
+	public HttpSessionAdapter(AtomicReference<Session<CatalinaSessionContext>> session, CatalinaManager manager, SuspendedBatch batch, Runnable closeTask) {
 		this.session = session;
 		this.manager = manager;
 		this.batch = batch;
-		this.invalidateTask = invalidateTask;
 		this.closeTask = closeTask;
 	}
 
@@ -147,7 +113,8 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 
 	@Override
 	public void invalidate() {
-		this.invalidateTask.run();
+		HttpSessionEvent event = new HttpSessionEvent(HttpSessionProvider.INSTANCE.asSession(this.session.get(), this.manager.getContext().getServletContext()));
+		CatalinaSessionEventNotifier.Lifecycle.DESTROY.accept(this.manager, event);
 		try (Batch batch = this.batch.resume()) {
 			try (Session<CatalinaSessionContext> session = this.session.get()) {
 				session.invalidate();
@@ -259,8 +226,8 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 			}
 		}
 		HttpSessionBindingEvent event = new HttpSessionBindingEvent(this, name, (oldValue != null) ? oldValue : newValue);
-		AttributeEventType type = (oldValue == null) ? AttributeEventType.ADDED : (newValue == null) ? AttributeEventType.REMOVED : AttributeEventType.REPLACED;
-		type.accept(this.manager.getContext(), event);
+		CatalinaSessionEventNotifier.Attribute notifier = (oldValue == null) ? CatalinaSessionEventNotifier.Attribute.ADDED : (newValue == null) ? CatalinaSessionEventNotifier.Attribute.REMOVED : CatalinaSessionEventNotifier.Attribute.REPLACED;
+		notifier.accept(this.manager, event);
 	}
 
 	@Override
