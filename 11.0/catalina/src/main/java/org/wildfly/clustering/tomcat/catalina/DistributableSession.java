@@ -34,15 +34,17 @@ public class DistributableSession implements CatalinaSession {
 	private final AtomicReference<Session<CatalinaSessionContext>> session;
 	private final String internalId;
 	private final SuspendedBatch batch;
-	private final Runnable invalidateAction;
+	private final Runnable invalidateTask;
+	private final Runnable closeTask;
 	private final Instant startTime;
 
-	public DistributableSession(CatalinaManager manager, Session<CatalinaSessionContext> session, String internalId, SuspendedBatch batch, Runnable invalidateAction) {
+	public DistributableSession(CatalinaManager manager, Session<CatalinaSessionContext> session, String internalId, SuspendedBatch batch, Runnable invalidateTask, Runnable closeTask) {
 		this.manager = manager;
 		this.session = new AtomicReference<>(session);
 		this.internalId = internalId;
 		this.batch = batch;
-		this.invalidateAction = invalidateAction;
+		this.invalidateTask = invalidateTask;
+		this.closeTask = closeTask;
 		this.startTime = session.getMetaData().isNew() ? session.getMetaData().getCreationTime() : Instant.now();
 	}
 
@@ -144,7 +146,7 @@ public class DistributableSession implements CatalinaSession {
 
 	@Override
 	public HttpSession getSession() {
-		return new HttpSessionAdapter<>(this.session, this.manager, this.batch, this.invalidateAction);
+		return new HttpSessionAdapter(this.session, this.manager, this.batch, this.invalidateTask, this.closeTask);
 	}
 
 	@Override
@@ -171,6 +173,8 @@ public class DistributableSession implements CatalinaSession {
 		} catch (Throwable e) {
 			// Don't propagate exceptions at the stage, since response was already committed
 			this.manager.getContext().getLogger().warn(e.getLocalizedMessage(), e);
+		} finally {
+			this.closeTask.run();
 		}
 	}
 

@@ -27,7 +27,7 @@ import org.wildfly.clustering.session.Session;
  * Adapts a WildFly distributable Session to an HttpSession.
  * @author Paul Ferraro
  */
-public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
+public class HttpSessionAdapter extends AbstractHttpSession {
 
 	private static final Set<String> EXCLUDED_ATTRIBUTES = Set.of(Globals.GSS_CREDENTIAL_ATTR, org.apache.catalina.valves.CrawlerSessionManagerValve.class.getName());
 
@@ -64,13 +64,15 @@ public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 	private final AtomicReference<Session<CatalinaSessionContext>> session;
 	private final CatalinaManager manager;
 	private final SuspendedBatch batch;
-	private final Runnable invalidateAction;
+	private final Runnable invalidateTask;
+	private final Runnable closeTask;
 
-	public HttpSessionAdapter(AtomicReference<Session<CatalinaSessionContext>> session, CatalinaManager manager, SuspendedBatch batch, Runnable invalidateAction) {
+	public HttpSessionAdapter(AtomicReference<Session<CatalinaSessionContext>> session, CatalinaManager manager, SuspendedBatch batch, Runnable invalidateTask, Runnable closeTask) {
 		this.session = session;
 		this.manager = manager;
 		this.batch = batch;
-		this.invalidateAction = invalidateAction;
+		this.invalidateTask = invalidateTask;
+		this.closeTask = closeTask;
 	}
 
 	@Override
@@ -145,17 +147,20 @@ public class HttpSessionAdapter<B extends Batch> extends AbstractHttpSession {
 
 	@Override
 	public void invalidate() {
-		this.invalidateAction.run();
-		Session<CatalinaSessionContext> session = this.session.get();
+		this.invalidateTask.run();
 		try (Batch batch = this.batch.resume()) {
-			session.invalidate();
-			session.close();
+			try (Session<CatalinaSessionContext> session = this.session.get()) {
+				session.invalidate();
+			}
 		} catch (IllegalStateException e) {
 			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
+			Session<CatalinaSessionContext> session = this.session.get();
 			if (!session.isValid()) {
 				session.close();
 			}
 			throw e;
+		} finally {
+			this.closeTask.run();
 		}
 	}
 

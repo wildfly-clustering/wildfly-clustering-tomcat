@@ -88,7 +88,7 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 			"interval" : 1000
 		},
 		"transaction" : {
-			"mode" : "BATCH",
+			"mode" : "NON_XA",
 			"locking" : "PESSIMISTIC"
 		}
 	}
