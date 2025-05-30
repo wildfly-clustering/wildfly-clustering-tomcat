@@ -5,15 +5,25 @@
 package org.wildfly.clustering.tomcat.catalina;
 
 import java.time.Instant;
+import java.util.function.Function;
+
+import jakarta.servlet.http.HttpSession;
 
 import org.apache.catalina.Manager;
 import org.apache.catalina.Session;
+import org.wildfly.clustering.session.ImmutableSession;
+import org.wildfly.clustering.session.spec.servlet.HttpSessionProvider;
 
 /**
  * Provides default implementations of methods that can be derived or outright ignored.
  * @author Paul Ferraro
  */
-public interface CatalinaSession extends Session {
+public interface CatalinaSession extends Session, Function<ImmutableSession, HttpSession> {
+
+	@Override
+	default HttpSession apply(ImmutableSession session) {
+		return HttpSessionProvider.INSTANCE.asSession(session, this.getManager().getContext().getServletContext());
+	}
 
 	@Override
 	default long getCreationTimeInternal() {

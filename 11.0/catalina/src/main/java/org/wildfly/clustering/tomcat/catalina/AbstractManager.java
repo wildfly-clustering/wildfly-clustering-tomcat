@@ -24,6 +24,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpSessionEvent;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.DistributedManager;
@@ -33,6 +34,8 @@ import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Session;
 import org.apache.catalina.session.ManagerBase;
+import org.wildfly.clustering.context.ContextClassLoaderReference;
+import org.wildfly.clustering.context.Contextualizer;
 import org.wildfly.clustering.function.IntPredicate;
 import org.wildfly.clustering.marshalling.ByteBufferMarshaller;
 import org.wildfly.clustering.server.immutable.Immutability;
@@ -42,6 +45,7 @@ import org.wildfly.clustering.session.SessionManager;
 import org.wildfly.clustering.session.SessionManagerConfiguration;
 import org.wildfly.clustering.session.SessionManagerFactory;
 import org.wildfly.clustering.session.SessionManagerFactoryConfiguration;
+import org.wildfly.clustering.session.spec.servlet.HttpSessionProvider;
 import org.wildfly.clustering.tomcat.SessionMarshallerFactory;
 import org.wildfly.clustering.tomcat.SessionPersistenceGranularity;
 
@@ -151,7 +155,8 @@ public abstract class AbstractManager extends ManagerBase implements Distributed
 		UnaryOperator<String> affinity = entry.getValue();
 		stopTasks.accept(managerFactory::close);
 
-		Consumer<ImmutableSession> expirationListener = new CatalinaSessionExpirationListener(context);
+		Contextualizer contextualizer = Contextualizer.withContextProvider(ContextClassLoaderReference.INSTANCE.provide(context.getLoader().getClassLoader()));
+		Consumer<ImmutableSession> destroyNotifier = session -> CatalinaSessionEventNotifier.Lifecycle.DESTROY.accept(this, new HttpSessionEvent(HttpSessionProvider.INSTANCE.asSession(session, this.getContext().getServletContext())));
 		Supplier<String> identifierFactory = new CatalinaIdentifierFactory(this.getSessionIdGenerator());
 
 		SessionManagerConfiguration<ServletContext> sessionManagerConfiguration = new org.wildfly.clustering.tomcat.SessionManagerConfiguration<>() {
@@ -172,7 +177,7 @@ public abstract class AbstractManager extends ManagerBase implements Distributed
 
 			@Override
 			public Consumer<ImmutableSession> getExpirationListener() {
-				return expirationListener;
+				return contextualizer.contextualize(destroyNotifier);
 			}
 		};
 		SessionManager<CatalinaSessionContext> sessionManager = managerFactory.createSessionManager(sessionManagerConfiguration);
