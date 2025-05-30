@@ -18,15 +18,8 @@
 
 	<name>WildFly Clustering: Tomcat</name>
 
-	<scm>
-		<connection>scm:git:git://github.com:wildfly-clustering/wildfly-clustering-tomcat.git</connection>
-		<developerConnection>scm:git:git@github.com:wildfly-clustering/wildfly-clustering-tomcat.git</developerConnection>
-		<url>https://github.com/wildfly-clustering/wildfly-clustering-tomcat</url>
-		<tag>HEAD</tag>
-	</scm>
-
 	<properties>
-		<jdk.runtime.args>--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED</jdk.runtime.args>
+		<jdk.runtime.args>-Dorg.jboss.logging.provider=jdk --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED</jdk.runtime.args>
 		<maven.compiler.release>17</maven.compiler.release>
 		<maven.repository.url>https://repository.jboss.org/nexus/content/groups/public/</maven.repository.url>
 
@@ -35,9 +28,7 @@
 		<version.org.kohsuke.metainf-services>1.11</version.org.kohsuke.metainf-services>
 
 		<!-- Runtime dependency versions -->
-		<version.org.jboss.logging.slf4j>1.2.1.Final</version.org.jboss.logging.slf4j>
-		<version.org.slf4j.jdk14>2.0.17</version.org.slf4j.jdk14>
-		<version.org.wildfly.clustering>7.0.0.Final</version.org.wildfly.clustering>
+		<version.org.wildfly.clustering>7.0.2.Final</version.org.wildfly.clustering>
 
 		<!-- Test dependency versions -->
 		<version.org.assertj>3.27.3</version.org.assertj>
@@ -46,6 +37,7 @@
 		<version.org.jboss.shrinkwrap>1.2.6</version.org.jboss.shrinkwrap>
 		<version.org.junit>5.12.2</version.org.junit>
 		<version.org.mockito>5.17.0</version.org.mockito>
+		<version.org.slf4j>2.0.17</version.org.slf4j>
 		<version.org.testcontainers>1.21.0</version.org.testcontainers>
 	</properties>
 
@@ -65,18 +57,6 @@
 				<groupId>org.kohsuke.metainf-services</groupId>
 				<artifactId>metainf-services</artifactId>
 				<version>${version.org.kohsuke.metainf-services}</version>
-			</dependency>
-
-			<!-- Runtime dependencies -->
-			<dependency>
-				<groupId>org.jboss.slf4j</groupId>
-				<artifactId>slf4j-jboss-logging</artifactId>
-				<version>${version.org.jboss.logging.slf4j}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.slf4j</groupId>
-				<artifactId>slf4j-jdk14</artifactId>
-				<version>${version.org.slf4j.jdk14}</version>
 			</dependency>
 
 			<!-- Test BOM dependencies -->
@@ -112,6 +92,13 @@
 				<groupId>org.mockito</groupId>
 				<artifactId>mockito-bom</artifactId>
 				<version>${version.org.mockito}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-bom</artifactId>
+				<version>${version.org.slf4j}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
