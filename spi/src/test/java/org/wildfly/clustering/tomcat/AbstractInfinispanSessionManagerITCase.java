@@ -18,6 +18,7 @@ import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.params.ParameterizedInvocationConstants;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
@@ -44,7 +45,7 @@ public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSes
 
 	private SessionManagementParameters parameters;
 
-	@ParameterizedTest(name = ParameterizedTest.ARGUMENTS_PLACEHOLDER)
+	@ParameterizedTest(name = ParameterizedInvocationConstants.ARGUMENTS_PLACEHOLDER)
 	@ArgumentsSource(InfinispanSessionManagerArgumentsProvider.class)
 	@RunAsClient
 	public void test(SessionManagementParameters parameters) throws Exception {
@@ -74,7 +75,7 @@ public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSes
 			throw new IllegalStateException(e);
 		}
 		return super.createArchive(configuration)
-				.addAsResource("infinispan.xml")
+				.addAsWebInfResource("infinispan.xml", "classes/infinispan.xml")
 				.addAsManifestResource(new StringAsset(stringWriter.toString()), "context.xml");
 	}
 
@@ -105,5 +106,4 @@ public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSes
 			return builder.build();
 		}
 	}
-
 }
