@@ -115,6 +115,7 @@
 				<targetPath>${catalina.home}/conf</targetPath>
 				<includes>
 					<include>*.xml</include>
+					<include>*.properties</include>
 				</includes>
 			</testResource>
 		</testResources>
