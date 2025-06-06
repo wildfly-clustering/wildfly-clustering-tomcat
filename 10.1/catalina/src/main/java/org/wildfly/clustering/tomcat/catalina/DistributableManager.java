@@ -85,12 +85,14 @@ public class DistributableManager implements CatalinaManager {
 	@Override
 	public org.apache.catalina.Session createSession(String sessionId) {
 		String id = (sessionId != null) ? parseSessionId(sessionId) : this.manager.getIdentifierFactory().get();
+		LOGGER.log(System.Logger.Level.DEBUG, "createSession({0})", sessionId);
 		return this.getSession(SessionManager::createSession, id);
 	}
 
 	@Override
 	public org.apache.catalina.Session findSession(String sessionId) throws IOException {
 		String id = parseSessionId(sessionId);
+		LOGGER.log(System.Logger.Level.DEBUG, "findSession({0})", sessionId);
 		return this.getSession(SessionManager::findSession, id);
 	}
 
@@ -100,9 +102,16 @@ public class DistributableManager implements CatalinaManager {
 		Runnable closeTask = entry.getValue();
 		try (BatchContext<Batch> context = suspendedBatch.resumeWithContext()) {
 			Session<CatalinaSessionContext> session = function.apply(this.manager, id);
-			if ((session == null) || !session.isValid() || session.getMetaData().isExpired()) {
-				rollback(context, closeTask);
-				return null;
+			if (session == null) {
+				return rollback(context, closeTask);
+			}
+			if (!session.isValid()) {
+				LOGGER.log(System.Logger.Level.DEBUG, "Session {0} found, but is not valid.");
+				return rollback(context, closeTask);
+			}
+			if (session.getMetaData().isExpired()) {
+				LOGGER.log(System.Logger.Level.DEBUG, "Session {0} found, but has expired.");
+				return rollback(context, closeTask);
 			}
 			if (session.getMetaData().isNew()) {
 				HttpSessionEvent event = new HttpSessionEvent(HttpSessionProvider.INSTANCE.asSession(session, this.getContext().getServletContext()));
@@ -148,7 +157,7 @@ public class DistributableManager implements CatalinaManager {
 		}
 	}
 
-	private static void rollback(Supplier<Batch> batchSupplier, Runnable closeTask) {
+	private static org.apache.catalina.Session rollback(Supplier<Batch> batchSupplier, Runnable closeTask) {
 		try (Batch batch = batchSupplier.get()) {
 			batch.discard();
 		} catch (RuntimeException | Error e) {
@@ -156,6 +165,7 @@ public class DistributableManager implements CatalinaManager {
 		} finally {
 			closeTask.run();
 		}
+		return null;
 	}
 
 	private Runnable getSessionCloseTask() {
