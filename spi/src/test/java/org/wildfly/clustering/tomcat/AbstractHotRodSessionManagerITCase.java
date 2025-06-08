@@ -22,7 +22,6 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.params.ParameterizedInvocationConstants;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
@@ -60,7 +59,7 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 
 	private SessionManagementParameters parameters;
 
-	@ParameterizedTest(name = ParameterizedInvocationConstants.ARGUMENTS_PLACEHOLDER)
+	@ParameterizedTest
 	@ArgumentsSource(HotRodSessionManagerArgumentsProvider.class)
 	@RunAsClient
 	public void test(SessionManagementParameters parameters) throws Exception {

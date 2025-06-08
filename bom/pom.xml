@@ -19,10 +19,19 @@
 	<packaging>pom</packaging>
 
 	<name>WildFly Clustering: Tomcat: BOM</name>
+	<description>${project.name}</description>
+	<url>https://github.com/wildfly-clustering/wildfly-clustering-tomcat</url>
 
 	<properties>
 		<maven.repository.url>https://repository.jboss.org/nexus/content/groups/public/</maven.repository.url>
 	</properties>
+
+	<licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>https://www.apache.org/licenses/LICENSE-2.0</url>
+		</license>
+	</licenses>
 
 	<scm>
 		<connection>scm:git:git://github.com:wildfly-clustering/wildfly-clustering-tomcat.git</connection>

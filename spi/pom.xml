@@ -15,7 +15,7 @@
 	<artifactId>wildfly-clustering-tomcat-spi</artifactId>
 	<packaging>jar</packaging>
 
-	<name>WildFly Clustering: Tomcat: Session management SPI</name>
+	<name>WildFly Clustering: Tomcat: SPI</name>
 
 	<dependencies>
 		<dependency>

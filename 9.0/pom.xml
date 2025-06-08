@@ -15,7 +15,7 @@
 	<artifactId>wildfly-clustering-tomcat-9.0</artifactId>
 	<packaging>pom</packaging>
 
-	<name>WildFly Clustering: Tomcat 9.0</name>
+	<name>WildFly Clustering: Tomcat 9.0: Modules</name>
 
 	<modules>
 		<module>catalina</module>
