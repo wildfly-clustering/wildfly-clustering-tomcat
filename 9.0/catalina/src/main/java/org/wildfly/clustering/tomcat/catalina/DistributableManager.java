@@ -101,6 +101,7 @@ public class DistributableManager implements CatalinaManager {
 		try (BatchContext<Batch> context = suspendedBatch.resumeWithContext()) {
 			Session<CatalinaSessionContext> session = function.apply(this.manager, id);
 			if (session == null) {
+				LOGGER.log(System.Logger.Level.DEBUG, "Session {0} not found");
 				return rollback(context, closeTask);
 			}
 			if (!session.isValid()) {

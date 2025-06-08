@@ -85,14 +85,14 @@ public class DistributableManager implements CatalinaManager {
 	@Override
 	public org.apache.catalina.Session createSession(String sessionId) {
 		String id = (sessionId != null) ? parseSessionId(sessionId) : this.manager.getIdentifierFactory().get();
-		LOGGER.log(System.Logger.Level.DEBUG, "createSession({0})", sessionId);
+		LOGGER.log(System.Logger.Level.DEBUG, "createSession({0})", id);
 		return this.getSession(SessionManager::createSession, id);
 	}
 
 	@Override
 	public org.apache.catalina.Session findSession(String sessionId) throws IOException {
 		String id = parseSessionId(sessionId);
-		LOGGER.log(System.Logger.Level.DEBUG, "findSession({0})", sessionId);
+		LOGGER.log(System.Logger.Level.DEBUG, "findSession({0})", id);
 		return this.getSession(SessionManager::findSession, id);
 	}
 
@@ -103,6 +103,7 @@ public class DistributableManager implements CatalinaManager {
 		try (BatchContext<Batch> context = suspendedBatch.resumeWithContext()) {
 			Session<CatalinaSessionContext> session = function.apply(this.manager, id);
 			if (session == null) {
+				LOGGER.log(System.Logger.Level.DEBUG, "Session {0} not found");
 				return rollback(context, closeTask);
 			}
 			if (!session.isValid()) {
