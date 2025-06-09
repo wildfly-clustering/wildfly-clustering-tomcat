@@ -8,6 +8,7 @@ updates:
       - dependency-name: jakarta.annotation:jakarta.annotation-api
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.apache.tomcat:tomcat-catalina
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.infinispan:infinispan-bom
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.wildfly.clustering:wildfly-clustering-bom
