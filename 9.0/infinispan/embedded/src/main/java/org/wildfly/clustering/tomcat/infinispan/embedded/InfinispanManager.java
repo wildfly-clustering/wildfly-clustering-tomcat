@@ -43,7 +43,6 @@ import org.infinispan.protostream.SerializationContext;
 import org.infinispan.protostream.SerializationContextInitializer;
 import org.infinispan.remoting.transport.jgroups.JGroupsChannelConfigurator;
 import org.infinispan.remoting.transport.jgroups.JGroupsTransport;
-import org.infinispan.transaction.TransactionMode;
 import org.infinispan.transaction.tm.EmbeddedTransactionManager;
 import org.infinispan.util.concurrent.BlockingManager;
 import org.infinispan.util.concurrent.NonBlockingManager;
@@ -122,7 +121,7 @@ public class InfinispanManager extends AbstractManager {
 					throw new IllegalArgumentException(this.resourceName);
 				}
 			}
-			LOGGER.log(System.Logger.Level.DEBUG, "Configuring Infinispan from {0}", url);
+			LOGGER.log(System.Logger.Level.INFO, "Configuring Infinispan from {0}", url);
 
 			ConfigurationBuilderHolder holder = new ParserRegistry(loader, false, System.getProperties()).parse(url);
 			GlobalConfigurationBuilder global = holder.getGlobalConfigurationBuilder();
@@ -134,14 +133,14 @@ public class InfinispanManager extends AbstractManager {
 			if (channel != null) {
 				channel.setName(transport.nodeName());
 				channel.setDiscardOwnMessages(true);
-				LOGGER.log(System.Logger.Level.DEBUG, "Connecting {0} to {1}", transport.nodeName(), transport.clusterName());
+				LOGGER.log(System.Logger.Level.INFO, "Connecting {0} to {1}", transport.nodeName(), transport.clusterName());
 				channel.connect(transport.clusterName());
-				LOGGER.log(System.Logger.Level.DEBUG, "Connected {0} to {1} with view: {2}", channel.getName(), channel.getClusterName(), channel.view().getMembers());
+				LOGGER.log(System.Logger.Level.INFO, "Connected {0} to {1} with view: {2}", channel.getName(), channel.getClusterName(), channel.view().getMembers());
 				stopTasks.accept(() -> {
-					LOGGER.log(System.Logger.Level.DEBUG, "Disconnecting {0} from {1} with view: {2}", channel.getName(), channel.getClusterName(), channel.view().getMembers());
+					LOGGER.log(System.Logger.Level.INFO, "Disconnecting {0} from {1} with view: {2}", channel.getName(), channel.getClusterName(), channel.view().getMembers());
 					try {
 						channel.disconnect();
-						LOGGER.log(System.Logger.Level.DEBUG, "Disconnected {0} from {1}", transport.nodeName(), transport.clusterName());
+						LOGGER.log(System.Logger.Level.INFO, "Disconnected {0} from {1}", transport.nodeName(), transport.clusterName());
 					} finally {
 						channel.close();
 					}
@@ -235,8 +234,7 @@ public class InfinispanManager extends AbstractManager {
 			builder.encoding().mediaType(MediaType.APPLICATION_OBJECT_TYPE);
 
 			if (template.invocationBatching().enabled()) {
-				builder.invocationBatching().disable();
-				builder.transaction().transactionMode(TransactionMode.TRANSACTIONAL).transactionManagerLookup(EmbeddedTransactionManager::getInstance);
+				builder.transaction().transactionManagerLookup(EmbeddedTransactionManager::getInstance);
 			}
 
 			// Disable expiration
