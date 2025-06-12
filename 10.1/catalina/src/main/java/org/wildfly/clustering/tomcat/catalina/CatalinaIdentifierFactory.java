@@ -4,9 +4,8 @@
  */
 package org.wildfly.clustering.tomcat.catalina;
 
-import java.util.function.Supplier;
-
 import org.apache.catalina.SessionIdGenerator;
+import org.wildfly.clustering.function.Supplier;
 
 /**
  * An identifier factory that uses Tomcat's SessionIdGenerator.
