@@ -27,7 +27,7 @@
 		<version.org.kohsuke.metainf-services>1.11</version.org.kohsuke.metainf-services>
 
 		<!-- Runtime dependency versions -->
-		<version.org.wildfly.clustering>7.0.7.Final</version.org.wildfly.clustering>
+		<version.org.wildfly.clustering>7.0.8.Final</version.org.wildfly.clustering>
 
 		<!-- Test dependency versions -->
 		<version.org.assertj>3.27.3</version.org.assertj>
