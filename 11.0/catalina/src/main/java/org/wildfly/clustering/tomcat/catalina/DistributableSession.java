@@ -16,12 +16,11 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 
-import org.apache.catalina.Context;
 import org.apache.catalina.Manager;
 import org.apache.catalina.SessionListener;
 import org.wildfly.clustering.cache.batch.Batch;
-import org.wildfly.clustering.cache.batch.BatchContext;
 import org.wildfly.clustering.cache.batch.SuspendedBatch;
+import org.wildfly.clustering.context.Context;
 import org.wildfly.clustering.session.Session;
 
 /**
@@ -209,7 +208,7 @@ public class DistributableSession implements CatalinaSession {
 
 	@Override
 	public void tellChangedSessionId(String newId, String oldId, boolean notifySessionListeners, boolean notifyContainerListeners) {
-		try (BatchContext<Batch> context = this.batch.resumeWithContext()) {
+		try (Context<Batch> context = this.batch.resumeWithContext()) {
 			Session<CatalinaSessionContext> oldSession = this.session.get();
 			Session<CatalinaSessionContext> newSession = this.manager.getSessionManager().createSession(newId);
 			try {
@@ -232,10 +231,10 @@ public class DistributableSession implements CatalinaSession {
 		}
 
 		// Invoke listeners outside of the context of the batch associated with this session
-		Context context = this.manager.getContext();
+		org.apache.catalina.Context context = this.manager.getContext();
 
 		if (notifyContainerListeners) {
-			context.fireContainerEvent(Context.CHANGE_SESSION_ID_EVENT, new String[] { oldId, newId });
+			context.fireContainerEvent(org.apache.catalina.Context.CHANGE_SESSION_ID_EVENT, new String[] { oldId, newId });
 		}
 
 		if (notifySessionListeners) {

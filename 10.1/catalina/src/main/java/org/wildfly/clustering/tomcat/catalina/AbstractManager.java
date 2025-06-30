@@ -33,8 +33,8 @@ import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Session;
 import org.apache.catalina.session.ManagerBase;
-import org.wildfly.clustering.context.ContextClassLoaderReference;
 import org.wildfly.clustering.context.Contextualizer;
+import org.wildfly.clustering.context.ThreadContextClassLoaderReference;
 import org.wildfly.clustering.function.IntPredicate;
 import org.wildfly.clustering.function.Supplier;
 import org.wildfly.clustering.marshalling.ByteBufferMarshaller;
@@ -155,7 +155,7 @@ public abstract class AbstractManager extends ManagerBase implements Distributed
 		UnaryOperator<String> affinity = entry.getValue();
 		stopTasks.accept(managerFactory::close);
 
-		Contextualizer contextualizer = Contextualizer.withContextProvider(ContextClassLoaderReference.INSTANCE.provide(context.getLoader().getClassLoader()));
+		Contextualizer contextualizer = Contextualizer.withContextProvider(ThreadContextClassLoaderReference.CURRENT.provide(context.getLoader().getClassLoader()));
 		Consumer<ImmutableSession> destroyNotifier = session -> CatalinaSessionEventNotifier.Lifecycle.DESTROY.accept(this, new HttpSessionEvent(HttpSessionProvider.INSTANCE.asSession(session, this.getContext().getServletContext())));
 		Supplier<String> identifierFactory = new CatalinaIdentifierFactory(this.getSessionIdGenerator());
 
