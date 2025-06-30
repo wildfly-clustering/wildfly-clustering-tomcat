@@ -14,10 +14,9 @@ import java.util.function.UnaryOperator;
 
 import jakarta.servlet.http.HttpSessionEvent;
 
-import org.apache.catalina.Context;
 import org.wildfly.clustering.cache.batch.Batch;
-import org.wildfly.clustering.cache.batch.BatchContext;
 import org.wildfly.clustering.cache.batch.SuspendedBatch;
+import org.wildfly.clustering.context.Context;
 import org.wildfly.clustering.marshalling.Marshallability;
 import org.wildfly.clustering.session.Session;
 import org.wildfly.clustering.session.SessionManager;
@@ -33,12 +32,12 @@ public class DistributableManager implements CatalinaManager {
 
 	private final SessionManager<CatalinaSessionContext> manager;
 	private final UnaryOperator<String> affinity;
-	private final Context context;
+	private final org.apache.catalina.Context context;
 	private final Marshallability marshallability;
 	private final StampedLock lifecycleLock = new StampedLock();
 	private final AtomicLong lifecycleStamp = new AtomicLong();
 
-	public DistributableManager(SessionManager<CatalinaSessionContext> manager, UnaryOperator<String> affinity, Context context, Marshallability marshallability) {
+	public DistributableManager(SessionManager<CatalinaSessionContext> manager, UnaryOperator<String> affinity, org.apache.catalina.Context context, Marshallability marshallability) {
 		this.manager = manager;
 		this.affinity = affinity;
 		this.marshallability = marshallability;
@@ -100,7 +99,7 @@ public class DistributableManager implements CatalinaManager {
 		Map.Entry<SuspendedBatch, Runnable> entry = this.createBatchEntry();
 		SuspendedBatch suspendedBatch = entry.getKey();
 		Runnable closeTask = entry.getValue();
-		try (BatchContext<Batch> context = suspendedBatch.resumeWithContext()) {
+		try (Context<Batch> context = suspendedBatch.resumeWithContext()) {
 			Session<CatalinaSessionContext> session = function.apply(this.manager, id);
 			if (session == null) {
 				LOGGER.log(System.Logger.Level.DEBUG, "Session {0} not found");
@@ -134,7 +133,7 @@ public class DistributableManager implements CatalinaManager {
 	}
 
 	@Override
-	public Context getContext() {
+	public org.apache.catalina.Context getContext() {
 		return this.context;
 	}
 
