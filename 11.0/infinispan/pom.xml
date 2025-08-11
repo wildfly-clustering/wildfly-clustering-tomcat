@@ -9,7 +9,7 @@
 	<parent>
 		<groupId>org.wildfly.clustering.tomcat</groupId>
 		<artifactId>wildfly-clustering-tomcat-11.0</artifactId>
-		<version>27.0.0.Final</version>
+		<version>28.0.0.Final-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>wildfly-clustering-tomcat-11.0-infinispan</artifactId>
