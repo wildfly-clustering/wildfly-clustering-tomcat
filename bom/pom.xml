@@ -15,7 +15,7 @@
 
 	<groupId>org.wildfly.clustering.tomcat</groupId>
 	<artifactId>wildfly-clustering-tomcat-bom</artifactId>
-	<version>27.0.0.Final-SNAPSHOT</version>
+	<version>27.0.0.Final</version>
 	<packaging>pom</packaging>
 
 	<name>WildFly Clustering: Tomcat: BOM</name>
@@ -44,7 +44,7 @@
 		<connection>scm:git:git://github.com:wildfly-clustering/wildfly-clustering-tomcat.git</connection>
 		<developerConnection>scm:git:git@github.com:wildfly-clustering/wildfly-clustering-tomcat.git</developerConnection>
 		<url>https://github.com/wildfly-clustering/wildfly-clustering-tomcat</url>
-		<tag>HEAD</tag>
+		<tag>27.0.0.Final</tag>
 	</scm>
 
 	<dependencyManagement>
