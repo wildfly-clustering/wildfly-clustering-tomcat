@@ -8,7 +8,6 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpSessionBindingEvent;
@@ -18,6 +17,9 @@ import jakarta.servlet.http.HttpSessionEvent;
 import org.apache.catalina.Globals;
 import org.wildfly.clustering.cache.batch.Batch;
 import org.wildfly.clustering.cache.batch.SuspendedBatch;
+import org.wildfly.clustering.context.Context;
+import org.wildfly.clustering.function.Consumer;
+import org.wildfly.clustering.function.Supplier;
 import org.wildfly.clustering.session.Session;
 import org.wildfly.clustering.session.spec.servlet.HttpSessionProvider;
 
@@ -29,135 +31,102 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 
 	private static final Set<String> EXCLUDED_ATTRIBUTES = Set.of(Globals.GSS_CREDENTIAL_ATTR, org.apache.catalina.valves.CrawlerSessionManagerValve.class.getName());
 
-	private final AtomicReference<Session<CatalinaSessionContext>> session;
 	private final CatalinaManager manager;
+	private final Supplier<Session<CatalinaSessionContext>> reference;
 	private final SuspendedBatch batch;
 	private final Runnable closeTask;
 
-	public HttpSessionAdapter(AtomicReference<Session<CatalinaSessionContext>> session, CatalinaManager manager, SuspendedBatch batch, Runnable closeTask) {
-		this.session = session;
+	public HttpSessionAdapter(CatalinaManager manager, Supplier<Session<CatalinaSessionContext>> reference, SuspendedBatch batch, Runnable closeTask) {
 		this.manager = manager;
+		this.reference = reference;
 		this.batch = batch;
 		this.closeTask = closeTask;
 	}
 
 	@Override
 	public boolean isNew() {
-		Session<CatalinaSessionContext> session = this.session.get();
+		Session<CatalinaSessionContext> session = this.reference.get();
 		try {
 			return session.getMetaData().isNew();
 		} catch (IllegalStateException e) {
-			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
-			if (!session.isValid()) {
-				session.close();
-			}
+			this.closeIfInvalid(session);
 			throw e;
 		}
 	}
 
 	@Override
 	public long getCreationTime() {
-		Session<CatalinaSessionContext> session = this.session.get();
+		Session<CatalinaSessionContext> session = this.reference.get();
 		try {
 			return session.getMetaData().getCreationTime().toEpochMilli();
 		} catch (IllegalStateException e) {
-			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
-			if (!session.isValid()) {
-				session.close();
-			}
+			this.closeIfInvalid(session);
 			throw e;
 		}
 	}
 
 	@Override
 	public long getLastAccessedTime() {
-		Session<CatalinaSessionContext> session = this.session.get();
+		Session<CatalinaSessionContext> session = this.reference.get();
 		try {
-			return session.getMetaData().getLastAccessStartTime().toEpochMilli();
+			return session.getMetaData().getLastAccessTime().toEpochMilli();
 		} catch (IllegalStateException e) {
-			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
-			if (!session.isValid()) {
-				session.close();
-			}
+			this.closeIfInvalid(session);
 			throw e;
 		}
 	}
 
 	@Override
 	public int getMaxInactiveInterval() {
-		Session<CatalinaSessionContext> session = this.session.get();
+		Session<CatalinaSessionContext> session = this.reference.get();
 		try {
 			return (int) session.getMetaData().getTimeout().getSeconds();
 		} catch (IllegalStateException e) {
-			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
-			if (!session.isValid()) {
-				session.close();
-			}
+			this.closeIfInvalid(session);
 			throw e;
 		}
 	}
 
 	@Override
 	public void setMaxInactiveInterval(int interval) {
-		Session<CatalinaSessionContext> session = this.session.get();
+		Session<CatalinaSessionContext> session = this.reference.get();
 		try {
 			session.getMetaData().setTimeout((interval > 0) ? Duration.ofSeconds(interval) : Duration.ZERO);
 		} catch (IllegalStateException e) {
-			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
-			if (!session.isValid()) {
-				session.close();
-			}
+			this.closeIfInvalid(session);
 			throw e;
 		}
 	}
 
 	@Override
 	public void invalidate() {
-		HttpSessionEvent event = new HttpSessionEvent(HttpSessionProvider.INSTANCE.asSession(this.session.get(), this.manager.getContext().getServletContext()));
+		Session<CatalinaSessionContext> session = this.reference.get();
+		HttpSessionEvent event = new HttpSessionEvent(HttpSessionProvider.INSTANCE.asSession(session, this.manager.getContext().getServletContext()));
 		CatalinaSessionEventNotifier.Lifecycle.DESTROY.accept(this.manager, event);
-		try (Batch batch = this.batch.resume()) {
-			try (Session<CatalinaSessionContext> session = this.session.get()) {
-				session.invalidate();
-			}
-		} catch (IllegalStateException e) {
-			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
-			Session<CatalinaSessionContext> session = this.session.get();
-			if (!session.isValid()) {
-				session.close();
-			}
-			throw e;
-		} finally {
-			this.closeTask.run();
-		}
+		this.close(session, Session::invalidate);
 	}
 
 	@Override
 	public Object getAttribute(String name) {
-		Session<CatalinaSessionContext> session = this.session.get();
+		Session<CatalinaSessionContext> session = this.reference.get();
 		if (EXCLUDED_ATTRIBUTES.contains(name)) {
 			return session.getContext().getNotes().get(name);
 		}
 		try {
 			return session.getAttributes().get(name);
 		} catch (IllegalStateException e) {
-			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
-			if (!session.isValid()) {
-				session.close();
-			}
+			this.closeIfInvalid(session);
 			throw e;
 		}
 	}
 
 	@Override
 	public Enumeration<String> getAttributeNames() {
-		Session<CatalinaSessionContext> session = this.session.get();
+		Session<CatalinaSessionContext> session = this.reference.get();
 		try {
 			return Collections.enumeration(session.getAttributes().keySet());
 		} catch (IllegalStateException e) {
-			// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
-			if (!session.isValid()) {
-				session.close();
-			}
+			this.closeIfInvalid(session);
 			throw e;
 		}
 	}
@@ -165,7 +134,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 	@Override
 	public void setAttribute(String name, Object value) {
 		if (value != null) {
-			Session<CatalinaSessionContext> session = this.session.get();
+			Session<CatalinaSessionContext> session = this.reference.get();
 			if (EXCLUDED_ATTRIBUTES.contains(name)) {
 				session.getContext().getNotes().put(name, value);
 			} else {
@@ -175,10 +144,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 						this.notifySessionAttributeListeners(name, old, value);
 					}
 				} catch (IllegalStateException e) {
-					// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
-					if (!session.isValid()) {
-						session.close();
-					}
+					this.closeIfInvalid(session);
 					throw e;
 				}
 			}
@@ -189,7 +155,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 
 	@Override
 	public void removeAttribute(String name) {
-		Session<CatalinaSessionContext> session = this.session.get();
+		Session<CatalinaSessionContext> session = this.reference.get();
 		if (EXCLUDED_ATTRIBUTES.contains(name)) {
 			session.getContext().getNotes().remove(name);
 		} else {
@@ -199,10 +165,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 					this.notifySessionAttributeListeners(name, value, null);
 				}
 			} catch (IllegalStateException e) {
-				// If session was invalidated by a concurrent request, Tomcat may not trigger Session.endAccess(), so we need to close the session here
-				if (!session.isValid()) {
-					session.close();
-				}
+				this.closeIfInvalid(session);
 				throw e;
 			}
 		}
@@ -232,11 +195,27 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 
 	@Override
 	public String getId() {
-		return this.session.get().getId();
+		return this.reference.get().getId();
 	}
 
 	@Override
 	public ServletContext getServletContext() {
 		return this.manager.getContext().getServletContext();
+	}
+
+	void closeIfInvalid(Session<CatalinaSessionContext> session) {
+		if (!session.isValid()) {
+			this.close(session, Consumer.close());
+		}
+	}
+
+	void close(Session<CatalinaSessionContext> session, Consumer<Session<CatalinaSessionContext>> closeTask) {
+		try (Context<Batch> context = this.batch.resumeWithContext()) {
+			try (Batch batch = context.get()) {
+				closeTask.accept(session);
+			} finally {
+				this.closeTask.run();
+			}
+		}
 	}
 }

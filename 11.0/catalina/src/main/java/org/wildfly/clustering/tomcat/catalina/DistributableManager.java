@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpSessionEvent;
 import org.wildfly.clustering.cache.batch.Batch;
 import org.wildfly.clustering.cache.batch.SuspendedBatch;
 import org.wildfly.clustering.context.Context;
+import org.wildfly.clustering.function.Consumer;
 import org.wildfly.clustering.marshalling.Marshallability;
 import org.wildfly.clustering.session.Session;
 import org.wildfly.clustering.session.SessionManager;
@@ -101,15 +102,15 @@ public class DistributableManager implements CatalinaManager {
 			Session<CatalinaSessionContext> session = function.apply(this.manager, id);
 			if (session == null) {
 				LOGGER.log(System.Logger.Level.DEBUG, "Session {0} not found");
-				return rollback(context, closeTask);
+				return close(context, closeTask);
 			}
 			if (!session.isValid()) {
 				LOGGER.log(System.Logger.Level.DEBUG, "Session {0} found, but is not valid.");
-				return rollback(context, closeTask);
+				return close(context, closeTask);
 			}
 			if (session.getMetaData().isExpired()) {
 				LOGGER.log(System.Logger.Level.DEBUG, "Session {0} found, but has expired.");
-				return rollback(context, closeTask);
+				return close(context, closeTask);
 			}
 			if (session.getMetaData().isNew()) {
 				HttpSessionEvent event = new HttpSessionEvent(HttpSessionProvider.INSTANCE.asSession(session, this.getContext().getServletContext()));
@@ -155,8 +156,16 @@ public class DistributableManager implements CatalinaManager {
 		}
 	}
 
-	private static org.apache.catalina.Session rollback(Supplier<Batch> batchSupplier, Runnable closeTask) {
-		try (Batch batch = batchSupplier.get()) {
+	private static org.apache.catalina.Session close(Supplier<Batch> batchProvider, Runnable closeTask) {
+		return close(batchProvider, Consumer.empty(), closeTask);
+	}
+
+	private static org.apache.catalina.Session rollback(Supplier<Batch> batchProvider, Runnable closeTask) {
+		return close(batchProvider, Batch::discard, closeTask);
+	}
+
+	private static org.apache.catalina.Session close(Supplier<Batch> batchProvider, Consumer<Batch> batchTask, Runnable closeTask) {
+		try (Batch batch = batchProvider.get()) {
 			batch.discard();
 		} catch (RuntimeException | Error e) {
 			LOGGER.log(System.Logger.Level.WARNING, e.getLocalizedMessage(), e);
