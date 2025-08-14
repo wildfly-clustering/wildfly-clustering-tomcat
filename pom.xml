@@ -21,6 +21,8 @@
 	<properties>
 		<jdk.runtime.args>-Dorg.jboss.logging.provider=jdk --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED</jdk.runtime.args>
 		<maven.compiler.release>17</maven.compiler.release>
+		<!-- Skip redundant source packaging -->
+		<skipReleaseAssembly>true</skipReleaseAssembly>
 
 		<!-- Provided dependency versions -->
 		<version.net.jcip.annotations>1.0</version.net.jcip.annotations>
@@ -357,7 +359,7 @@
 			</properties>
 		</profile>
 		<profile>
-			<id>release</id>
+			<id>jboss-release</id>
 			<properties>
 				<checkstyle.skip>true</checkstyle.skip>
 				<skipTests>true</skipTests>
