@@ -9,8 +9,8 @@
 	<parent>
 		<groupId>org.jboss</groupId>
 		<artifactId>jboss-parent</artifactId>
-		<version>49</version>
-		<relativePath />
+		<version>50</version>
+		<relativePath/>
 	</parent>
 
 	<groupId>org.wildfly.clustering.tomcat</groupId>
@@ -24,13 +24,7 @@
 
 	<properties>
 		<!-- Nexus deployment settings -->
-		<nexus.repository.release>releases</nexus.repository.release>
-		<nexus.repository.staging>${nexus.repository.release}</nexus.repository.staging>
-		<nexus.repository.url>https://repository.jboss.org/nexus/</nexus.repository.url>
-		<nexus.server.id>jboss</nexus.server.id>
 		<nexus.staging.tag>${project.groupId}-${project.version}</nexus.staging.tag>
-
-		<maven.repository.url>https://repository.jboss.org/nexus/content/groups/public/</maven.repository.url>
 	</properties>
 
 	<licenses>
@@ -108,104 +102,4 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
-
-	<repositories>
-		<repository>
-			<id>default</id>
-			<url>${maven.repository.url}</url>
-			<layout>default</layout>
-			<releases>
-				<enabled>true</enabled>
-				<updatePolicy>never</updatePolicy>
-			</releases>
-			<snapshots>
-				<enabled>false</enabled>
-				<updatePolicy>never</updatePolicy>
-			</snapshots>
-		</repository>
-	</repositories>
-	<pluginRepositories>
-		<pluginRepository>
-			<id>default</id>
-			<url>${maven.repository.url}</url>
-			<releases>
-				<enabled>true</enabled>
-			</releases>
-			<snapshots>
-				<enabled>false</enabled>
-			</snapshots>
-		</pluginRepository>
-	</pluginRepositories>
-
-	<build>
-		<pluginManagement>
-			<plugins>
-				<plugin>
-					<groupId>org.sonatype.plugins</groupId>
-					<artifactId>nxrm3-maven-plugin</artifactId>
-					<version>1.0.7</version>
-				</plugin>
-			</plugins>
-		</pluginManagement>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-deploy-plugin</artifactId>
-				<executions>
-					<execution>
-						<!-- Disable default deploy execution from maven-deploy-plugin -->
-						<id>default-deploy</id>
-						<phase>none</phase>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-release-plugin</artifactId>
-				<configuration>
-					<!-- jboss-parent defines an arguments property which otherwise applies jboss-release profile on prepare -->
-					<arguments combine.self="override" />
-					<autoVersionSubmodules>true</autoVersionSubmodules>
-					<releaseProfiles>gpg-sign,release</releaseProfiles>
-					<signTag>true</signTag>
-					<tagNameFormat>@{project.version}</tagNameFormat>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.sonatype.plugins</groupId>
-				<artifactId>nxrm3-maven-plugin</artifactId>
-				<configuration>
-					<serverId>${nexus.server.id}</serverId>
-					<nexusUrl>${nexus.repository.url}</nexusUrl>
-					<repository>${nexus.repository.staging}</repository>
-					<tag>${nexus.staging.tag}</tag>
-					<!-- Used by staging-move goal -->
-					<destinationRepository>${nexus.repository.release}</destinationRepository>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
-
-	<profiles>
-		<profile>
-			<id>release</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.sonatype.plugins</groupId>
-						<artifactId>nxrm3-maven-plugin</artifactId>
-						<executions>
-							<execution>
-								<id>nexus-deploy</id>
-								<phase>deploy</phase>
-								<goals>
-									<goal>staging-deploy</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
 </project>

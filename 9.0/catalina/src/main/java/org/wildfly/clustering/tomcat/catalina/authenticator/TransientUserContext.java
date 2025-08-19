@@ -9,7 +9,7 @@ import java.security.Principal;
 /**
  * @author Paul Ferraro
  */
-public class LocalSSOContext {
+public class TransientUserContext {
 
 	private volatile Principal principal;
 

@@ -21,13 +21,15 @@
 	<properties>
 		<jdk.runtime.args>-Dorg.jboss.logging.provider=jdk --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED</jdk.runtime.args>
 		<maven.compiler.release>17</maven.compiler.release>
+		<!-- Skip redundant source packaging -->
+		<skipReleaseAssembly>true</skipReleaseAssembly>
 
 		<!-- Provided dependency versions -->
 		<version.net.jcip.annotations>1.0</version.net.jcip.annotations>
 		<version.org.kohsuke.metainf-services>1.11</version.org.kohsuke.metainf-services>
 
 		<!-- Runtime dependency versions -->
-		<version.org.wildfly.clustering>7.0.9.Final</version.org.wildfly.clustering>
+		<version.org.wildfly.clustering>7.0.10.Final</version.org.wildfly.clustering>
 
 		<!-- Test dependency versions -->
 		<version.org.assertj>3.27.4</version.org.assertj>
@@ -357,7 +359,7 @@
 			</properties>
 		</profile>
 		<profile>
-			<id>release</id>
+			<id>jboss-release</id>
 			<properties>
 				<checkstyle.skip>true</checkstyle.skip>
 				<skipTests>true</skipTests>
