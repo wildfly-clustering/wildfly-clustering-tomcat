@@ -123,7 +123,9 @@ public class DistributableManager implements CatalinaManager {
 			String internalId = new StringBuilder(id.length() + route.length() + 1).append(id).append(ROUTE_DELIMITER).append(route).toString();
 			return new DistributableSession(this, session, internalId, suspendedBatch, closeTask);
 		} catch (RuntimeException | Error e) {
-			rollback(suspendedBatch::resume, closeTask);
+			try (Context<Batch> context = entry.getKey().resumeWithContext()) {
+				close(context, Batch::discard, entry.getValue());
+			}
 			throw e;
 		}
 	}
@@ -160,10 +162,6 @@ public class DistributableManager implements CatalinaManager {
 
 	private static org.apache.catalina.Session close(Supplier<Batch> batchProvider, Runnable closeTask) {
 		return close(batchProvider, Consumer.empty(), closeTask);
-	}
-
-	private static org.apache.catalina.Session rollback(Supplier<Batch> batchProvider, Runnable closeTask) {
-		return close(batchProvider, Batch::discard, closeTask);
 	}
 
 	private static org.apache.catalina.Session close(Supplier<Batch> batchProvider, Consumer<Batch> batchTask, Runnable closeTask) {

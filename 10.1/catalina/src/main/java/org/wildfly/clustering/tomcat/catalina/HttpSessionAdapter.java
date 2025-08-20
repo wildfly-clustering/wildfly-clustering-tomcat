@@ -46,7 +46,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 	@Override
 	public boolean isNew() {
 		Session<CatalinaSessionContext> session = this.reference.get();
-		try (Context<Batch> context = this.batch.resumeWithContext()) {
+		try {
 			return session.getMetaData().isNew();
 		} catch (IllegalStateException e) {
 			this.closeIfInvalid(session);
@@ -57,7 +57,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 	@Override
 	public long getCreationTime() {
 		Session<CatalinaSessionContext> session = this.reference.get();
-		try (Context<Batch> context = this.batch.resumeWithContext()) {
+		try {
 			return session.getMetaData().getCreationTime().toEpochMilli();
 		} catch (IllegalStateException e) {
 			this.closeIfInvalid(session);
@@ -68,7 +68,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 	@Override
 	public long getLastAccessedTime() {
 		Session<CatalinaSessionContext> session = this.reference.get();
-		try (Context<Batch> context = this.batch.resumeWithContext()) {
+		try {
 			return session.getMetaData().getLastAccessTime().toEpochMilli();
 		} catch (IllegalStateException e) {
 			this.closeIfInvalid(session);
@@ -79,7 +79,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 	@Override
 	public int getMaxInactiveInterval() {
 		Session<CatalinaSessionContext> session = this.reference.get();
-		try (Context<Batch> context = this.batch.resumeWithContext()) {
+		try {
 			return (int) session.getMetaData().getTimeout().getSeconds();
 		} catch (IllegalStateException e) {
 			this.closeIfInvalid(session);
@@ -90,7 +90,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 	@Override
 	public void setMaxInactiveInterval(int interval) {
 		Session<CatalinaSessionContext> session = this.reference.get();
-		try (Context<Batch> context = this.batch.resumeWithContext()) {
+		try {
 			session.getMetaData().setTimeout((interval > 0) ? Duration.ofSeconds(interval) : Duration.ZERO);
 		} catch (IllegalStateException e) {
 			this.closeIfInvalid(session);
@@ -112,7 +112,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 		if (EXCLUDED_ATTRIBUTES.contains(name)) {
 			return session.getContext().getNotes().get(name);
 		}
-		try (Context<Batch> context = this.batch.resumeWithContext()) {
+		try {
 			return session.getAttributes().get(name);
 		} catch (IllegalStateException e) {
 			this.closeIfInvalid(session);
@@ -123,7 +123,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 	@Override
 	public Enumeration<String> getAttributeNames() {
 		Session<CatalinaSessionContext> session = this.reference.get();
-		try (Context<Batch> context = this.batch.resumeWithContext()) {
+		try {
 			return Collections.enumeration(session.getAttributes().keySet());
 		} catch (IllegalStateException e) {
 			this.closeIfInvalid(session);
@@ -138,7 +138,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 			if (EXCLUDED_ATTRIBUTES.contains(name)) {
 				session.getContext().getNotes().put(name, value);
 			} else {
-				try (Context<Batch> context = this.batch.resumeWithContext()) {
+				try {
 					Object old = session.getAttributes().put(name, value);
 					if (old != value) {
 						this.notifySessionAttributeListeners(name, old, value);
@@ -159,7 +159,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 		if (EXCLUDED_ATTRIBUTES.contains(name)) {
 			session.getContext().getNotes().remove(name);
 		} else {
-			try (Context<Batch> context = this.batch.resumeWithContext()) {
+			try {
 				Object value = session.getAttributes().remove(name);
 				if (value != null) {
 					this.notifySessionAttributeListeners(name, value, null);
