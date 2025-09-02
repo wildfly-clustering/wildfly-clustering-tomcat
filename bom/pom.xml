@@ -10,12 +10,12 @@
 		<groupId>org.jboss</groupId>
 		<artifactId>jboss-parent</artifactId>
 		<version>50</version>
-		<relativePath/>
+		<relativePath />
 	</parent>
 
 	<groupId>org.wildfly.clustering.tomcat</groupId>
 	<artifactId>wildfly-clustering-tomcat-bom</artifactId>
-	<version>28.0.0.Final-SNAPSHOT</version>
+	<version>27.0.1.Final</version>
 	<packaging>pom</packaging>
 
 	<name>WildFly Clustering: Tomcat: BOM</name>
@@ -38,7 +38,7 @@
 		<connection>scm:git:git://github.com:wildfly-clustering/wildfly-clustering-tomcat.git</connection>
 		<developerConnection>scm:git:git@github.com:wildfly-clustering/wildfly-clustering-tomcat.git</developerConnection>
 		<url>https://github.com/wildfly-clustering/wildfly-clustering-tomcat</url>
-		<tag>HEAD</tag>
+		<tag>27.0.1.Final</tag>
 	</scm>
 
 	<dependencyManagement>
