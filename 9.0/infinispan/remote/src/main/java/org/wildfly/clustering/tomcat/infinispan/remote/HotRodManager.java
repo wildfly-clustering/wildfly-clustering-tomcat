@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 
 import javax.servlet.ServletContext;
 
+import org.infinispan.client.hotrod.DataFormat;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheContainer;
 import org.infinispan.client.hotrod.RemoteCacheManager;
@@ -21,6 +22,8 @@ import org.infinispan.client.hotrod.configuration.NearCacheMode;
 import org.infinispan.client.hotrod.configuration.RemoteCacheConfigurationBuilder;
 import org.infinispan.client.hotrod.configuration.TransactionMode;
 import org.infinispan.client.hotrod.impl.HotRodURI;
+import org.infinispan.commons.dataconversion.MediaType;
+import org.infinispan.commons.marshall.Marshaller;
 import org.wildfly.clustering.cache.infinispan.marshalling.MediaTypes;
 import org.wildfly.clustering.cache.infinispan.marshalling.UserMarshaller;
 import org.wildfly.clustering.cache.infinispan.remote.RemoteCacheConfiguration;
@@ -50,6 +53,14 @@ public class HotRodManager extends AbstractManager {
 	"distributed-cache" : {
 		"mode" : "SYNC",
 		"statistics" : "true",
+		"encoding" : {
+			"key" : {
+				"media-type" : "application/octet-stream"
+			},
+			"value" : {
+				"media-type" : "application/octet-stream"
+			}
+		},
 		"transaction" : {
 			"mode" : "BATCH",
 			"locking" : "PESSIMISTIC"
@@ -77,9 +88,10 @@ public class HotRodManager extends AbstractManager {
 	@Override
 	protected Map.Entry<SessionManagerFactory<ServletContext, CatalinaSessionContext>, java.util.function.UnaryOperator<String>> createSessionManagerFactory(SessionManagerFactoryConfiguration<CatalinaSessionContext> config, String localRoute, Consumer<Runnable> stopTasks) {
 		ClassLoader containerLoader = HotRodSessionManagerFactory.class.getClassLoader();
+		Marshaller marshaller = new UserMarshaller(MediaTypes.WILDFLY_PROTOSTREAM, new ProtoStreamByteBufferMarshaller(SerializationContextBuilder.newInstance(ClassLoaderMarshaller.of(containerLoader)).load(containerLoader).build()));
 		Configuration configuration = Optional.ofNullable(this.uri).map(HotRodURI::create).map(HotRodURI::toConfigurationBuilder).orElseGet(ConfigurationBuilder::new)
 				.withProperties(this.properties)
-				.marshaller(new UserMarshaller(MediaTypes.WILDFLY_PROTOSTREAM, new ProtoStreamByteBufferMarshaller(SerializationContextBuilder.newInstance(ClassLoaderMarshaller.of(containerLoader)).load(containerLoader).build())))
+				.marshaller(marshaller)
 				.build();
 
 		Consumer<RemoteCacheConfigurationBuilder> configurator = builder -> builder.forceReturnValues(false).nearCacheMode(config.getMaxActiveSessions().isPresent() ? NearCacheMode.INVALIDATED : NearCacheMode.DISABLED).transactionMode(TransactionMode.NONE);
@@ -98,7 +110,7 @@ public class HotRodManager extends AbstractManager {
 			@SuppressWarnings("unchecked")
 			@Override
 			public <K, V> RemoteCache<K, V> getCache() {
-				return (RemoteCache<K, V>) cache;
+				return (RemoteCache<K, V>) cache.withDataFormat(DataFormat.builder().keyType(MediaType.APPLICATION_OBJECT).keyMarshaller(marshaller).valueType(MediaType.APPLICATION_OBJECT).valueMarshaller(marshaller).build());
 			}
 		};
 

@@ -16,7 +16,6 @@ import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 
-import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
@@ -84,6 +83,14 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 				writer.writeAttribute("configuration", """
 {
 	"local-cache" : {
+		"encoding" : {
+			"key" : {
+				"media-type" : "application/octet-stream"
+			},
+			"value" : {
+				"media-type" : "application/octet-stream"
+			}
+		},
 		"expiration" : {
 			"interval" : 1000
 		},
@@ -93,8 +100,7 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 		}
 	}
 }""");
-				// TODO Figure out how to configure HASH_DISTRIBUTION_AWARE w/bridge networking
-				writer.writeAttribute("uri", String.format("hotrod://%s:%s@%s:%s?client_intelligence=%s", container.getUsername(), String.valueOf(container.getPassword()), container.getHost(), container.getPort(), container.isPortMapping() ? ClientIntelligence.BASIC : ClientIntelligence.HASH_DISTRIBUTION_AWARE));
+				writer.writeAttribute("uri", String.format("hotrod://%s:%s@%s:%s", container.getUsername(), String.valueOf(container.getPassword()), container.getHost(), container.getPort()));
 				writer.writeEndElement();
 			}
 			writer.writeEndElement();
