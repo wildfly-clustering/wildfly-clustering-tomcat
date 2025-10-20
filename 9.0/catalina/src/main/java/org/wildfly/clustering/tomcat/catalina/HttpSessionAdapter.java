@@ -36,6 +36,13 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 	private final SuspendedBatch batch;
 	private final Runnable closeTask;
 
+	/**
+	 * Creates a session adapter.
+	 * @param manager the manager of this session
+	 * @param reference a reference to the session
+	 * @param batch the batch associated with this session
+	 * @param closeTask a task to invoke on {@link #invalidate()}
+	 */
 	public HttpSessionAdapter(CatalinaManager manager, Supplier<Session<CatalinaSessionContext>> reference, SuspendedBatch batch, Runnable closeTask) {
 		this.manager = manager;
 		this.reference = reference;

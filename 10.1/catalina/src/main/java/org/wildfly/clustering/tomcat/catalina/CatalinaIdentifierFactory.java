@@ -15,6 +15,10 @@ public class CatalinaIdentifierFactory implements Supplier<String> {
 
 	private final SessionIdGenerator generator;
 
+	/**
+	 * Creates an identifier factory.
+	 * @param generator a session identifier generator
+	 */
 	public CatalinaIdentifierFactory(SessionIdGenerator generator) {
 		this.generator = generator;
 		// Prevent Tomcat's session id generator from auto-appending the route

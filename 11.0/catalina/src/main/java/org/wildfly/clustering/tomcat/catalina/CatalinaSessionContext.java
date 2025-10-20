@@ -22,26 +22,56 @@ public class CatalinaSessionContext {
 	private volatile String authType;
 	private volatile Principal principal;
 
+	/**
+	 * Creates the context of a Tomcat session.
+	 */
+	public CatalinaSessionContext() {
+	}
+
+	/**
+	 * Returns the authentication type.
+	 * @return the authentication type.
+	 */
 	public String getAuthType() {
 		return this.authType;
 	}
 
+	/**
+	 * Specifies the authentication type.
+	 * @param authType the authentication type.
+	 */
 	public void setAuthType(String authType) {
 		this.authType = authType;
 	}
 
+	/**
+	 * Returns the user principal.
+	 * @return the user principal.
+	 */
 	public Principal getPrincipal() {
 		return this.principal;
 	}
 
+	/**
+	 * Specifies the user principal.
+	 * @param principal a user principal
+	 */
 	public void setPrincipal(Principal principal) {
 		this.principal = principal;
 	}
 
+	/**
+	 * Returns the notes of this session.
+	 * @return the notes of this session.
+	 */
 	public Map<String, Object> getNotes() {
 		return this.notes;
 	}
 
+	/**
+	 * Returns the listeners of this session.
+	 * @return the listeners of this session.
+	 */
 	public List<SessionListener> getSessionListeners() {
 		return this.listeners;
 	}

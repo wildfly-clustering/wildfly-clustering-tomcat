@@ -5,6 +5,7 @@
 package org.wildfly.clustering.tomcat.catalina;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -16,7 +17,6 @@ import java.util.OptionalInt;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.ToIntFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -55,34 +55,75 @@ import org.wildfly.clustering.tomcat.SessionPersistenceGranularity;
  */
 public abstract class AbstractManager extends ManagerBase implements DistributedManager {
 
-	static final ToIntFunction<ServletContext> SESSION_TIMEOUT_FUNCTION = ServletContext::getSessionTimeout;
-
 	private final Deque<Runnable> stopTasks = new LinkedList<>();
 
 	private volatile CatalinaManager manager;
 	private volatile SessionAttributePersistenceStrategy persistenceStrategy = SessionPersistenceGranularity.SESSION.get();
 	private volatile SessionMarshallerFactory marshallerFactory = SessionMarshallerFactory.JBOSS;
+	private volatile Optional<Duration> idleTimeout = Optional.empty();
 
+	/**
+	 * Creates a manager.
+	 */
+	protected AbstractManager() {
+	}
+
+	/**
+	 * Specifies the session attribute persistence strategy of this manager.
+	 * @param strategy a session attribute persistence strategy
+	 */
 	public void setPersistenceStrategy(SessionAttributePersistenceStrategy strategy) {
 		this.persistenceStrategy = strategy;
 	}
 
+	/**
+	 * Specifies the session attribute granularity of this manager.
+	 * @param granularity a session attribute granularity
+	 */
 	public void setGranularity(SessionPersistenceGranularity granularity) {
 		this.setPersistenceStrategy(granularity.get());
 	}
 
+	/**
+	 * Specifies the session attribute granularity of this manager.
+	 * @param granularity a session attribute granularity
+	 */
 	public void setGranularity(String granularity) {
 		this.setGranularity(SessionPersistenceGranularity.valueOf(granularity));
 	}
 
+	/**
+	 * Specifies the factory for creating the session attribute marshaller for this manager.
+	 * @param marshallerFactory factory for creating the session attribute marshaller for this manager.
+	 */
 	public void setMarshallerFactory(SessionMarshallerFactory marshallerFactory) {
 		this.marshallerFactory = marshallerFactory;
 	}
 
-	public void setMarshaller(String marshallerFactory) {
-		this.setMarshallerFactory(SessionMarshallerFactory.valueOf(marshallerFactory));
+	/**
+	 * Specifies the name of the session attribute marshaller for this manager.
+	 * @param name the name of session attribute marshaller for this manager.
+	 */
+	public void setMarshaller(String name) {
+		this.setMarshallerFactory(SessionMarshallerFactory.valueOf(name));
 	}
 
+	/**
+	 * Specifies the duration, in ISO-8601 format, following last access after which a session should be considered idle.
+	 * @param duration a duration in ISO-8601 format
+	 */
+	public void setIdleTimeout(String duration) {
+		this.idleTimeout = Optional.of(Duration.parse(duration));
+	}
+
+	/**
+	 * Creates a tuple containing a session manager factory and JVM route provider.
+	 * @param configuration the configuration the session manager factory
+	 * @param localRoute the local JVM route
+	 * @param stopTask a task to invoke on {@link AbstractManager#stop()}.
+	 * @return a tuple containing a session manager factory and JVM route provider.
+	 * @throws LifecycleException if the session manager factory could not be created.
+	 */
 	protected abstract Map.Entry<SessionManagerFactory<ServletContext, CatalinaSessionContext>, UnaryOperator<String>> createSessionManagerFactory(SessionManagerFactoryConfiguration<CatalinaSessionContext> configuration, String localRoute, Consumer<Runnable> stopTask) throws LifecycleException;
 
 	@Override
@@ -97,6 +138,7 @@ public abstract class AbstractManager extends ManagerBase implements Distributed
 		// Deployment name = host name + context path + version
 		String deploymentName = host.getName() + context.getName();
 		OptionalInt maxActiveSessions = IntStream.of(this.getMaxActiveSessions()).filter(IntPredicate.POSITIVE).findFirst();
+		Optional<Duration> idleTimeout = this.idleTimeout;
 		SessionAttributePersistenceStrategy strategy = this.persistenceStrategy;
 
 		ClassLoader loader = context.getLoader().getClassLoader();
@@ -110,8 +152,13 @@ public abstract class AbstractManager extends ManagerBase implements Distributed
 
 		SessionManagerFactoryConfiguration<CatalinaSessionContext> sessionManagerFactoryConfig = new SessionManagerFactoryConfiguration<>() {
 			@Override
-			public OptionalInt getMaxActiveSessions() {
+			public OptionalInt getMaxSize() {
 				return maxActiveSessions;
+			}
+
+			@Override
+			public Optional<Duration> getIdleTimeout() {
+				return idleTimeout;
 			}
 
 			@Override
@@ -159,15 +206,15 @@ public abstract class AbstractManager extends ManagerBase implements Distributed
 		Consumer<ImmutableSession> destroyNotifier = session -> CatalinaSessionEventNotifier.Lifecycle.DESTROY.accept(this, new HttpSessionEvent(HttpSessionProvider.INSTANCE.asSession(session, this.getContext().getServletContext())));
 		Supplier<String> identifierFactory = new CatalinaIdentifierFactory(this.getSessionIdGenerator());
 
-		SessionManagerConfiguration<ServletContext> sessionManagerConfiguration = new org.wildfly.clustering.tomcat.SessionManagerConfiguration<>() {
+		SessionManagerConfiguration<ServletContext> sessionManagerConfiguration = new SessionManagerConfiguration<>() {
 			@Override
 			public ServletContext getContext() {
 				return servletContext;
 			}
 
 			@Override
-			public ToIntFunction<ServletContext> getSessionTimeoutFunction() {
-				return SESSION_TIMEOUT_FUNCTION;
+			public Duration getTimeout() {
+				return Duration.ofMinutes(servletContext.getSessionTimeout());
 			}
 
 			@Override

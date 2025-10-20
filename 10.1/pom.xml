@@ -15,16 +15,20 @@
 	<artifactId>wildfly-clustering-tomcat-10.1</artifactId>
 	<packaging>pom</packaging>
 
-	<name>WildFly Clustering: Tomcat 10.1: Modules</name>
+	<name>${project.tomcat}: Modules</name>
+
+	<properties>
+		<project.tomcat>${project.repository.name} 10.1</project.tomcat>
+
+		<version.org.apache.tomcat>10.1.46</version.org.apache.tomcat>
+
+		<catalina.home>${project.build.directory}/apache-tomcat-${version.org.apache.tomcat}</catalina.home>
+	</properties>
 
 	<modules>
 		<module>catalina</module>
 		<module>infinispan</module>
 	</modules>
-
-	<properties>
-		<version.org.apache.tomcat>10.1.46</version.org.apache.tomcat>
-	</properties>
 
 	<dependencyManagement>
 		<dependencies>
@@ -35,5 +39,4 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
-
 </project>

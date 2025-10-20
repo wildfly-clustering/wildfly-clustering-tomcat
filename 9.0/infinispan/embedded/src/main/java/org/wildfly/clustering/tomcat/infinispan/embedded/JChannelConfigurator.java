@@ -42,6 +42,7 @@ import org.jgroups.util.StackType;
 import org.jgroups.util.Util;
 
 /**
+ * A JGroups channel configurator.
  * @author Paul Ferraro
  */
 public class JChannelConfigurator implements JGroupsChannelConfigurator {
@@ -52,6 +53,12 @@ public class JChannelConfigurator implements JGroupsChannelConfigurator {
 	private final String name;
 	private final ProtocolStackConfigurator configurator;
 
+	/**
+	 * Creates a JGroups channel configurator.
+	 * @param transport a transport configuration
+	 * @param loader the class loader used to load protocol classes
+	 * @throws IOException if the JGroups configuration could not be loadeded
+	 */
 	public JChannelConfigurator(TransportConfiguration transport, ClassLoader loader) throws IOException {
 		this.name = transport.stack();
 		this.configurator = getProtocolStackConfigurator(transport, loader);

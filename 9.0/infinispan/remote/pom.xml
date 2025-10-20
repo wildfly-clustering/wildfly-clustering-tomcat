@@ -15,13 +15,7 @@
 	<artifactId>wildfly-clustering-tomcat-9.0-infinispan-remote</artifactId>
 	<packaging>jar</packaging>
 
-	<name>WildFly Clustering: Tomcat 9.0: Remote Infinispan session manager</name>
-
-	<properties>
-		<infinispan.server.home>${project.build.directory}/infinispan-server-${version.org.infinispan.server}</infinispan.server.home>
-		<infinispan.server.profile>${infinispan.server.home}/server/conf/infinispan.xml</infinispan.server.profile>
-		<catalina.home>${project.build.directory}/apache-tomcat-${version.org.apache.tomcat}</catalina.home>
-	</properties>
+	<name>${project.tomcat.infinispan}: Embedded</name>
 
 	<dependencies>
 		<dependency>
@@ -107,14 +101,15 @@
 		<testResources>
 			<testResource>
 				<directory>src/test/resources</directory>
+				<filtering>true</filtering>
 				<includes>
 					<include>arquillian.xml</include>
 				</includes>
-				<filtering>true</filtering>
 			</testResource>
 			<testResource>
 				<directory>src/test/resources/tomcat</directory>
 				<targetPath>${catalina.home}/conf</targetPath>
+				<filtering>true</filtering>
 				<includes>
 					<include>*.xml</include>
 					<include>*.properties</include>
@@ -213,6 +208,21 @@
 						</goals>
 						<configuration>
 							<outputDirectory>${project.build.directory}/tomcat-2</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${catalina.home}</directory>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+					<execution>
+						<id>copy-tomcat-3</id>
+						<phase>pre-integration-test</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/tomcat-3</outputDirectory>
 							<resources>
 								<resource>
 									<directory>${catalina.home}</directory>
