@@ -36,6 +36,14 @@ public class DistributableSession implements CatalinaSession {
 	private final Runnable closeTask;
 	private final HttpSession session;
 
+	/**
+	 * Creates a distributable session.
+	 * @param manager the manager of this session.
+	 * @param session the decorated session
+	 * @param internalId the internal identifier
+	 * @param batch the batch associated with this session
+	 * @param closeTask a task to invoke on {@link #endAccess()}.
+	 */
 	public DistributableSession(CatalinaManager manager, Session<CatalinaSessionContext> session, String internalId, SuspendedBatch batch, Runnable closeTask) {
 		this.manager = manager;
 		this.reference = new AtomicReference<>(session);
@@ -225,6 +233,6 @@ public class DistributableSession implements CatalinaSession {
 
 	@Override
 	public boolean isAttributeDistributable(String name, Object value) {
-		return this.manager.getMarshallability().isMarshallable(value);
+		return this.manager.getMarshallability().test(value);
 	}
 }

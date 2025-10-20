@@ -15,7 +15,11 @@
 	<artifactId>wildfly-clustering-tomcat-9.0-infinispan</artifactId>
 	<packaging>pom</packaging>
 
-	<name>WildFly Clustering: Tomcat 9.0: Infinispan modules</name>
+	<name>${project.tomcat.infinispan}: Modules</name>
+
+	<properties>
+		<project.tomcat.infinispan>${project.tomcat}: Infinispan</project.tomcat.infinispan>
+	</properties>
 
 	<modules>
 		<module>embedded</module>

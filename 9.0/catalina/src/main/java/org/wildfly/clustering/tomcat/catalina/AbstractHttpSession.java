@@ -15,6 +15,11 @@ import javax.servlet.http.HttpSession;
  * @author Paul Ferraro
  */
 public abstract class AbstractHttpSession implements HttpSession {
+	/**
+	 * Creates a session.
+	 */
+	protected AbstractHttpSession() {
+	}
 
 	@Deprecated
 	@Override

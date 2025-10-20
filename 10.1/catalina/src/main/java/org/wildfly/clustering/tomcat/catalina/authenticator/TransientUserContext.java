@@ -7,17 +7,18 @@ package org.wildfly.clustering.tomcat.catalina.authenticator;
 import java.security.Principal;
 
 /**
+ * A non-persistent user context.
  * @author Paul Ferraro
  */
-public class TransientUserContext {
+class TransientUserContext {
 
 	private volatile Principal principal;
 
-	public Principal getPrincipal() {
+	Principal getPrincipal() {
 		return this.principal;
 	}
 
-	public void setPrincipal(Principal principal) {
+	void setPrincipal(Principal principal) {
 		this.principal = principal;
 	}
 }

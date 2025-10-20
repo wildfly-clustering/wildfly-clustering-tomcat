@@ -18,7 +18,7 @@ import org.wildfly.clustering.cache.batch.Batch;
 import org.wildfly.clustering.cache.batch.SuspendedBatch;
 import org.wildfly.clustering.context.Context;
 import org.wildfly.clustering.function.Consumer;
-import org.wildfly.clustering.marshalling.Marshallability;
+import org.wildfly.clustering.function.Predicate;
 import org.wildfly.clustering.session.Session;
 import org.wildfly.clustering.session.SessionManager;
 import org.wildfly.clustering.session.spec.servlet.HttpSessionProvider;
@@ -34,11 +34,18 @@ public class DistributableManager implements CatalinaManager {
 	private final SessionManager<CatalinaSessionContext> manager;
 	private final UnaryOperator<String> affinity;
 	private final org.apache.catalina.Context context;
-	private final Marshallability marshallability;
+	private final Predicate<Object> marshallability;
 	private final StampedLock lifecycleLock = new StampedLock();
 	private final AtomicLong lifecycleStamp = new AtomicLong();
 
-	public DistributableManager(SessionManager<CatalinaSessionContext> manager, UnaryOperator<String> affinity, org.apache.catalina.Context context, Marshallability marshallability) {
+	/**
+	 * Creates a distributed manager.
+	 * @param manager the decorated manager
+	 * @param affinity the session affinity
+	 * @param context the servlet context
+	 * @param marshallability the predicate for testing marshallability of a session attribute.
+	 */
+	public DistributableManager(SessionManager<CatalinaSessionContext> manager, UnaryOperator<String> affinity, org.apache.catalina.Context context, Predicate<Object> marshallability) {
 		this.manager = manager;
 		this.affinity = affinity;
 		this.marshallability = marshallability;
@@ -51,7 +58,7 @@ public class DistributableManager implements CatalinaManager {
 	}
 
 	@Override
-	public Marshallability getMarshallability() {
+	public Predicate<Object> getMarshallability() {
 		return this.marshallability;
 	}
 
@@ -142,7 +149,7 @@ public class DistributableManager implements CatalinaManager {
 
 	@Override
 	public boolean willAttributeDistribute(String name, Object value) {
-		return this.marshallability.isMarshallable(value);
+		return this.marshallability.test(value);
 	}
 
 	@Override

@@ -11,6 +11,8 @@ import java.util.Properties;
 import java.util.function.Consumer;
 
 import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSessionActivationListener;
 
 import org.infinispan.client.hotrod.DataFormat;
 import org.infinispan.client.hotrod.RemoteCache;
@@ -34,6 +36,8 @@ import org.wildfly.clustering.marshalling.protostream.SerializationContextBuilde
 import org.wildfly.clustering.session.SessionManagerFactory;
 import org.wildfly.clustering.session.SessionManagerFactoryConfiguration;
 import org.wildfly.clustering.session.infinispan.remote.HotRodSessionManagerFactory;
+import org.wildfly.clustering.session.spec.SessionEventListenerSpecificationProvider;
+import org.wildfly.clustering.session.spec.SessionSpecificationProvider;
 import org.wildfly.clustering.session.spec.servlet.HttpSessionActivationListenerProvider;
 import org.wildfly.clustering.session.spec.servlet.HttpSessionProvider;
 import org.wildfly.clustering.tomcat.catalina.AbstractManager;
@@ -69,18 +73,41 @@ public class HotRodManager extends AbstractManager {
 }""";
 	private volatile URI uri = null;
 
+	/**
+	 * Creates a new distributed manager.
+	 */
+	public HotRodManager() {
+	}
+
+	/**
+	 * Specifies the HotRod URI of this manager.
+	 * @param uri a HotRod URI.
+	 */
 	public void setUri(String uri) {
 		this.uri = URI.create(uri);
 	}
 
+	/**
+	 * Specifies a HotRod property.
+	 * @param name a property name
+	 * @param value a property value
+	 */
 	public void setProperty(String name, String value) {
 		this.properties.setProperty("infinispan.client.hotrod." + name, value);
 	}
 
+	/**
+	 * Specifies the name of a server-side cache configuration.
+	 * @param templateName the name of a server-side cache configuration
+	 */
 	public void setTemplate(String templateName) {
 		this.templateName = templateName;
 	}
 
+	/**
+	 * Specifies a server-side cache configuration.
+	 * @param configuration a server-side cache configuration
+	 */
 	public void setConfiguration(String configuration) {
 		this.configuration = configuration;
 	}
@@ -94,7 +121,7 @@ public class HotRodManager extends AbstractManager {
 				.marshaller(marshaller)
 				.build();
 
-		Consumer<RemoteCacheConfigurationBuilder> configurator = builder -> builder.forceReturnValues(false).nearCacheMode(config.getMaxActiveSessions().isPresent() ? NearCacheMode.INVALIDATED : NearCacheMode.DISABLED).transactionMode(TransactionMode.NONE);
+		Consumer<RemoteCacheConfigurationBuilder> configurator = builder -> builder.forceReturnValues(false).nearCacheMode(config.getMaxSize().isPresent() ? NearCacheMode.INVALIDATED : NearCacheMode.DISABLED).transactionMode(TransactionMode.NONE);
 		configuration.addRemoteCache(config.getDeploymentName(), configurator.andThen((this.templateName != null) ? builder -> builder.templateName(this.templateName) : builder -> builder.configuration(this.configuration)));
 
 		@SuppressWarnings("resource")
@@ -106,14 +133,33 @@ public class HotRodManager extends AbstractManager {
 		cache.start();
 		stopTasks.accept(cache::stop);
 
-		RemoteCacheConfiguration hotrod = new RemoteCacheConfiguration() {
+		RemoteCacheConfiguration cacheConfiguration = new RemoteCacheConfiguration() {
 			@SuppressWarnings("unchecked")
 			@Override
 			public <K, V> RemoteCache<K, V> getCache() {
 				return (RemoteCache<K, V>) cache.withDataFormat(DataFormat.builder().keyType(MediaType.APPLICATION_OBJECT).keyMarshaller(marshaller).valueType(MediaType.APPLICATION_OBJECT).valueMarshaller(marshaller).build());
 			}
 		};
+		return Map.entry(new HotRodSessionManagerFactory<>(new HotRodSessionManagerFactory.Configuration<HttpSession, ServletContext, CatalinaSessionContext, HttpSessionActivationListener>() {
+			@Override
+			public SessionManagerFactoryConfiguration<CatalinaSessionContext> getSessionManagerFactoryConfiguration() {
+				return config;
+			}
 
-		return Map.entry(new HotRodSessionManagerFactory<>(config, HttpSessionProvider.INSTANCE, HttpSessionActivationListenerProvider.INSTANCE, hotrod), UnaryOperator.of(localRoute));
+			@Override
+			public SessionSpecificationProvider<HttpSession, ServletContext> getSessionSpecificationProvider() {
+				return HttpSessionProvider.INSTANCE;
+			}
+
+			@Override
+			public SessionEventListenerSpecificationProvider<HttpSession, HttpSessionActivationListener> getSessionEventListenerSpecificationProvider() {
+				return HttpSessionActivationListenerProvider.INSTANCE;
+			}
+
+			@Override
+			public RemoteCacheConfiguration getCacheConfiguration() {
+				return cacheConfiguration;
+			}
+		}), UnaryOperator.of(localRoute));
 	}
 }

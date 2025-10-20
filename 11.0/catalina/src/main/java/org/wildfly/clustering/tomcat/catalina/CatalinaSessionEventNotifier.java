@@ -22,10 +22,26 @@ import org.apache.catalina.Manager;
 /**
  * Describes a container session event.
  * @author Paul Ferraro
+ * @param <L> the session event listener type
+ * @param <E> the session event type
  */
 public interface CatalinaSessionEventNotifier<L, E extends HttpSessionEvent> extends BiConsumer<Manager, E> {
+	/**
+	 * Returns the specification session event listener class.
+	 * @return the specification session event listener class.
+	 */
 	Class<L> getListenerClass();
+
+	/**
+	 * Returns the event type.
+	 * @return the event type.
+	 */
 	String getEventType();
+
+	/**
+	 * Returns the session event notifier.
+	 * @return the session event notifier.
+	 */
 	BiConsumer<L, E> getEventNotifier();
 
 	@Override
@@ -45,8 +61,13 @@ public interface CatalinaSessionEventNotifier<L, E extends HttpSessionEvent> ext
 		});
 	}
 
+	/**
+	 * Enumerates the session lifecycle events.
+	 */
 	enum Lifecycle implements CatalinaSessionEventNotifier<HttpSessionListener, HttpSessionEvent> {
+		/** A session created event */
 		CREATE("Created", HttpSessionListener::sessionCreated),
+		/** A session destroyed event */
 		DESTROY("Destroyed", HttpSessionListener::sessionDestroyed) {
 			@Override
 			public void accept(Manager manager, HttpSessionEvent event) {
@@ -93,9 +114,15 @@ public interface CatalinaSessionEventNotifier<L, E extends HttpSessionEvent> ext
 		}
 	}
 
+	/**
+	 * Enumerates the session attribute events.
+	 */
 	enum Attribute implements CatalinaSessionEventNotifier<HttpSessionAttributeListener, HttpSessionBindingEvent> {
+		/** A session attribute added event */
 		ADDED("AttributeAdded", HttpSessionAttributeListener::attributeAdded),
+		/** A session attribute removed event */
 		REMOVED("AttributeRemoved", HttpSessionAttributeListener::attributeRemoved),
+		/** A session attribute replaced event */
 		REPLACED("AttributeReplaced", HttpSessionAttributeListener::attributeReplaced),
 		;
 		private final String eventType;

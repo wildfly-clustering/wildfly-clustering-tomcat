@@ -16,7 +16,7 @@
 	<artifactId>wildfly-clustering-tomcat-10.1-catalina</artifactId>
 	<packaging>jar</packaging>
 
-	<name>WildFly Clustering: Tomcat 10.1: Catalina integration</name>
+	<name>${project.tomcat}: Catalina</name>
 
 	<dependencies>
 		<dependency>

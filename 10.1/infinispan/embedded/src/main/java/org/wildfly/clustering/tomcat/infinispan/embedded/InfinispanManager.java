@@ -19,6 +19,8 @@ import java.util.function.UnaryOperator;
 import javax.management.ObjectName;
 
 import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSessionActivationListener;
 
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
@@ -51,6 +53,7 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.jmx.JmxConfigurator;
 import org.wildfly.clustering.cache.Key;
+import org.wildfly.clustering.cache.infinispan.embedded.EmbeddedCacheConfiguration;
 import org.wildfly.clustering.cache.infinispan.embedded.container.DataContainerConfigurationBuilder;
 import org.wildfly.clustering.cache.infinispan.marshalling.MediaTypes;
 import org.wildfly.clustering.cache.infinispan.marshalling.UserMarshaller;
@@ -68,13 +71,13 @@ import org.wildfly.clustering.server.infinispan.dispatcher.LocalEmbeddedCacheMan
 import org.wildfly.clustering.server.jgroups.ChannelGroupMember;
 import org.wildfly.clustering.server.jgroups.dispatcher.ChannelCommandDispatcherFactory;
 import org.wildfly.clustering.server.jgroups.dispatcher.JChannelCommandDispatcherFactory;
-import org.wildfly.clustering.server.jgroups.dispatcher.JChannelCommandDispatcherFactoryConfiguration;
 import org.wildfly.clustering.session.SessionManagerFactory;
 import org.wildfly.clustering.session.SessionManagerFactoryConfiguration;
 import org.wildfly.clustering.session.cache.affinity.UnarySessionAffinity;
 import org.wildfly.clustering.session.infinispan.embedded.InfinispanSessionManagerFactory;
-import org.wildfly.clustering.session.infinispan.embedded.InfinispanSessionManagerFactoryConfiguration;
 import org.wildfly.clustering.session.infinispan.embedded.metadata.SessionMetaDataKey;
+import org.wildfly.clustering.session.spec.SessionEventListenerSpecificationProvider;
+import org.wildfly.clustering.session.spec.SessionSpecificationProvider;
 import org.wildfly.clustering.session.spec.servlet.HttpSessionActivationListenerProvider;
 import org.wildfly.clustering.session.spec.servlet.HttpSessionProvider;
 import org.wildfly.clustering.tomcat.catalina.AbstractManager;
@@ -91,10 +94,24 @@ public class InfinispanManager extends AbstractManager {
 	private volatile String resourceName = "infinispan.xml";
 	private volatile String cacheName = null;
 
+	/**
+	 * Creates a distributed manager.
+	 */
+	public InfinispanManager() {
+	}
+
+	/**
+	 * Specifies the name Infinispan configuration resource.
+	 * @param resourceName the name of the Infinispan configuration resource.
+	 */
 	public void setResource(String resourceName) {
 		this.resourceName = resourceName;
 	}
 
+	/**
+	 * Specifies the name of a cache configuration.
+	 * @param cacheName the name of a cache configuration.
+	 */
 	public void setTemplate(String cacheName) {
 		this.cacheName = cacheName;
 	}
@@ -165,7 +182,7 @@ public class InfinispanManager extends AbstractManager {
 				global.transport().withProperties(properties);
 			}
 
-			ChannelCommandDispatcherFactory channelCommandDispatcherFactory = (channel != null) ? new JChannelCommandDispatcherFactory(new JChannelCommandDispatcherFactoryConfiguration() {
+			ChannelCommandDispatcherFactory channelCommandDispatcherFactory = (channel != null) ? new JChannelCommandDispatcherFactory(new JChannelCommandDispatcherFactory.Configuration() {
 				@Override
 				public JChannel getChannel() {
 					return channel;
@@ -241,7 +258,7 @@ public class InfinispanManager extends AbstractManager {
 			// Disable expiration
 			builder.expiration().lifespan(-1).maxIdle(-1).disableReaper().wakeUpInterval(-1);
 
-			OptionalInt maxActiveSessions = config.getMaxActiveSessions();
+			OptionalInt maxActiveSessions = config.getMaxSize();
 			EvictionStrategy eviction = maxActiveSessions.isPresent() ? EvictionStrategy.REMOVE : EvictionStrategy.MANUAL;
 			builder.memory().storage(StorageType.HEAP)
 					.whenFull(eviction)
@@ -250,7 +267,9 @@ public class InfinispanManager extends AbstractManager {
 			if (eviction.isEnabled()) {
 				// Only evict meta-data entries
 				// We will cascade eviction to the remaining entries for a given session
-				builder.addModule(DataContainerConfigurationBuilder.class).evictable(SessionMetaDataKey.class::isInstance);
+				DataContainerConfigurationBuilder containerBuilder = builder.addModule(DataContainerConfigurationBuilder.class);
+				containerBuilder.evictable(SessionMetaDataKey.class::isInstance);
+				config.getIdleTimeout().ifPresent(containerBuilder::idleTimeout);
 			}
 
 			String cacheName = config.getDeploymentName();
@@ -278,16 +297,38 @@ public class InfinispanManager extends AbstractManager {
 			cache.start();
 			stopTasks.accept(cache::stop);
 
-			return Map.entry(new InfinispanSessionManagerFactory<>(config, HttpSessionProvider.INSTANCE, HttpSessionActivationListenerProvider.INSTANCE, new InfinispanSessionManagerFactoryConfiguration() {
+			EmbeddedCacheConfiguration cacheConfiguration = new EmbeddedCacheConfiguration() {
 				@SuppressWarnings("unchecked")
 				@Override
 				public <K, V> Cache<K, V> getCache() {
 					return (Cache<K, V>) cache;
 				}
+			};
+
+			return Map.entry(new InfinispanSessionManagerFactory<>(new InfinispanSessionManagerFactory.Configuration<HttpSession, ServletContext, CatalinaSessionContext, HttpSessionActivationListener>() {
+				@Override
+				public SessionManagerFactoryConfiguration<CatalinaSessionContext> getSessionManagerFactoryConfiguration() {
+					return config;
+				}
+
+				@Override
+				public SessionSpecificationProvider<HttpSession, ServletContext> getSessionSpecificationProvider() {
+					return HttpSessionProvider.INSTANCE;
+				}
+
+				@Override
+				public SessionEventListenerSpecificationProvider<HttpSession, HttpSessionActivationListener> getSessionEventListenerSpecificationProvider() {
+					return HttpSessionActivationListenerProvider.INSTANCE;
+				}
 
 				@Override
 				public CacheContainerCommandDispatcherFactory getCommandDispatcherFactory() {
 					return commandDispatcherFactory;
+				}
+
+				@Override
+				public EmbeddedCacheConfiguration getCacheConfiguration() {
+					return cacheConfiguration;
 				}
 			}), new UnarySessionAffinity<>(new UnaryGroupMemberAffinity<>(cache, commandDispatcherFactory.getGroup()), CacheContainerGroupMember::getName));
 		} catch (LifecycleException e) {

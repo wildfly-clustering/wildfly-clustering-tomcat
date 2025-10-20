@@ -16,7 +16,7 @@ import org.apache.catalina.LifecycleListener;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Manager;
 import org.apache.catalina.SessionIdGenerator;
-import org.wildfly.clustering.marshalling.Marshallability;
+import org.wildfly.clustering.function.Predicate;
 import org.wildfly.clustering.session.SessionManager;
 
 /**
@@ -32,10 +32,10 @@ public interface CatalinaManager extends Manager, Lifecycle, DistributedManager 
 	SessionManager<CatalinaSessionContext> getSessionManager();
 
 	/**
-	 * Returns a mechanism for determining the marshallability of a session attribute.
-	 * @return the mechanism for determining marshallability.
+	 * Returns a predicate for testing the marshallability of a session attribute.
+	 * @return a predicate for testing the marshallability of a session attribute.
 	 */
-	Marshallability getMarshallability();
+	Predicate<Object> getMarshallability();
 
 	@Override
 	default int getActiveSessionsFull() {

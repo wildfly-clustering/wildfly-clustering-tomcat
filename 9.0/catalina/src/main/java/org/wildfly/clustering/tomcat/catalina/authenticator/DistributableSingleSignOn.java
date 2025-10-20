@@ -26,6 +26,7 @@ import org.wildfly.clustering.session.user.User;
 import org.wildfly.clustering.session.user.UserManager;
 
 /**
+ * A distributable single sign-on implementation.
  * @author Paul Ferraro
  */
 public class DistributableSingleSignOn extends SingleSignOn implements ManagerRegistry, LifecycleListener {
@@ -33,6 +34,10 @@ public class DistributableSingleSignOn extends SingleSignOn implements ManagerRe
 	private final ConcurrentMap<String, Manager> managers = new ConcurrentHashMap<>();
 	private final UserManager<Credentials, TransientUserContext, String, String> manager;
 
+	/**
+	 * Creates a distributable single sign-on.
+	 * @param manager a user manager
+	 */
 	public DistributableSingleSignOn(UserManager<Credentials, TransientUserContext, String, String> manager) {
 		this.manager = manager;
 	}

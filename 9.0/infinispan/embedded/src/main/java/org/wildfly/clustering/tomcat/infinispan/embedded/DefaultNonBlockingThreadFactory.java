@@ -12,7 +12,10 @@ import org.wildfly.clustering.context.DefaultThreadFactory;
  * @author Paul Ferraro
  */
 public class DefaultNonBlockingThreadFactory extends DefaultThreadFactory implements NonBlockingResource {
-
+	/**
+	 * Creates a factory for creating non-blocking threads.
+	 * @param targetClass the class whose loader should be associated with threads created by this factory
+	 */
 	public DefaultNonBlockingThreadFactory(Class<?> targetClass) {
 		super(targetClass, targetClass.getClassLoader());
 	}

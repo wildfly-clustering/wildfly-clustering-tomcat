@@ -11,7 +11,10 @@ import org.wildfly.clustering.context.DefaultThreadFactory;
  * @author Paul Ferraro
  */
 public class DefaultBlockingThreadFactory extends DefaultThreadFactory {
-
+	/**
+	 * Creates a factory for creating blocking threads.
+	 * @param targetClass the class whose loader should be associated with threads created by this factory
+	 */
 	public DefaultBlockingThreadFactory(Class<?> targetClass) {
 		super(targetClass, targetClass.getClassLoader());
 	}
