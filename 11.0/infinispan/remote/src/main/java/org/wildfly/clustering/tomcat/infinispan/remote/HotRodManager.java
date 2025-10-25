@@ -133,13 +133,6 @@ public class HotRodManager extends AbstractManager {
 		cache.start();
 		stopTasks.accept(cache::stop);
 
-		RemoteCacheConfiguration cacheConfiguration = new RemoteCacheConfiguration() {
-			@SuppressWarnings("unchecked")
-			@Override
-			public <K, V> RemoteCache<K, V> getCache() {
-				return (RemoteCache<K, V>) cache.withDataFormat(DataFormat.builder().keyType(MediaType.APPLICATION_OBJECT).keyMarshaller(marshaller).valueType(MediaType.APPLICATION_OBJECT).valueMarshaller(marshaller).build());
-			}
-		};
 		return Map.entry(new HotRodSessionManagerFactory<>(new HotRodSessionManagerFactory.Configuration<HttpSession, ServletContext, CatalinaSessionContext, HttpSessionActivationListener>() {
 			@Override
 			public SessionManagerFactoryConfiguration<CatalinaSessionContext> getSessionManagerFactoryConfiguration() {
@@ -158,7 +151,7 @@ public class HotRodManager extends AbstractManager {
 
 			@Override
 			public RemoteCacheConfiguration getCacheConfiguration() {
-				return cacheConfiguration;
+				return RemoteCacheConfiguration.of(cache.withDataFormat(DataFormat.builder().keyType(MediaType.APPLICATION_OBJECT).keyMarshaller(marshaller).valueType(MediaType.APPLICATION_OBJECT).valueMarshaller(marshaller).build()));
 			}
 		}), UnaryOperator.of(localRoute));
 	}

@@ -303,6 +303,11 @@ public class InfinispanManager extends AbstractManager {
 				public <K, V> Cache<K, V> getCache() {
 					return (Cache<K, V>) cache;
 				}
+
+				@Override
+				public boolean isFaultTolerant() {
+					return true;
+				}
 			};
 			return Map.entry(new InfinispanSessionManagerFactory<>(new InfinispanSessionManagerFactory.Configuration<HttpSession, ServletContext, CatalinaSessionContext, HttpSessionActivationListener>() {
 				@Override

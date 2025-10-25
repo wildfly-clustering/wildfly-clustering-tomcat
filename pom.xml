@@ -19,8 +19,6 @@
 	<name>${project.repository.name}: Modules</name>
 
 	<properties>
-		<maven.surefire.parameters>${java.runtime.parameters} -javaagent:${project.build.directory}/agent/mockito-core.jar</maven.surefire.parameters>
-
 		<tomcat1.http.port>8080</tomcat1.http.port>
 		<tomcat2.http.port>8180</tomcat2.http.port>
 		<tomcat3.http.port>8280</tomcat3.http.port>
@@ -37,14 +35,7 @@
 
 	<dependencyManagement>
 		<dependencies>
-			<!-- External compile dependencies -->
-			<dependency>
-				<groupId>org.kohsuke.metainf-services</groupId>
-				<artifactId>metainf-services</artifactId>
-				<version>1.11</version>
-			</dependency>
-
-			<!-- Test BOM dependencies -->
+			<!-- BOM dependencies -->
 			<dependency>
 				<groupId>org.assertj</groupId>
 				<artifactId>assertj-bom</artifactId>
@@ -94,8 +85,20 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
+			<dependency>
+				<groupId>org.wildfly.clustering</groupId>
+				<artifactId>wildfly-clustering-bom</artifactId>
+				<version>8.0.3.Final</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
 
-			<!-- Test dependencies -->
+			<!-- BOM-less dependencies -->
+			<dependency>
+				<groupId>org.kohsuke.metainf-services</groupId>
+				<artifactId>metainf-services</artifactId>
+				<version>1.11</version>
+			</dependency>
 			<dependency>
 				<groupId>org.jboss.arquillian.container</groupId>
 				<artifactId>arquillian-tomcat-managed-8</artifactId>
@@ -122,35 +125,14 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
 				<configuration>
-					<artifactItems>
-						<artifactItem>
-							<groupId>${project.groupId}</groupId>
-							<artifactId>${project.artifactId}</artifactId>
-							<version>${project.version}</version>
-						</artifactItem>
-					</artifactItems>
+					<artifact>${project.groupId}:${project.artifactId}:${project.version}</artifact>
 				</configuration>
-				<executions>
-					<execution>
-						<id>copy-java-agent</id>
-						<phase>process-test-classes</phase>
-						<goals>
-							<goal>copy-dependencies</goal>
-						</goals>
-						<configuration>
-							<includeGroupIds>org.mockito</includeGroupIds>
-							<includeArtifactIds>mockito-core</includeArtifactIds>
-							<stripVersion>true</stripVersion>
-							<outputDirectory>${project.build.directory}/agent</outputDirectory>
-						</configuration>
-					</execution>
-				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-resources-plugin</artifactId>
+				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
-					<overwrite>true</overwrite>
+					<argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
 				</configuration>
 			</plugin>
 		</plugins>
