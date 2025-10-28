@@ -20,7 +20,7 @@
 	<properties>
 		<project.tomcat>${project.repository.name} 9.0</project.tomcat>
 
-		<version.org.apache.tomcat>9.0.109</version.org.apache.tomcat>
+		<version.org.apache.tomcat>9.0.110</version.org.apache.tomcat>
 
 		<catalina.home>${project.build.directory}/apache-tomcat-${version.org.apache.tomcat}</catalina.home>
 	</properties>
