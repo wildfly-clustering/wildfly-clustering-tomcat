@@ -9,8 +9,8 @@
 	<parent>
 		<groupId>org.wildfly.clustering</groupId>
 		<artifactId>wildfly-clustering-parent</artifactId>
-		<version>8.0.1.Final</version>
-		<relativePath />
+		<version>8.0.3.Final</version>
+		<relativePath/>
 	</parent>
 
 	<groupId>org.wildfly.clustering.tomcat</groupId>
@@ -31,14 +31,6 @@
 
 	<dependencyManagement>
 		<dependencies>
-			<dependency>
-				<groupId>org.wildfly.clustering</groupId>
-				<artifactId>wildfly-clustering-bom</artifactId>
-				<version>8.0.1.Final</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-
 			<dependency>
 				<groupId>${project.groupId}</groupId>
 				<artifactId>wildfly-clustering-tomcat-spi</artifactId>

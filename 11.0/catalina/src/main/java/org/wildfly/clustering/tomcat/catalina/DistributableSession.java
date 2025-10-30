@@ -221,7 +221,7 @@ public class DistributableSession implements CatalinaSession {
 
 		if (notifySessionListeners) {
 			HttpSessionEvent event = new HttpSessionEvent(this.getSession());
-			Stream.of(context.getApplicationEventListeners()).filter(listener -> listener instanceof HttpSessionIdListener).map(listener -> (HttpSessionIdListener) listener).forEach(listener -> {
+			Stream.of(context.getApplicationEventListeners()).filter(HttpSessionIdListener.class::isInstance).map(HttpSessionIdListener.class::cast).forEach(listener -> {
 				try {
 					listener.sessionIdChanged(event, oldId);
 				} catch (Throwable e) {

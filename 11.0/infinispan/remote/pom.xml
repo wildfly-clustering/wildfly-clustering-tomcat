@@ -154,17 +154,9 @@
 							<goal>unpack</goal>
 						</goals>
 						<configuration>
-							<artifactItems>
-								<artifactItem>
-									<groupId>org.apache.tomcat</groupId>
-									<artifactId>tomcat</artifactId>
-									<version>${version.org.apache.tomcat}</version>
-									<type>zip</type>
-									<overWrite>true</overWrite>
-									<outputDirectory>${project.build.directory}</outputDirectory>
-									<includes>**</includes>
-								</artifactItem>
-							</artifactItems>
+							<artifact>org.apache.tomcat:tomcat:${version.org.apache.tomcat}:zip</artifact>
+							<outputDirectory>${project.build.directory}</outputDirectory>
+							<overWriteReleases>true</overWriteReleases>
 						</configuration>
 					</execution>
 					<execution>
