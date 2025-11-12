@@ -4,7 +4,6 @@
  */
 package org.wildfly.clustering.tomcat.catalina;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.StampedLock;
@@ -97,7 +96,7 @@ public class DistributableManager implements CatalinaManager {
 	}
 
 	@Override
-	public org.apache.catalina.Session findSession(String sessionId) throws IOException {
+	public org.apache.catalina.Session findSession(String sessionId) {
 		String id = parseSessionId(sessionId);
 		LOGGER.log(System.Logger.Level.DEBUG, "findSession({0})", id);
 		return this.getSession(SessionManager::findSession, id);

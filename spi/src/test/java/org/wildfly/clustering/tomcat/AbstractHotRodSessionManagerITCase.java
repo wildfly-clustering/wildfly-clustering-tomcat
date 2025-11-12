@@ -61,7 +61,7 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 	@ParameterizedTest
 	@ArgumentsSource(HotRodSessionManagerArgumentsProvider.class)
 	@RunAsClient
-	public void test(SessionManagementParameters parameters) throws Exception {
+	public void test(SessionManagementParameters parameters) {
 		this.parameters = parameters;
 		this.run();
 	}
@@ -115,7 +115,7 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 
 	public static class HotRodSessionManagerArgumentsProvider implements ArgumentsProvider {
 		@Override
-		public Stream<? extends Arguments> provideArguments(ExtensionContext context) throws Exception {
+		public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
 			Stream.Builder<Arguments> builder = Stream.builder();
 			for (SessionPersistenceGranularity strategy : EnumSet.allOf(SessionPersistenceGranularity.class)) {
 				for (SessionMarshallerFactory marshaller : EnumSet.allOf(SessionMarshallerFactory.class)) {
