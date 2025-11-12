@@ -47,7 +47,7 @@ public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSes
 	@ParameterizedTest
 	@ArgumentsSource(InfinispanSessionManagerArgumentsProvider.class)
 	@RunAsClient
-	public void test(SessionManagementParameters parameters) throws Exception {
+	public void test(SessionManagementParameters parameters) {
 		this.parameters = parameters;
 		this.run();
 	}
@@ -80,7 +80,7 @@ public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSes
 
 	public static class InfinispanSessionManagerArgumentsProvider implements ArgumentsProvider {
 		@Override
-		public Stream<? extends Arguments> provideArguments(ExtensionContext context) throws Exception {
+		public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
 			Stream.Builder<Arguments> builder = Stream.builder();
 			for (SessionPersistenceGranularity strategy : EnumSet.allOf(SessionPersistenceGranularity.class)) {
 				for (SessionMarshallerFactory marshaller : EnumSet.allOf(SessionMarshallerFactory.class)) {

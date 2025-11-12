@@ -278,12 +278,12 @@ public abstract class AbstractManager extends ManagerBase implements Distributed
 	}
 
 	@Override
-	public void load() throws ClassNotFoundException, IOException {
+	public void load() {
 		// Do nothing
 	}
 
 	@Override
-	public void unload() throws IOException {
+	public void unload() {
 		// Do nothing
 	}
 

@@ -5,13 +5,11 @@
 package org.wildfly.clustering.tomcat.catalina;
 
 import java.beans.PropertyChangeListener;
-import java.io.IOException;
 import java.util.Set;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.DistributedManager;
 import org.apache.catalina.Lifecycle;
-import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleListener;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Manager;
@@ -56,11 +54,11 @@ public interface CatalinaManager extends Manager, Lifecycle, DistributedManager 
 	// We don't care about any of the methods below
 
 	@Override
-	default void init() throws LifecycleException {
+	default void init() {
 	}
 
 	@Override
-	default void destroy() throws LifecycleException {
+	default void destroy() {
 	}
 
 	@Override
@@ -152,7 +150,7 @@ public interface CatalinaManager extends Manager, Lifecycle, DistributedManager 
 	}
 
 	@Override
-	default void load() throws ClassNotFoundException, IOException {
+	default void load() {
 	}
 
 	@Override
@@ -168,7 +166,7 @@ public interface CatalinaManager extends Manager, Lifecycle, DistributedManager 
 	}
 
 	@Override
-	default void unload() throws IOException {
+	default void unload() {
 	}
 
 	@Override
