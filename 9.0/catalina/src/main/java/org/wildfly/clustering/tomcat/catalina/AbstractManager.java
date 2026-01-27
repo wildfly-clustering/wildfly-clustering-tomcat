@@ -16,13 +16,14 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.UnaryOperator;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import javax.servlet.ServletContext;
+import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionEvent;
 
 import org.apache.catalina.Context;
@@ -32,11 +33,15 @@ import org.apache.catalina.Host;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Session;
+import org.apache.catalina.Valve;
 import org.apache.catalina.session.ManagerBase;
 import org.wildfly.clustering.context.Contextualizer;
 import org.wildfly.clustering.context.ThreadContextClassLoaderReference;
+import org.wildfly.clustering.function.Consumer;
 import org.wildfly.clustering.function.IntPredicate;
+import org.wildfly.clustering.function.Predicate;
 import org.wildfly.clustering.function.Supplier;
+import org.wildfly.clustering.function.UnaryOperator;
 import org.wildfly.clustering.marshalling.ByteBufferMarshaller;
 import org.wildfly.clustering.server.immutable.Immutability;
 import org.wildfly.clustering.session.ImmutableSession;
@@ -45,7 +50,8 @@ import org.wildfly.clustering.session.SessionManager;
 import org.wildfly.clustering.session.SessionManagerConfiguration;
 import org.wildfly.clustering.session.SessionManagerFactory;
 import org.wildfly.clustering.session.SessionManagerFactoryConfiguration;
-import org.wildfly.clustering.session.spec.servlet.HttpSessionProvider;
+import org.wildfly.clustering.session.container.ContainerProvider;
+import org.wildfly.clustering.session.container.servlet.ServletContainerProvider;
 import org.wildfly.clustering.tomcat.SessionMarshallerFactory;
 import org.wildfly.clustering.tomcat.SessionPersistenceGranularity;
 
@@ -61,6 +67,7 @@ public abstract class AbstractManager extends ManagerBase implements Distributed
 	private volatile SessionAttributePersistenceStrategy persistenceStrategy = SessionPersistenceGranularity.SESSION.get();
 	private volatile SessionMarshallerFactory marshallerFactory = SessionMarshallerFactory.JBOSS;
 	private volatile Optional<Duration> idleTimeout = Optional.empty();
+	private final Valve cookieValve = new SessionCookieValve();
 
 	/**
 	 * Creates a manager.
@@ -127,10 +134,17 @@ public abstract class AbstractManager extends ManagerBase implements Distributed
 	protected abstract Map.Entry<SessionManagerFactory<ServletContext, CatalinaSessionContext>, UnaryOperator<String>> createSessionManagerFactory(SessionManagerFactoryConfiguration<CatalinaSessionContext> configuration, String localRoute, Consumer<Runnable> stopTask) throws LifecycleException;
 
 	@Override
+	protected void initInternal() throws LifecycleException {
+		super.initInternal();
+		// Auto-add valve for re-writing session cookies
+		this.getContext().getPipeline().addValve(this.cookieValve);
+	}
+
+	@Override
 	protected void startInternal() throws LifecycleException {
 		super.startInternal();
 
-		Consumer<Runnable> stopTasks = this.stopTasks::addFirst;
+		Consumer<Runnable> stopTasks = this.stopTasks::addLast;
 		Context context = this.getContext();
 		Host host = (Host) context.getParent();
 		Engine engine = (Engine) host.getParent();
@@ -152,12 +166,12 @@ public abstract class AbstractManager extends ManagerBase implements Distributed
 
 		SessionManagerFactoryConfiguration<CatalinaSessionContext> sessionManagerFactoryConfig = new SessionManagerFactoryConfiguration<>() {
 			@Override
-			public OptionalInt getMaxSize() {
+			public OptionalInt getSizeThreshold() {
 				return maxActiveSessions;
 			}
 
 			@Override
-			public Optional<Duration> getIdleTimeout() {
+			public Optional<Duration> getIdleThreshold() {
 				return idleTimeout;
 			}
 
@@ -203,7 +217,9 @@ public abstract class AbstractManager extends ManagerBase implements Distributed
 		stopTasks.accept(managerFactory::close);
 
 		Contextualizer contextualizer = Contextualizer.withContextProvider(ThreadContextClassLoaderReference.CURRENT.provide(context.getLoader().getClassLoader()));
-		Consumer<ImmutableSession> destroyNotifier = session -> CatalinaSessionEventNotifier.Lifecycle.DESTROY.accept(this, new HttpSessionEvent(HttpSessionProvider.INSTANCE.asSession(session, this.getContext().getServletContext())));
+		ContainerProvider<ServletContext, HttpSession, HttpSessionActivationListener, CatalinaSessionContext> provider = new ServletContainerProvider<>();
+		AtomicReference<SessionManager<CatalinaSessionContext>> sessionManagerReference = new AtomicReference<>();
+		Consumer<ImmutableSession> destroyNotifier = session -> CatalinaSessionEventNotifier.Lifecycle.DESTROY.accept(this, new HttpSessionEvent(provider.getDetachableSession(sessionManagerReference.getPlain(), session, this.getContext().getServletContext())));
 		Supplier<String> identifierFactory = new CatalinaIdentifierFactory(this.getSessionIdGenerator());
 
 		SessionManagerConfiguration<ServletContext> sessionManagerConfiguration = new SessionManagerConfiguration<>() {
@@ -213,8 +229,8 @@ public abstract class AbstractManager extends ManagerBase implements Distributed
 			}
 
 			@Override
-			public Duration getTimeout() {
-				return Duration.ofMinutes(servletContext.getSessionTimeout());
+			public Optional<Duration> getMaxIdle() {
+				return Optional.of(Duration.ofMinutes(servletContext.getSessionTimeout())).filter(Predicate.not(Duration::isZero).and(Predicate.not(Duration::isNegative)));
 			}
 
 			@Override
@@ -224,12 +240,37 @@ public abstract class AbstractManager extends ManagerBase implements Distributed
 
 			@Override
 			public Consumer<ImmutableSession> getExpirationListener() {
-				return contextualizer.contextualize(destroyNotifier);
+				return Consumer.<ImmutableSession>empty().andThen(contextualizer.contextualize(destroyNotifier));
 			}
 		};
-		SessionManager<CatalinaSessionContext> sessionManager = managerFactory.createSessionManager(sessionManagerConfiguration);
+		sessionManagerReference.setPlain(managerFactory.createSessionManager(sessionManagerConfiguration));
 
-		this.manager = new DistributableManager(sessionManager, affinity, context, marshaller);
+		this.manager = new DistributableManager(new DistributableManager.Configuration() {
+			@Override
+			public SessionManager<CatalinaSessionContext> getSessionManager() {
+				return sessionManagerReference.getPlain();
+			}
+
+			@Override
+			public Predicate<Object> getMarshallability() {
+				return marshaller;
+			}
+
+			@Override
+			public Context getContext() {
+				return context;
+			}
+
+			@Override
+			public ContainerProvider<ServletContext, HttpSession, HttpSessionActivationListener, CatalinaSessionContext> getContainerProvider() {
+				return provider;
+			}
+
+			@Override
+			public UnaryOperator<String> getAffinity() {
+				return affinity;
+			}
+		});
 		this.manager.start();
 
 		this.setState(LifecycleState.STARTING);
@@ -241,25 +282,49 @@ public abstract class AbstractManager extends ManagerBase implements Distributed
 
 		Optional.ofNullable(this.manager).ifPresent(CatalinaManager::stop);
 
-		this.stopTasks.forEach(Runnable::run);
+		Iterable<Runnable> tasks = this.stopTasks::descendingIterator;
+		tasks.forEach(Runnable::run);
 		this.stopTasks.clear();
 
 		super.stopInternal();
 	}
 
 	@Override
-	public Session createSession(String sessionId) {
-		return this.manager.createSession(sessionId);
+	protected void destroyInternal() throws LifecycleException {
+		this.getContext().getPipeline().removeValve(this.cookieValve);
+		super.destroyInternal();
 	}
 
 	@Override
-	public Session findSession(String id) throws IOException {
-		return this.manager.findSession(id);
+	public String rotateSessionId(Session session) {
+		String id = this.manager.getSessionManager().getIdentifierFactory().get();
+		this.changeSessionId(session, id);
+		return session.getIdInternal();
+	}
+
+	@Override
+	public Session createSession(String internalId) {
+		return this.manager.createSession(Optional.ofNullable(internalId).map(AbstractManager::parseSessionId).orElseGet(this.manager.getSessionManager().getIdentifierFactory()));
+	}
+
+	@Override
+	public Session findSession(String internalId) throws IOException {
+		return this.manager.findSession(parseSessionId(internalId));
+	}
+
+	/**
+	 * Strips routing information from requested session identifier.
+	 */
+	private static String parseSessionId(String internalId) {
+		int index = internalId.indexOf(".");
+		return (index < 0) ? internalId : internalId.substring(0, index);
 	}
 
 	@Override
 	public void changeSessionId(Session session, String newId) {
-		this.manager.changeSessionId(session, newId);
+		String oldId = session.getId();
+		session.setId(newId);
+		session.tellChangedSessionId(newId, oldId, true, true);
 	}
 
 	@Override

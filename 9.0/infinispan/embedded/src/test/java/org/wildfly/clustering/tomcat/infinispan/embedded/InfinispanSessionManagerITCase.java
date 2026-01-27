@@ -4,7 +4,7 @@
  */
 package org.wildfly.clustering.tomcat.infinispan.embedded;
 
-import org.wildfly.clustering.session.spec.container.servlet.SessionServlet;
+import org.wildfly.clustering.session.container.servlet.atomic.AtomicSessionServlet;
 import org.wildfly.clustering.tomcat.AbstractInfinispanSessionManagerITCase;
 
 /**
@@ -13,6 +13,6 @@ import org.wildfly.clustering.tomcat.AbstractInfinispanSessionManagerITCase;
 public class InfinispanSessionManagerITCase extends AbstractInfinispanSessionManagerITCase {
 
 	public InfinispanSessionManagerITCase() {
-		super(InfinispanManager.class, SessionServlet.class);
+		super(InfinispanManager.class, AtomicSessionServlet.class);
 	}
 }

@@ -15,7 +15,7 @@
 	<artifactId>wildfly-clustering-tomcat-11.0-infinispan-remote</artifactId>
 	<packaging>jar</packaging>
 
-	<name>${project.tomcat.infinispan}: Embedded</name>
+	<name>${project.tomcat.infinispan}: Remote</name>
 
 	<dependencies>
 		<dependency>
@@ -59,7 +59,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.wildfly.clustering</groupId>
-			<artifactId>wildfly-clustering-session-spec-servlet-6.1</artifactId>
+			<artifactId>wildfly-clustering-session-container-servlet-6.1</artifactId>
 			<classifier>tests</classifier>
 			<scope>test</scope>
 		</dependency>

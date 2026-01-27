@@ -7,15 +7,22 @@ package org.wildfly.clustering.tomcat.catalina;
 import java.beans.PropertyChangeListener;
 import java.util.Set;
 
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionActivationListener;
+
 import org.apache.catalina.Context;
 import org.apache.catalina.DistributedManager;
 import org.apache.catalina.Lifecycle;
 import org.apache.catalina.LifecycleListener;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Manager;
+import org.apache.catalina.Session;
 import org.apache.catalina.SessionIdGenerator;
 import org.wildfly.clustering.function.Predicate;
+import org.wildfly.clustering.function.UnaryOperator;
 import org.wildfly.clustering.session.SessionManager;
+import org.wildfly.clustering.session.container.ContainerProvider;
 
 /**
  * Enhances Tomcat's Manager interface, providing default implementations for deprecated methods and methods we currently ignore.
@@ -28,6 +35,18 @@ public interface CatalinaManager extends Manager, Lifecycle, DistributedManager 
 	 * @return a session manager
 	 */
 	SessionManager<CatalinaSessionContext> getSessionManager();
+
+	/**
+	 * Returns a function for computing the internal session identifier.
+	 * @return a function for computing the internal session identifier.
+	 */
+	UnaryOperator<String> getIdentifierInternalizer();
+
+	/**
+	 * Returns the container provider.
+	 * @return the container provider.
+	 */
+	ContainerProvider<ServletContext, HttpSession, HttpSessionActivationListener, CatalinaSessionContext> getContainerProvider();
 
 	/**
 	 * Returns a predicate for testing the marshallability of a session attribute.
@@ -52,6 +71,14 @@ public interface CatalinaManager extends Manager, Lifecycle, DistributedManager 
 	void stop();
 
 	// We don't care about any of the methods below
+
+	@Override
+	default void changeSessionId(Session session) {
+	}
+
+	@Override
+	default void changeSessionId(Session session, String newId) {
+	}
 
 	@Override
 	default void init() {

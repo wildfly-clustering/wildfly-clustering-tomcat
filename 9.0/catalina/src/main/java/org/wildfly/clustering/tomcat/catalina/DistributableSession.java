@@ -15,7 +15,6 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionIdListener;
 
-import org.apache.catalina.Manager;
 import org.apache.catalina.SessionListener;
 import org.wildfly.clustering.cache.batch.Batch;
 import org.wildfly.clustering.cache.batch.SuspendedBatch;
@@ -27,10 +26,10 @@ import org.wildfly.clustering.session.Session;
  * @author Paul Ferraro
  */
 public class DistributableSession implements CatalinaSession {
+	private static final System.Logger LOGGER = System.getLogger(DistributableSession.class.getCanonicalName());
 
 	private final CatalinaManager manager;
 	private final AtomicReference<Session<CatalinaSessionContext>> reference;
-	private final String internalId;
 	private final Instant startTime;
 	private final SuspendedBatch batch;
 	private final Runnable closeTask;
@@ -40,15 +39,13 @@ public class DistributableSession implements CatalinaSession {
 	 * Creates a distributable session.
 	 * @param manager the manager of this session.
 	 * @param session the decorated session
-	 * @param internalId the internal identifier
 	 * @param batch the batch associated with this session
 	 * @param closeTask a task to invoke on {@link #endAccess()}.
 	 */
-	public DistributableSession(CatalinaManager manager, Session<CatalinaSessionContext> session, String internalId, SuspendedBatch batch, Runnable closeTask) {
+	public DistributableSession(CatalinaManager manager, Session<CatalinaSessionContext> session, SuspendedBatch batch, Runnable closeTask) {
 		this.manager = manager;
 		this.reference = new AtomicReference<>(session);
-		this.internalId = internalId;
-		this.startTime = session.getMetaData().isNew() ? session.getMetaData().getCreationTime() : Instant.now();
+		this.startTime = session.getMetaData().getLastAccessTime().isEmpty() ? session.getMetaData().getCreationTime() : Instant.now();
 		this.batch = batch;
 		this.closeTask = closeTask;
 		this.session = new HttpSessionAdapter(this.manager, this.reference::get, batch, closeTask);
@@ -75,17 +72,12 @@ public class DistributableSession implements CatalinaSession {
 	}
 
 	@Override
-	public String getIdInternal() {
-		return this.internalId;
-	}
-
-	@Override
 	public long getLastAccessedTime() {
 		return this.session.getLastAccessedTime();
 	}
 
 	@Override
-	public Manager getManager() {
+	public CatalinaManager getManager() {
 		return this.manager;
 	}
 
@@ -126,6 +118,7 @@ public class DistributableSession implements CatalinaSession {
 
 	@Override
 	public void endAccess() {
+		LOGGER.log(System.Logger.Level.TRACE, "DistributableSession.endAccess() for {0}", this.session.getId());
 		try (Context<Batch> context = this.batch.resumeWithContext()) {
 			try (Batch batch = context.get()) {
 				try (Session<CatalinaSessionContext> session = this.reference.get()) {
@@ -143,12 +136,6 @@ public class DistributableSession implements CatalinaSession {
 				this.closeTask.run();
 			}
 		}
-	}
-
-	@Override
-	public void expire() {
-		// Expiration not handled here
-		throw new IllegalStateException();
 	}
 
 	@Override
@@ -177,16 +164,18 @@ public class DistributableSession implements CatalinaSession {
 	}
 
 	@Override
-	public void tellChangedSessionId(String newId, String oldId, boolean notifySessionListeners, boolean notifyContainerListeners) {
+	public void setId(String id) {
 		Session<CatalinaSessionContext> oldSession = this.reference.get();
 		try (Context<Batch> context = this.batch.resumeWithContext()) {
-			Session<CatalinaSessionContext> newSession = this.manager.getSessionManager().createSession(newId);
+			Session<CatalinaSessionContext> newSession = this.manager.getSessionManager().createSession(id);
 			try {
 				for (Map.Entry<String, Object> entry : oldSession.getAttributes().entrySet()) {
 					newSession.getAttributes().put(entry.getKey(), entry.getValue());
 				}
-				newSession.getMetaData().setTimeout(oldSession.getMetaData().getTimeout());
-				newSession.getMetaData().setLastAccess(oldSession.getMetaData().getLastAccessStartTime(), oldSession.getMetaData().getLastAccessTime());
+				oldSession.getMetaData().getMaxIdle().ifPresent(newSession.getMetaData()::setMaxIdle);
+				if (oldSession.getMetaData().getLastAccessTime().isPresent()) {
+					newSession.getMetaData().setLastAccess(oldSession.getMetaData().getLastAccessStartTime().get(), oldSession.getMetaData().getLastAccessTime().get());
+				}
 				newSession.getContext().setAuthType(oldSession.getContext().getAuthType());
 				newSession.getContext().setPrincipal(oldSession.getContext().getPrincipal());
 				this.reference.set(newSession);
@@ -206,8 +195,10 @@ public class DistributableSession implements CatalinaSession {
 				}
 			}
 		}
+	}
 
-		// Invoke listeners outside of the context of the batch associated with this session
+	@Override
+	public void tellChangedSessionId(String newId, String oldId, boolean notifySessionListeners, boolean notifyContainerListeners) {
 		org.apache.catalina.Context context = this.manager.getContext();
 
 		if (notifyContainerListeners) {

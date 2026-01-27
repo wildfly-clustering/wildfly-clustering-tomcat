@@ -39,7 +39,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.wildfly.clustering</groupId>
-			<artifactId>wildfly-clustering-session-spec-servlet-4.0</artifactId>
+			<artifactId>wildfly-clustering-session-container-servlet-4.0</artifactId>
 		</dependency>
 	</dependencies>
 
