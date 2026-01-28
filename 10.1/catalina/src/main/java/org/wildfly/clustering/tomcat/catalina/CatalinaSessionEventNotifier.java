@@ -6,7 +6,6 @@
 package org.wildfly.clustering.tomcat.catalina;
 
 import java.util.Iterator;
-import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import jakarta.servlet.http.HttpSession;
@@ -18,6 +17,7 @@ import jakarta.servlet.http.HttpSessionListener;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.Manager;
+import org.wildfly.clustering.function.BiConsumer;
 
 /**
  * Describes a container session event.

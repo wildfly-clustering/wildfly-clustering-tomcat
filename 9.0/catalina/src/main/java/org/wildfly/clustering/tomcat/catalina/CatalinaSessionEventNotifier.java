@@ -6,7 +6,6 @@
 package org.wildfly.clustering.tomcat.catalina;
 
 import java.util.Iterator;
-import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import javax.servlet.http.HttpSession;
@@ -18,6 +17,7 @@ import javax.servlet.http.HttpSessionListener;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.Manager;
+import org.wildfly.clustering.function.BiConsumer;
 
 /**
  * Describes a container session event.
@@ -60,6 +60,7 @@ public interface CatalinaSessionEventNotifier<L, E extends HttpSessionEvent> ext
 			}
 		});
 	}
+
 
 	/**
 	 * Enumerates the session lifecycle events.

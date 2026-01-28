@@ -5,24 +5,22 @@
 package org.wildfly.clustering.tomcat.catalina;
 
 import java.time.Instant;
-import java.util.function.Function;
-
-import jakarta.servlet.http.HttpSession;
 
 import org.apache.catalina.Manager;
 import org.apache.catalina.Session;
-import org.wildfly.clustering.session.ImmutableSession;
-import org.wildfly.clustering.session.spec.servlet.HttpSessionProvider;
 
 /**
  * Provides default implementations of methods that can be derived or outright ignored.
  * @author Paul Ferraro
  */
-public interface CatalinaSession extends Session, Function<ImmutableSession, HttpSession> {
+public interface CatalinaSession extends Session {
 
 	@Override
-	default HttpSession apply(ImmutableSession session) {
-		return HttpSessionProvider.INSTANCE.asSession(session, this.getManager().getContext().getServletContext());
+	CatalinaManager getManager();
+
+	@Override
+	default String getIdInternal() {
+		return this.getManager().getIdentifierInternalizer().apply(this.getId());
 	}
 
 	@Override
@@ -35,11 +33,8 @@ public interface CatalinaSession extends Session, Function<ImmutableSession, Htt
 	}
 
 	@Override
-	default void setId(String id) {
-	}
-
-	@Override
 	default void setId(String id, boolean notify) {
+		this.setId(id);
 	}
 
 	@Override
@@ -81,6 +76,12 @@ public interface CatalinaSession extends Session, Function<ImmutableSession, Htt
 
 	@Override
 	default void access() {
+	}
+
+	@Override
+	default void expire() {
+		// Expiration not handled here
+		throw new IllegalStateException();
 	}
 
 	@Override
