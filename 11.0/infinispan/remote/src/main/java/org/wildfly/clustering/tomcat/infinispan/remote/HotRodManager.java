@@ -8,11 +8,8 @@ import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.function.Consumer;
 
 import jakarta.servlet.ServletContext;
-import jakarta.servlet.http.HttpSession;
-import jakarta.servlet.http.HttpSessionActivationListener;
 
 import org.infinispan.client.hotrod.DataFormat;
 import org.infinispan.client.hotrod.RemoteCache;
@@ -29,6 +26,7 @@ import org.infinispan.commons.marshall.Marshaller;
 import org.wildfly.clustering.cache.infinispan.marshalling.MediaTypes;
 import org.wildfly.clustering.cache.infinispan.marshalling.UserMarshaller;
 import org.wildfly.clustering.cache.infinispan.remote.RemoteCacheConfiguration;
+import org.wildfly.clustering.function.Consumer;
 import org.wildfly.clustering.function.UnaryOperator;
 import org.wildfly.clustering.marshalling.protostream.ClassLoaderMarshaller;
 import org.wildfly.clustering.marshalling.protostream.ProtoStreamByteBufferMarshaller;
@@ -36,10 +34,6 @@ import org.wildfly.clustering.marshalling.protostream.SerializationContextBuilde
 import org.wildfly.clustering.session.SessionManagerFactory;
 import org.wildfly.clustering.session.SessionManagerFactoryConfiguration;
 import org.wildfly.clustering.session.infinispan.remote.HotRodSessionManagerFactory;
-import org.wildfly.clustering.session.spec.SessionEventListenerSpecificationProvider;
-import org.wildfly.clustering.session.spec.SessionSpecificationProvider;
-import org.wildfly.clustering.session.spec.servlet.HttpSessionActivationListenerProvider;
-import org.wildfly.clustering.session.spec.servlet.HttpSessionProvider;
 import org.wildfly.clustering.tomcat.catalina.AbstractManager;
 import org.wildfly.clustering.tomcat.catalina.CatalinaSessionContext;
 
@@ -113,7 +107,7 @@ public class HotRodManager extends AbstractManager {
 	}
 
 	@Override
-	protected Map.Entry<SessionManagerFactory<ServletContext, CatalinaSessionContext>, java.util.function.UnaryOperator<String>> createSessionManagerFactory(SessionManagerFactoryConfiguration<CatalinaSessionContext> config, String localRoute, Consumer<Runnable> stopTasks) {
+	protected Map.Entry<SessionManagerFactory<ServletContext, CatalinaSessionContext>, UnaryOperator<String>> createSessionManagerFactory(SessionManagerFactoryConfiguration<CatalinaSessionContext> config, String localRoute, Consumer<Runnable> stopTasks) {
 		ClassLoader containerLoader = HotRodSessionManagerFactory.class.getClassLoader();
 		Marshaller marshaller = new UserMarshaller(MediaTypes.WILDFLY_PROTOSTREAM, new ProtoStreamByteBufferMarshaller(SerializationContextBuilder.newInstance(ClassLoaderMarshaller.of(containerLoader)).load(containerLoader).build()));
 		Configuration configuration = Optional.ofNullable(this.uri).map(HotRodURI::create).map(HotRodURI::toConfigurationBuilder).orElseGet(ConfigurationBuilder::new)
@@ -121,7 +115,7 @@ public class HotRodManager extends AbstractManager {
 				.marshaller(marshaller)
 				.build();
 
-		Consumer<RemoteCacheConfigurationBuilder> configurator = builder -> builder.forceReturnValues(false).nearCacheMode(config.getMaxSize().isPresent() ? NearCacheMode.INVALIDATED : NearCacheMode.DISABLED).transactionMode(TransactionMode.NONE);
+		Consumer<RemoteCacheConfigurationBuilder> configurator = builder -> builder.forceReturnValues(false).nearCacheMode(config.getSizeThreshold().isPresent() ? NearCacheMode.INVALIDATED : NearCacheMode.DISABLED).transactionMode(TransactionMode.NONE);
 		configuration.addRemoteCache(config.getDeploymentName(), configurator.andThen((this.templateName != null) ? builder -> builder.templateName(this.templateName) : builder -> builder.configuration(this.configuration)));
 
 		@SuppressWarnings("resource")
@@ -133,20 +127,10 @@ public class HotRodManager extends AbstractManager {
 		cache.start();
 		stopTasks.accept(cache::stop);
 
-		return Map.entry(new HotRodSessionManagerFactory<>(new HotRodSessionManagerFactory.Configuration<HttpSession, ServletContext, CatalinaSessionContext, HttpSessionActivationListener>() {
+		return Map.entry(new HotRodSessionManagerFactory<>(new HotRodSessionManagerFactory.Configuration<>() {
 			@Override
 			public SessionManagerFactoryConfiguration<CatalinaSessionContext> getSessionManagerFactoryConfiguration() {
 				return config;
-			}
-
-			@Override
-			public SessionSpecificationProvider<HttpSession, ServletContext> getSessionSpecificationProvider() {
-				return HttpSessionProvider.INSTANCE;
-			}
-
-			@Override
-			public SessionEventListenerSpecificationProvider<HttpSession, HttpSessionActivationListener> getSessionEventListenerSpecificationProvider() {
-				return HttpSessionActivationListenerProvider.INSTANCE;
 			}
 
 			@Override

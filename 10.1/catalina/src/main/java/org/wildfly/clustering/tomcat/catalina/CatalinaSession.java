@@ -16,6 +16,14 @@ import org.apache.catalina.Session;
 public interface CatalinaSession extends Session {
 
 	@Override
+	CatalinaManager getManager();
+
+	@Override
+	default String getIdInternal() {
+		return this.getManager().getIdentifierInternalizer().apply(this.getId());
+	}
+
+	@Override
 	default long getCreationTimeInternal() {
 		return this.getCreationTime();
 	}
@@ -25,11 +33,8 @@ public interface CatalinaSession extends Session {
 	}
 
 	@Override
-	default void setId(String id) {
-	}
-
-	@Override
 	default void setId(String id, boolean notify) {
+		this.setId(id);
 	}
 
 	@Override
@@ -71,6 +76,12 @@ public interface CatalinaSession extends Session {
 
 	@Override
 	default void access() {
+	}
+
+	@Override
+	default void expire() {
+		// Expiration not handled here
+		throw new IllegalStateException();
 	}
 
 	@Override

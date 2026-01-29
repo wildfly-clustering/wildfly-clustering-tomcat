@@ -4,7 +4,7 @@
  */
 package org.wildfly.clustering.tomcat.infinispan.remote;
 
-import org.wildfly.clustering.session.spec.container.servlet.SessionServlet;
+import org.wildfly.clustering.session.container.servlet.atomic.AtomicSessionServlet;
 import org.wildfly.clustering.tomcat.AbstractHotRodSessionManagerITCase;
 
 /**
@@ -13,6 +13,6 @@ import org.wildfly.clustering.tomcat.AbstractHotRodSessionManagerITCase;
 public class HotRodSessionManagerITCase extends AbstractHotRodSessionManagerITCase {
 
 	public HotRodSessionManagerITCase() {
-		super(HotRodManager.class, SessionServlet.class);
+		super(HotRodManager.class, AtomicSessionServlet.class);
 	}
 }

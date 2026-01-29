@@ -7,31 +7,43 @@ package org.wildfly.clustering.tomcat.catalina;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.StampedLock;
-import java.util.function.BiFunction;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSessionActivationListener;
 import jakarta.servlet.http.HttpSessionEvent;
 
 import org.wildfly.clustering.cache.batch.Batch;
 import org.wildfly.clustering.cache.batch.SuspendedBatch;
 import org.wildfly.clustering.context.Context;
+import org.wildfly.clustering.function.BiFunction;
 import org.wildfly.clustering.function.Consumer;
 import org.wildfly.clustering.function.Predicate;
+import org.wildfly.clustering.function.UnaryOperator;
 import org.wildfly.clustering.session.Session;
 import org.wildfly.clustering.session.SessionManager;
-import org.wildfly.clustering.session.spec.servlet.HttpSessionProvider;
+import org.wildfly.clustering.session.container.ContainerProvider;
 
 /**
  * Adapts a WildFly distributable SessionManager to Tomcat's Manager interface.
  * @author Paul Ferraro
  */
 public class DistributableManager implements CatalinaManager {
-	private static final System.Logger LOGGER = System.getLogger(DistributableManager.class.getPackageName());
+	private static final System.Logger LOGGER = System.getLogger(DistributableManager.class.getCanonicalName());
 	private static final char ROUTE_DELIMITER = '.';
 
+	interface Configuration {
+		SessionManager<CatalinaSessionContext> getSessionManager();
+		ContainerProvider<ServletContext, HttpSession, HttpSessionActivationListener, CatalinaSessionContext> getContainerProvider();
+		UnaryOperator<String> getAffinity();
+		org.apache.catalina.Context getContext();
+		Predicate<Object> getMarshallability();
+	}
+
+	private final ContainerProvider<ServletContext, HttpSession, HttpSessionActivationListener, CatalinaSessionContext> provider;
 	private final SessionManager<CatalinaSessionContext> manager;
-	private final UnaryOperator<String> affinity;
+	private final UnaryOperator<String> internalizer;
 	private final org.apache.catalina.Context context;
 	private final Predicate<Object> marshallability;
 	private final StampedLock lifecycleLock = new StampedLock();
@@ -39,16 +51,20 @@ public class DistributableManager implements CatalinaManager {
 
 	/**
 	 * Creates a distributed manager.
-	 * @param manager the decorated manager
-	 * @param affinity the session affinity
-	 * @param context the servlet context
-	 * @param marshallability the predicate for testing marshallability of a session attribute.
+	 * @param configuration the configuration of this manager
 	 */
-	public DistributableManager(SessionManager<CatalinaSessionContext> manager, UnaryOperator<String> affinity, org.apache.catalina.Context context, Predicate<Object> marshallability) {
-		this.manager = manager;
-		this.affinity = affinity;
-		this.marshallability = marshallability;
-		this.context = context;
+	public DistributableManager(Configuration configuration) {
+		this.manager = configuration.getSessionManager();
+		this.provider = configuration.getContainerProvider();
+		this.internalizer = new UnaryOperator<>() {
+			@Override
+			public String apply(String id) {
+				String route = configuration.getAffinity().apply(id);
+				return (route != null) ? new StringBuilder(id.length() + route.length() + 1).append(id).append(ROUTE_DELIMITER).append(route).toString() : id;
+			}
+		};
+		this.marshallability = configuration.getMarshallability();
+		this.context = configuration.getContext();
 	}
 
 	@Override
@@ -57,25 +73,27 @@ public class DistributableManager implements CatalinaManager {
 	}
 
 	@Override
+	public UnaryOperator<String> getIdentifierInternalizer() {
+		return this.internalizer;
+	}
+
+	@Override
+	public ContainerProvider<ServletContext, HttpSession, HttpSessionActivationListener, CatalinaSessionContext> getContainerProvider() {
+		return this.provider;
+	}
+
+	@Override
 	public Predicate<Object> getMarshallability() {
 		return this.marshallability;
 	}
 
-	/**
-	 * Strips routing information from requested session identifier.
-	 */
-	private static String parseSessionId(String requestedSesssionId) {
-		int index = requestedSesssionId.indexOf(ROUTE_DELIMITER);
-		return (index < 0) ? requestedSesssionId : requestedSesssionId.substring(0, index);
-	}
-
 	@Override
 	public void start() {
+		this.manager.start();
 		long stamp = this.lifecycleStamp.getAndSet(0L);
 		if (StampedLock.isWriteLockStamp(stamp)) {
 			this.lifecycleLock.unlockWrite(stamp);
 		}
-		this.manager.start();
 	}
 
 	@Override
@@ -89,16 +107,14 @@ public class DistributableManager implements CatalinaManager {
 	}
 
 	@Override
-	public org.apache.catalina.Session createSession(String sessionId) {
-		String id = (sessionId != null) ? parseSessionId(sessionId) : this.manager.getIdentifierFactory().get();
-		LOGGER.log(System.Logger.Level.DEBUG, "createSession({0})", id);
+	public org.apache.catalina.Session createSession(String id) {
+		LOGGER.log(System.Logger.Level.TRACE, "DistributableManager.createSession({0})", id);
 		return this.getSession(SessionManager::createSession, id);
 	}
 
 	@Override
-	public org.apache.catalina.Session findSession(String sessionId) {
-		String id = parseSessionId(sessionId);
-		LOGGER.log(System.Logger.Level.DEBUG, "findSession({0})", id);
+	public org.apache.catalina.Session findSession(String id) {
+		LOGGER.log(System.Logger.Level.TRACE, "DistributableManager.findSession({0})", id);
 		return this.getSession(SessionManager::findSession, id);
 	}
 
@@ -109,36 +125,28 @@ public class DistributableManager implements CatalinaManager {
 		try (Context<Batch> context = suspendedBatch.resumeWithContext()) {
 			Session<CatalinaSessionContext> session = function.apply(this.manager, id);
 			if (session == null) {
-				LOGGER.log(System.Logger.Level.DEBUG, "Session {0} not found");
+				LOGGER.log(System.Logger.Level.TRACE, "Session {0} not found", id);
 				return close(context, closeTask);
 			}
 			if (!session.isValid()) {
-				LOGGER.log(System.Logger.Level.DEBUG, "Session {0} found, but is not valid.");
+				LOGGER.log(System.Logger.Level.DEBUG, "Session {0} found, but is not valid.", id);
 				return close(context, closeTask);
 			}
 			if (session.getMetaData().isExpired()) {
-				LOGGER.log(System.Logger.Level.DEBUG, "Session {0} found, but has expired.");
+				LOGGER.log(System.Logger.Level.DEBUG, "Session {0} found, but has expired.", id);
 				return close(context, closeTask);
 			}
-			if (session.getMetaData().isNew()) {
-				HttpSessionEvent event = new HttpSessionEvent(HttpSessionProvider.INSTANCE.asSession(session, this.getContext().getServletContext()));
+			if (session.getMetaData().getLastAccessTime().isEmpty()) {
+				HttpSessionEvent event = new HttpSessionEvent(this.getContainerProvider().getDetachableSession(this.getSessionManager(), session, this.getContext().getServletContext()));
 				CatalinaSessionEventNotifier.Lifecycle.CREATE.accept(this, event);
 			}
-			String route = this.affinity.apply(id);
-			// Append route to session identifier.
-			String internalId = new StringBuilder(id.length() + route.length() + 1).append(id).append(ROUTE_DELIMITER).append(route).toString();
-			return new DistributableSession(this, session, internalId, suspendedBatch, closeTask);
+			return new DistributableSession(this, session, suspendedBatch, closeTask);
 		} catch (RuntimeException | Error e) {
 			try (Context<Batch> context = entry.getKey().resumeWithContext()) {
 				close(context, Batch::discard, entry.getValue());
 			}
 			throw e;
 		}
-	}
-
-	@Override
-	public void changeSessionId(org.apache.catalina.Session session, String id) {
-		session.tellChangedSessionId(id, session.getId(), true, true);
 	}
 
 	@Override
@@ -154,6 +162,21 @@ public class DistributableManager implements CatalinaManager {
 	@Override
 	public boolean getNotifyAttributeListenerOnUnchangedValue() {
 		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return this.getContext().hashCode();
+	}
+
+	@Override
+	public boolean equals(Object object) {
+		return (object instanceof CatalinaManager manager) ? this.getContext().equals(manager.getContext()) : false;
+	}
+
+	@Override
+	public String toString() {
+		return this.getContext().toString();
 	}
 
 	private Map.Entry<SuspendedBatch, Runnable> createBatchEntry() {
@@ -172,7 +195,7 @@ public class DistributableManager implements CatalinaManager {
 
 	private static org.apache.catalina.Session close(Supplier<Batch> batchProvider, Consumer<Batch> batchTask, Runnable closeTask) {
 		try (Batch batch = batchProvider.get()) {
-			batchTask.accept(batch);
+			batch.discard();
 		} catch (RuntimeException | Error e) {
 			LOGGER.log(System.Logger.Level.WARNING, e.getLocalizedMessage(), e);
 		} finally {

@@ -7,20 +7,15 @@ package org.wildfly.clustering.tomcat.infinispan.embedded;
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.net.URL;
+import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 
 import javax.management.ObjectName;
 
 import jakarta.servlet.ServletContext;
-import jakarta.servlet.http.HttpSession;
-import jakarta.servlet.http.HttpSessionActivationListener;
 
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
@@ -57,6 +52,10 @@ import org.wildfly.clustering.cache.infinispan.embedded.EmbeddedCacheConfigurati
 import org.wildfly.clustering.cache.infinispan.embedded.container.DataContainerConfigurationBuilder;
 import org.wildfly.clustering.cache.infinispan.marshalling.MediaTypes;
 import org.wildfly.clustering.cache.infinispan.marshalling.UserMarshaller;
+import org.wildfly.clustering.function.Consumer;
+import org.wildfly.clustering.function.Function;
+import org.wildfly.clustering.function.Predicate;
+import org.wildfly.clustering.function.UnaryOperator;
 import org.wildfly.clustering.marshalling.ByteBufferMarshaller;
 import org.wildfly.clustering.marshalling.protostream.ClassLoaderMarshaller;
 import org.wildfly.clustering.marshalling.protostream.ProtoStreamByteBufferMarshaller;
@@ -76,10 +75,6 @@ import org.wildfly.clustering.session.SessionManagerFactoryConfiguration;
 import org.wildfly.clustering.session.cache.affinity.UnarySessionAffinity;
 import org.wildfly.clustering.session.infinispan.embedded.InfinispanSessionManagerFactory;
 import org.wildfly.clustering.session.infinispan.embedded.metadata.SessionMetaDataKey;
-import org.wildfly.clustering.session.spec.SessionEventListenerSpecificationProvider;
-import org.wildfly.clustering.session.spec.SessionSpecificationProvider;
-import org.wildfly.clustering.session.spec.servlet.HttpSessionActivationListenerProvider;
-import org.wildfly.clustering.session.spec.servlet.HttpSessionProvider;
 import org.wildfly.clustering.tomcat.catalina.AbstractManager;
 import org.wildfly.clustering.tomcat.catalina.CatalinaSessionContext;
 
@@ -88,7 +83,7 @@ import org.wildfly.clustering.tomcat.catalina.CatalinaSessionContext;
  * @author Paul Ferraro
  */
 public class InfinispanManager extends AbstractManager {
-	static final System.Logger LOGGER = System.getLogger(InfinispanManager.class.getPackageName());
+	static final System.Logger LOGGER = System.getLogger(InfinispanManager.class.getCanonicalName());
 	private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
 	private volatile String resourceName = "infinispan.xml";
@@ -150,7 +145,6 @@ public class InfinispanManager extends AbstractManager {
 			JChannel channel = (configurator != null) ? configurator.createChannel(null) : null;
 			if (channel != null) {
 				channel.setName(transport.nodeName());
-				channel.setDiscardOwnMessages(true);
 				LOGGER.log(System.Logger.Level.INFO, "Connecting {0} to {1}", transport.nodeName(), transport.clusterName());
 				channel.connect(transport.clusterName());
 				LOGGER.log(System.Logger.Level.INFO, "Connected {0} to {1} with view: {2}", channel.getName(), channel.getClusterName(), channel.view().getMembers());
@@ -177,9 +171,7 @@ public class InfinispanManager extends AbstractManager {
 					});
 				}
 
-				Properties properties = new Properties();
-				properties.put(JGroupsTransport.CHANNEL_CONFIGURATOR, new ForkChannelConfigurator(channel, containerName));
-				global.transport().withProperties(properties);
+				global.transport().addProperty(JGroupsTransport.CHANNEL_CONFIGURATOR, new ForkChannelConfigurator(channel, containerName));
 			}
 
 			ChannelCommandDispatcherFactory channelCommandDispatcherFactory = (channel != null) ? new JChannelCommandDispatcherFactory(new JChannelCommandDispatcherFactory.Configuration() {
@@ -218,18 +210,6 @@ public class InfinispanManager extends AbstractManager {
 						// Register dummy serialization context initializer, to bypass service loading in org.infinispan.marshall.protostream.impl.SerializationContextRegistryImpl
 						// Otherwise marshaller auto-detection will not work
 						.addContextInitializer(new SerializationContextInitializer() {
-							@Deprecated
-							@Override
-							public String getProtoFile() {
-								return null;
-							}
-
-							@Deprecated
-							@Override
-							public String getProtoFileName() {
-								return null;
-							}
-
 							@Override
 							public void registerMarshallers(SerializationContext context) {
 							}
@@ -258,18 +238,20 @@ public class InfinispanManager extends AbstractManager {
 			// Disable expiration
 			builder.expiration().lifespan(-1).maxIdle(-1).disableReaper().wakeUpInterval(-1);
 
-			OptionalInt maxActiveSessions = config.getMaxSize();
-			EvictionStrategy eviction = maxActiveSessions.isPresent() ? EvictionStrategy.REMOVE : EvictionStrategy.MANUAL;
+			OptionalInt sizeThreshold = config.getSizeThreshold();
+			Optional<Duration> idleThreshold = config.getIdleThreshold();
+
+			EvictionStrategy eviction = sizeThreshold.isPresent() || idleThreshold.isPresent() ? EvictionStrategy.REMOVE : EvictionStrategy.MANUAL;
 			builder.memory().storage(StorageType.HEAP)
 					.whenFull(eviction)
-					.maxCount(maxActiveSessions.orElse(-1))
+					.maxCount(sizeThreshold.orElse(-1))
 					;
 			if (eviction.isEnabled()) {
 				// Only evict meta-data entries
 				// We will cascade eviction to the remaining entries for a given session
 				DataContainerConfigurationBuilder containerBuilder = builder.addModule(DataContainerConfigurationBuilder.class);
 				containerBuilder.evictable(SessionMetaDataKey.class::isInstance);
-				config.getIdleTimeout().ifPresent(containerBuilder::idleTimeout);
+				idleThreshold.ifPresent(containerBuilder::idleTimeout);
 			}
 
 			String cacheName = config.getDeploymentName();
@@ -309,26 +291,15 @@ public class InfinispanManager extends AbstractManager {
 					return true;
 				}
 			};
-
-			return Map.entry(new InfinispanSessionManagerFactory<>(new InfinispanSessionManagerFactory.Configuration<HttpSession, ServletContext, CatalinaSessionContext, HttpSessionActivationListener>() {
-				@Override
-				public SessionManagerFactoryConfiguration<CatalinaSessionContext> getSessionManagerFactoryConfiguration() {
-					return config;
-				}
-
-				@Override
-				public SessionSpecificationProvider<HttpSession, ServletContext> getSessionSpecificationProvider() {
-					return HttpSessionProvider.INSTANCE;
-				}
-
-				@Override
-				public SessionEventListenerSpecificationProvider<HttpSession, HttpSessionActivationListener> getSessionEventListenerSpecificationProvider() {
-					return HttpSessionActivationListenerProvider.INSTANCE;
-				}
-
+			return Map.entry(new InfinispanSessionManagerFactory<>(new InfinispanSessionManagerFactory.Configuration<>() {
 				@Override
 				public CacheContainerCommandDispatcherFactory getCommandDispatcherFactory() {
 					return commandDispatcherFactory;
+				}
+
+				@Override
+				public SessionManagerFactoryConfiguration<CatalinaSessionContext> getSessionManagerFactoryConfiguration() {
+					return config;
 				}
 
 				@Override

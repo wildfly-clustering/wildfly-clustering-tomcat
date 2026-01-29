@@ -21,7 +21,6 @@ import org.wildfly.clustering.context.Context;
 import org.wildfly.clustering.function.Consumer;
 import org.wildfly.clustering.function.Supplier;
 import org.wildfly.clustering.session.Session;
-import org.wildfly.clustering.session.spec.servlet.HttpSessionProvider;
 
 /**
  * Adapts a WildFly distributable Session to an HttpSession.
@@ -54,7 +53,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 	public boolean isNew() {
 		Session<CatalinaSessionContext> session = this.reference.get();
 		try {
-			return session.getMetaData().isNew();
+			return session.getMetaData().getLastAccessTime().isEmpty();
 		} catch (IllegalStateException e) {
 			this.closeIfInvalid(session);
 			throw e;
@@ -76,7 +75,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 	public long getLastAccessedTime() {
 		Session<CatalinaSessionContext> session = this.reference.get();
 		try {
-			return session.getMetaData().getLastAccessTime().toEpochMilli();
+			return session.getMetaData().getLastAccessTime().orElse(session.getMetaData().getCreationTime()).toEpochMilli();
 		} catch (IllegalStateException e) {
 			this.closeIfInvalid(session);
 			throw e;
@@ -87,7 +86,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 	public int getMaxInactiveInterval() {
 		Session<CatalinaSessionContext> session = this.reference.get();
 		try {
-			return (int) session.getMetaData().getTimeout().getSeconds();
+			return (int) session.getMetaData().getMaxIdle().orElse(Duration.ZERO).getSeconds();
 		} catch (IllegalStateException e) {
 			this.closeIfInvalid(session);
 			throw e;
@@ -98,7 +97,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 	public void setMaxInactiveInterval(int interval) {
 		Session<CatalinaSessionContext> session = this.reference.get();
 		try {
-			session.getMetaData().setTimeout((interval > 0) ? Duration.ofSeconds(interval) : Duration.ZERO);
+			session.getMetaData().setMaxIdle((interval > 0) ? Duration.ofSeconds(interval) : Duration.ZERO);
 		} catch (IllegalStateException e) {
 			this.closeIfInvalid(session);
 			throw e;
@@ -108,7 +107,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 	@Override
 	public void invalidate() {
 		Session<CatalinaSessionContext> session = this.reference.get();
-		HttpSessionEvent event = new HttpSessionEvent(HttpSessionProvider.INSTANCE.asSession(session, this.manager.getContext().getServletContext()));
+		HttpSessionEvent event = new HttpSessionEvent(this.manager.getContainerProvider().getDetachableSession(this.manager.getSessionManager(), session, this.manager.getContext().getServletContext()));
 		CatalinaSessionEventNotifier.Lifecycle.DESTROY.accept(this.manager, event);
 		this.close(session, Session::invalidate);
 	}
@@ -208,6 +207,12 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 	@Override
 	public ServletContext getServletContext() {
 		return this.manager.getContext().getServletContext();
+	}
+
+	@Override
+	public Accessor getAccessor() {
+		Supplier<String> identifier = this.reference.thenApply(Session::getId);
+		return new HttpSessionAccessor(this.manager, identifier);
 	}
 
 	void closeIfInvalid(Session<CatalinaSessionContext> session) {
