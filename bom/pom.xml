@@ -15,7 +15,7 @@
 
 	<groupId>org.wildfly.clustering.tomcat</groupId>
 	<artifactId>wildfly-clustering-tomcat-bom</artifactId>
-	<version>29.0.0.Final</version>
+	<version>30.0.0.Beta1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<name>${project.repository.name}: BOM</name>
@@ -26,7 +26,7 @@
 	</properties>
 
 	<scm>
-		<tag>29.0.0.Final</tag>
+		<tag>HEAD</tag>
 	</scm>
 
 	<dependencyManagement>
