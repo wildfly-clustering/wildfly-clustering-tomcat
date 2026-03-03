@@ -38,7 +38,7 @@ public class HttpSessionAccessor implements HttpSession.Accessor {
 			try (Session<CatalinaSessionContext> session = this.manager.getSessionManager().findSession(this.identifier.get())) {
 				if (session != null) {
 					try (Context<SuspendedBatch> context = batch.suspendWithContext()) {
-						consumer.accept(new HttpSessionAdapter(this.manager, Supplier.of(session), context.get(), Runner.empty()));
+						consumer.accept(new HttpSessionAdapter(this.manager, Supplier.of(session), context.get(), Runner.of()));
 					}
 				}
 			} catch (RuntimeException | Error e) {

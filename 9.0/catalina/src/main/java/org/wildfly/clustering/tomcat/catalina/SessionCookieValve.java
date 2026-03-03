@@ -25,16 +25,16 @@ import org.apache.catalina.valves.ValveBase;
 public class SessionCookieValve extends ValveBase {
 	private static final VarHandle SESSION = findSessionField();
 
+	/** Creates a new valve */
+	public SessionCookieValve() {
+	}
+
 	private static VarHandle findSessionField() {
 		try {
 			return MethodHandles.privateLookupIn(Request.class, MethodHandles.lookup()).findVarHandle(Request.class, "session", Session.class);
 		} catch (NoSuchFieldException | IllegalAccessException e) {
 			throw new IllegalStateException(e);
 		}
-	}
-
-	/** Creates a new valve */
-	public SessionCookieValve() {
 	}
 
 	@Override

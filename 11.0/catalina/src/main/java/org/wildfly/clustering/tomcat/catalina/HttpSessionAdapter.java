@@ -107,7 +107,7 @@ public class HttpSessionAdapter extends AbstractHttpSession {
 	@Override
 	public void invalidate() {
 		Session<CatalinaSessionContext> session = this.reference.get();
-		HttpSessionEvent event = new HttpSessionEvent(this.manager.getContainerProvider().getDetachableSession(this.manager.getSessionManager(), session, this.manager.getContext().getServletContext()));
+		HttpSessionEvent event = new HttpSessionEvent(this.manager.getContainerProvider().getSession(this.manager.getSessionManager(), session, this.manager.getContext().getServletContext()));
 		CatalinaSessionEventNotifier.Lifecycle.DESTROY.accept(this.manager, event);
 		this.close(session, Session::invalidate);
 	}

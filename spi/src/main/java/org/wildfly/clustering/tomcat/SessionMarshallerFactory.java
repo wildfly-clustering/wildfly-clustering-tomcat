@@ -45,5 +45,4 @@ public enum SessionMarshallerFactory implements BiFunction<UnaryOperator<String>
 			return new ProtoStreamByteBufferMarshaller(SerializationContextBuilder.newInstance(ClassLoaderMarshaller.of(loader)).load(loader).build());
 		}
 	},
-	;
 }

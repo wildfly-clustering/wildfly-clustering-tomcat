@@ -219,7 +219,7 @@ public abstract class AbstractManager extends ManagerBase implements Distributed
 		Contextualizer contextualizer = Contextualizer.withContextProvider(ThreadContextClassLoaderReference.CURRENT.provide(context.getLoader().getClassLoader()));
 		ContainerProvider<ServletContext, HttpSession, HttpSessionActivationListener, CatalinaSessionContext> provider = new ServletContainerProvider<>();
 		AtomicReference<SessionManager<CatalinaSessionContext>> sessionManagerReference = new AtomicReference<>();
-		Consumer<ImmutableSession> destroyNotifier = session -> CatalinaSessionEventNotifier.Lifecycle.DESTROY.accept(this, new HttpSessionEvent(provider.getDetachableSession(sessionManagerReference.getPlain(), session, this.getContext().getServletContext())));
+		Consumer<ImmutableSession> destroyNotifier = session -> CatalinaSessionEventNotifier.Lifecycle.DESTROY.accept(this, new HttpSessionEvent(provider.getSession(sessionManagerReference.getPlain(), session, this.getContext().getServletContext())));
 		Supplier<String> identifierFactory = new CatalinaIdentifierFactory(this.getSessionIdGenerator());
 
 		SessionManagerConfiguration<ServletContext> sessionManagerConfiguration = new SessionManagerConfiguration<>() {
@@ -240,7 +240,7 @@ public abstract class AbstractManager extends ManagerBase implements Distributed
 
 			@Override
 			public Consumer<ImmutableSession> getExpirationListener() {
-				return Consumer.<ImmutableSession>empty().andThen(contextualizer.contextualize(destroyNotifier));
+				return Consumer.<ImmutableSession>of().andThen(contextualizer.contextualize(destroyNotifier));
 			}
 		};
 		sessionManagerReference.setPlain(managerFactory.createSessionManager(sessionManagerConfiguration));

@@ -137,7 +137,7 @@ public class DistributableManager implements CatalinaManager {
 				return close(context, closeTask);
 			}
 			if (session.getMetaData().getLastAccessTime().isEmpty()) {
-				HttpSessionEvent event = new HttpSessionEvent(this.getContainerProvider().getDetachableSession(this.getSessionManager(), session, this.getContext().getServletContext()));
+				HttpSessionEvent event = new HttpSessionEvent(this.getContainerProvider().getSession(this.getSessionManager(), session, this.getContext().getServletContext()));
 				CatalinaSessionEventNotifier.Lifecycle.CREATE.accept(this, event);
 			}
 			return new DistributableSession(this, session, suspendedBatch, closeTask);
@@ -190,7 +190,7 @@ public class DistributableManager implements CatalinaManager {
 	}
 
 	private static org.apache.catalina.Session close(Supplier<Batch> batchProvider, Runnable closeTask) {
-		return close(batchProvider, Consumer.empty(), closeTask);
+		return close(batchProvider, Consumer.of(), closeTask);
 	}
 
 	private static org.apache.catalina.Session close(Supplier<Batch> batchProvider, Consumer<Batch> batchTask, Runnable closeTask) {

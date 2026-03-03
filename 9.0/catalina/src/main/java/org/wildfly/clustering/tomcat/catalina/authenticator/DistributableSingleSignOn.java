@@ -59,7 +59,7 @@ public class DistributableSingleSignOn extends SingleSignOn implements ManagerRe
 		try (User<Credentials, TransientUserContext, String, String> sso = this.manager.findUser(ssoId)) {
 			if (sso != null) {
 				sso.getSessions().removeSession(getDeployment(session.getManager()));
-				if (sso.getSessions().getDeployments().isEmpty()) {
+				if (sso.getSessions().getSessions().isEmpty()) {
 					sso.invalidate();
 				}
 			}

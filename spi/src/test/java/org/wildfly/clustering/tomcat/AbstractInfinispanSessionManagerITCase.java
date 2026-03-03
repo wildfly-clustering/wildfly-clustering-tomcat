@@ -32,6 +32,8 @@ public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSes
 
 	private final Class<?> managerClass;
 
+	private SessionManagementParameters parameters;
+
 	protected AbstractInfinispanSessionManagerITCase(Class<?> managerClass, Class<?> endpointClass) {
 		super(new SessionManagementTesterConfiguration() {
 			@Override
@@ -41,8 +43,6 @@ public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSes
 		}, WebArchive.class);
 		this.managerClass = managerClass;
 	}
-
-	private SessionManagementParameters parameters;
 
 	@ParameterizedTest
 	@ArgumentsSource(InfinispanSessionManagerArgumentsProvider.class)
@@ -60,13 +60,13 @@ public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSes
 			XMLStreamWriter writer = factory.createXMLStreamWriter(stringWriter);
 			writer.writeStartDocument(StandardCharsets.UTF_8.displayName(), "1.0");
 			writer.writeStartElement("Context");
-			{
-				writer.writeStartElement("Manager");
-				writer.writeAttribute("className", this.managerClass.getName());
-				writer.writeAttribute("granularity", this.parameters.getSessionPersistenceGranularity().toString());
-				writer.writeAttribute("marshaller", this.parameters.getSessionMarshallerFactory().toString());
-				writer.writeEndElement();
-			}
+
+			writer.writeStartElement("Manager");
+			writer.writeAttribute("className", this.managerClass.getName());
+			writer.writeAttribute("granularity", this.parameters.getSessionPersistenceGranularity().toString());
+			writer.writeAttribute("marshaller", this.parameters.getSessionMarshallerFactory().toString());
+			writer.writeEndElement();
+
 			writer.writeEndElement();
 			writer.writeEndDocument();
 			writer.close();
