@@ -47,7 +47,7 @@ public class SessionCookieValve extends ValveBase {
 				if (requestedSessionId != null) {
 					// Use session referenced within request
 					Session session = (Session) SESSION.get(request);
-					if (session != null) {
+					if ((session != null) && session.isValid()) {
 						String sessionId = session.getIdInternal();
 						if (!sessionId.equals(requestedSessionId)) {
 							response.addCookie(ApplicationSessionCookieConfig.createSessionCookie(request.getContext(), sessionId, request.isSecure()));
