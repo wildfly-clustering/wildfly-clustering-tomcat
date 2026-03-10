@@ -87,7 +87,7 @@ public class InfinispanManager extends AbstractManager {
 	private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
 	private volatile String resourceName = "infinispan.xml";
-	private volatile String cacheName = null;
+	private volatile String cacheName;
 
 	/**
 	 * Creates a distributed manager.

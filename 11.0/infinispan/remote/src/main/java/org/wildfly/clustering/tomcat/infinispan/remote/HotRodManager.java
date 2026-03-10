@@ -45,8 +45,10 @@ public class HotRodManager extends AbstractManager {
 
 	private final Properties properties = new Properties();
 
-	private volatile String templateName = null;
-	private String configuration = """
+	private volatile String templateName;
+
+	private volatile String configuration =
+"""
 {
 	"distributed-cache" : {
 		"mode" : "SYNC",
@@ -64,8 +66,9 @@ public class HotRodManager extends AbstractManager {
 			"locking" : "PESSIMISTIC"
 		}
 	}
-}""";
-	private volatile URI uri = null;
+}
+""";
+	private volatile URI uri;
 
 	/**
 	 * Creates a new distributed manager.

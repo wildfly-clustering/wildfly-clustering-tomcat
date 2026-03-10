@@ -7,6 +7,7 @@ package org.wildfly.clustering.tomcat.catalina;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -16,10 +17,15 @@ import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 
 import org.apache.catalina.SessionListener;
-import org.wildfly.clustering.cache.batch.Batch;
-import org.wildfly.clustering.cache.batch.SuspendedBatch;
-import org.wildfly.clustering.context.Context;
+import org.wildfly.clustering.function.BiConsumer;
+import org.wildfly.clustering.function.Consumer;
+import org.wildfly.clustering.function.Function;
+import org.wildfly.clustering.function.UnaryOperator;
+import org.wildfly.clustering.server.util.BlockingReference;
+import org.wildfly.clustering.server.util.Reference;
 import org.wildfly.clustering.session.Session;
+import org.wildfly.clustering.session.SessionManager;
+import org.wildfly.clustering.session.SessionMetaData;
 
 /**
  * Adapts a WildFly distributable Session to Tomcat's Session interface.
@@ -28,37 +34,48 @@ import org.wildfly.clustering.session.Session;
 public class DistributableSession implements CatalinaSession {
 	private static final System.Logger LOGGER = System.getLogger(DistributableSession.class.getCanonicalName());
 
+	private static final Function<CatalinaSessionContext, String> GET_AUTH_TYPE = CatalinaSessionContext::getAuthType;
+	private static final BiConsumer<CatalinaSessionContext, String> SET_AUTH_TYPE = CatalinaSessionContext::setAuthType;
+	private static final Function<CatalinaSessionContext, Principal> GET_PRINCIPAL = CatalinaSessionContext::getPrincipal;
+	private static final BiConsumer<CatalinaSessionContext, Principal> SET_PRINCIPAL = CatalinaSessionContext::setPrincipal;
+	private static final Function<CatalinaSessionContext, List<SessionListener>> LISTENERS = CatalinaSessionContext::getSessionListeners;
+	private static final BiConsumer<List<SessionListener>, SessionListener> ADD_LISTENER = List::add;
+	private static final BiConsumer<List<SessionListener>, SessionListener> REMOVE_LISTENER = List::remove;
+
 	private final CatalinaManager manager;
-	private final AtomicReference<Session<CatalinaSessionContext>> reference;
+	private final BlockingReference<Session<CatalinaSessionContext>> reference;
+	private final Reference.Reader<CatalinaSessionContext> contextReader;
+	private final Reference.Reader<Map<String, Object>> notesReader;
+	private final Reference.Reader<List<SessionListener>> listenersReader;
 	private final Instant startTime;
-	private final SuspendedBatch batch;
-	private final Runnable closeTask;
+	private final AtomicReference<Runnable> closeTask;
 	private final HttpSession session;
 
 	/**
 	 * Creates a distributable session.
 	 * @param manager the manager of this session.
 	 * @param session the decorated session
-	 * @param batch the batch associated with this session
 	 * @param closeTask a task to invoke on {@link #endAccess()}.
 	 */
-	public DistributableSession(CatalinaManager manager, Session<CatalinaSessionContext> session, SuspendedBatch batch, Runnable closeTask) {
+	public DistributableSession(CatalinaManager manager, Session<CatalinaSessionContext> session, Runnable closeTask) {
 		this.manager = manager;
-		this.reference = new AtomicReference<>(session);
+		this.reference = BlockingReference.of(session);
+		this.contextReader = this.reference.getReader().map(DistributableHttpSession.CONTEXT);
+		this.notesReader = this.reference.getReader().map(DistributableHttpSession.NOTES);
+		this.listenersReader = this.contextReader.map(LISTENERS);
 		this.startTime = session.getMetaData().getLastAccessTime().isEmpty() ? session.getMetaData().getCreationTime() : Instant.now();
-		this.batch = batch;
-		this.closeTask = closeTask;
-		this.session = new HttpSessionAdapter(this.manager, this.reference::get, batch, closeTask);
+		this.closeTask = new AtomicReference<>(closeTask);
+		this.session = new DistributableHttpSession(this.manager, this.reference, this.closeTask);
 	}
 
 	@Override
 	public String getAuthType() {
-		return this.reference.get().getContext().getAuthType();
+		return this.contextReader.map(GET_AUTH_TYPE).get();
 	}
 
 	@Override
 	public void setAuthType(String authType) {
-		this.reference.get().getContext().setAuthType(authType);
+		this.contextReader.read(SET_AUTH_TYPE.composeUnary(Function.identity(), Function.of(authType)));
 	}
 
 	@Override
@@ -73,7 +90,7 @@ public class DistributableSession implements CatalinaSession {
 
 	@Override
 	public String getId() {
-		return this.reference.get().getId();
+		return this.session.getId();
 	}
 
 	@Override
@@ -98,12 +115,12 @@ public class DistributableSession implements CatalinaSession {
 
 	@Override
 	public Principal getPrincipal() {
-		return this.reference.get().getContext().getPrincipal();
+		return this.contextReader.map(GET_PRINCIPAL).get();
 	}
 
 	@Override
 	public void setPrincipal(Principal principal) {
-		this.reference.get().getContext().setPrincipal(principal);
+		this.contextReader.read(SET_PRINCIPAL.composeUnary(Function.identity(), Function.of(principal)));
 	}
 
 	@Override
@@ -113,93 +130,96 @@ public class DistributableSession implements CatalinaSession {
 
 	@Override
 	public boolean isValid() {
-		return this.reference.get().isValid();
-	}
-
-	@Override
-	public void addSessionListener(SessionListener listener) {
-		this.reference.get().getContext().getSessionListeners().add(listener);
+		return this.reference.getReader().map(DistributableHttpSession.VALID.thenBox()).get();
 	}
 
 	@Override
 	public void endAccess() {
-		LOGGER.log(System.Logger.Level.TRACE, "DistributableSession.endAccess() for {0}", this.session.getId());
-		try (Context<Batch> context = this.batch.resumeWithContext()) {
-			try (Batch batch = context.get()) {
-				try (Session<CatalinaSessionContext> session = this.reference.get()) {
-					if (session.isValid()) {
-						// According to §7.6 of the servlet specification:
-						// The session is considered to be accessed when a request that is part of the session is first handled
-						// by the servlet container.
-						session.getMetaData().setLastAccess(this.startTime, Instant.now());
+		// Guard against duplicate calls
+		Runnable closeTask = this.closeTask.getAndSet(null);
+		if (closeTask != null) {
+			try {
+				this.reference.getReader().read(completeSession -> {
+					// Ensure session is closed, even if invalid
+					try (Session<CatalinaSessionContext> session = completeSession) {
+						LOGGER.log(System.Logger.Level.TRACE, "DistributableSession.endAccess() for {0}", session.getId());
+						if (session.isValid()) {
+							// According to §7.6 of the servlet specification:
+							// The session is considered to be accessed when a request that is part of the session is first handled by the servlet container.
+							session.getMetaData().setLastAccess(this.startTime, Instant.now());
+						}
+					} catch (Throwable e) {
+						// Don't propagate exceptions at the stage, since response was already committed
+						this.manager.getContext().getLogger().warn(e.getLocalizedMessage(), e);
 					}
-				} catch (Throwable e) {
-					// Don't propagate exceptions at the stage, since response was already committed
-					this.manager.getContext().getLogger().warn(e.getLocalizedMessage(), e);
-				}
+				});
 			} finally {
-				this.closeTask.run();
+				closeTask.run();
 			}
 		}
 	}
 
 	@Override
-	public Object getNote(String name) {
-		return this.reference.get().getContext().getNotes().get(name);
-	}
-
-	@Override
-	public Iterator<String> getNoteNames() {
-		return this.reference.get().getContext().getNotes().keySet().iterator();
-	}
-
-	@Override
-	public void removeNote(String name) {
-		this.reference.get().getContext().getNotes().remove(name);
+	public void addSessionListener(SessionListener listener) {
+		this.listenersReader.read(ADD_LISTENER.composeUnary(Function.identity(), Function.of(listener)));
 	}
 
 	@Override
 	public void removeSessionListener(SessionListener listener) {
-		this.reference.get().getContext().getSessionListeners().remove(listener);
+		this.listenersReader.read(REMOVE_LISTENER.composeUnary(Function.identity(), Function.of(listener)));
+	}
+
+	@Override
+	public Object getNote(String name) {
+		return this.notesReader.map(DistributableHttpSession.GET_ATTRIBUTE.composeUnary(Function.identity(), Function.of(name))).get();
+	}
+
+	@Override
+	public Iterator<String> getNoteNames() {
+		return this.notesReader.map(DistributableHttpSession.ATTRIBUTE_NAMES).get().iterator();
+	}
+
+	@Override
+	public void removeNote(String name) {
+		this.notesReader.map(DistributableHttpSession.REMOVE_ATTRIBUTE.composeUnary(Function.identity(), Function.of(name))).get();
 	}
 
 	@Override
 	public void setNote(String name, Object value) {
-		this.reference.get().getContext().getNotes().put(name, value);
+		if (value != null) {
+			this.notesReader.map(DistributableHttpSession.SET_ATTRIBUTE.composeUnary(Function.identity(), Function.of(Map.entry(name, value)))).get();
+		} else {
+			this.removeNote(name);
+		}
 	}
 
 	@Override
 	public void setId(String id) {
-		Session<CatalinaSessionContext> oldSession = this.reference.get();
-		try (Context<Batch> context = this.batch.resumeWithContext()) {
-			Session<CatalinaSessionContext> newSession = this.manager.getSessionManager().createSession(id);
-			try {
-				for (Map.Entry<String, Object> entry : oldSession.getAttributes().entrySet()) {
-					newSession.getAttributes().put(entry.getKey(), entry.getValue());
-				}
-				oldSession.getMetaData().getMaxIdle().ifPresent(newSession.getMetaData()::setMaxIdle);
-				if (oldSession.getMetaData().getLastAccessTime().isPresent()) {
-					newSession.getMetaData().setLastAccess(oldSession.getMetaData().getLastAccessStartTime().get(), oldSession.getMetaData().getLastAccessTime().get());
-				}
-				newSession.getContext().setAuthType(oldSession.getContext().getAuthType());
-				newSession.getContext().setPrincipal(oldSession.getContext().getPrincipal());
-				this.reference.set(newSession);
-				oldSession.invalidate();
-			} catch (IllegalStateException e) {
-				newSession.invalidate();
-				throw e;
-			}
-		} catch (IllegalStateException e) {
-			if (!oldSession.isValid()) {
-				try (Context<Batch> context = this.batch.resumeWithContext()) {
-					try (Batch batch = context.get()) {
-						oldSession.close();
-					} finally {
-						this.closeTask.run();
-					}
+		SessionManager<CatalinaSessionContext> manager = this.manager.getSessionManager();
+		this.reference.getWriter(Session::isValid).update(new UnaryOperator<>() {
+			@Override
+			public Session<CatalinaSessionContext> apply(Session<CatalinaSessionContext> currentSession) {
+				SessionMetaData currentMetaData = currentSession.getMetaData();
+				Map<String, Object> currentAttributes = currentSession.getAttributes();
+				Session<CatalinaSessionContext> newSession = manager.createSession(id);
+				try {
+					newSession.getAttributes().putAll(currentAttributes);
+					SessionMetaData newMetaData = newSession.getMetaData();
+					currentMetaData.getMaxIdle().ifPresent(newMetaData::setMaxIdle);
+					currentMetaData.getLastAccess().ifPresent(newMetaData::setLastAccess);
+					newSession.getContext().setAuthType(currentSession.getContext().getAuthType());
+					newSession.getContext().setPrincipal(currentSession.getContext().getPrincipal());
+					newSession.getContext().getNotes().putAll(currentSession.getContext().getNotes());
+					currentSession.invalidate();
+					return newSession;
+				} catch (RuntimeException | Error e) {
+					newSession.invalidate();
+					throw e;
+				} finally {
+					Consumer.close().accept(newSession.isValid() ? currentSession : newSession);
 				}
 			}
-		}
+		});
 	}
 
 	@Override

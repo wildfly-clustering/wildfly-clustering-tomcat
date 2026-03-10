@@ -25,16 +25,16 @@ import org.apache.catalina.valves.ValveBase;
 public class SessionCookieValve extends ValveBase {
 	private static final VarHandle SESSION = findSessionField();
 
+	/** Creates a new valve */
+	public SessionCookieValve() {
+	}
+
 	private static VarHandle findSessionField() {
 		try {
 			return MethodHandles.privateLookupIn(Request.class, MethodHandles.lookup()).findVarHandle(Request.class, "session", Session.class);
 		} catch (NoSuchFieldException | IllegalAccessException e) {
 			throw new IllegalStateException(e);
 		}
-	}
-
-	/** Creates a new valve */
-	public SessionCookieValve() {
 	}
 
 	@Override
@@ -47,7 +47,7 @@ public class SessionCookieValve extends ValveBase {
 				if (requestedSessionId != null) {
 					// Use session referenced within request
 					Session session = (Session) SESSION.get(request);
-					if (session != null) {
+					if ((session != null) && session.isValid()) {
 						String sessionId = session.getIdInternal();
 						if (!sessionId.equals(requestedSessionId)) {
 							response.addCookie(ApplicationSessionCookieConfig.createSessionCookie(request.getContext(), sessionId, request.isSecure()));

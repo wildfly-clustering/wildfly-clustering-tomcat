@@ -41,6 +41,8 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 
 	private final Class<?> managerClass;
 
+	private SessionManagementParameters parameters;
+
 	protected AbstractHotRodSessionManagerITCase(Class<?> managerClass, Class<?> endpointClass) {
 		super(new SessionManagementTesterConfiguration() {
 			@Override
@@ -55,8 +57,6 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 		}, WebArchive.class);
 		this.managerClass = managerClass;
 	}
-
-	private SessionManagementParameters parameters;
 
 	@ParameterizedTest
 	@ArgumentsSource(HotRodSessionManagerArgumentsProvider.class)
@@ -75,12 +75,13 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 			XMLStreamWriter writer = factory.createXMLStreamWriter(stringWriter);
 			writer.writeStartDocument(StandardCharsets.UTF_8.displayName(), "1.0");
 			writer.writeStartElement("Context");
-			{
-				writer.writeStartElement("Manager");
-				writer.writeAttribute("className", this.managerClass.getName());
-				writer.writeAttribute("granularity", this.parameters.getSessionPersistenceGranularity().toString());
-				writer.writeAttribute("marshaller", this.parameters.getSessionMarshallerFactory().toString());
-				writer.writeAttribute("configuration", """
+
+			writer.writeStartElement("Manager");
+			writer.writeAttribute("className", this.managerClass.getName());
+			writer.writeAttribute("granularity", this.parameters.getSessionPersistenceGranularity().toString());
+			writer.writeAttribute("marshaller", this.parameters.getSessionMarshallerFactory().toString());
+			writer.writeAttribute("configuration",
+"""
 {
 	"local-cache" : {
 		"encoding" : {
@@ -99,10 +100,11 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 			"locking" : "PESSIMISTIC"
 		}
 	}
-}""");
-				writer.writeAttribute("uri", String.format("hotrod://%s:%s@%s:%s", container.getUsername(), String.valueOf(container.getPassword()), container.getHost(), container.getPort()));
-				writer.writeEndElement();
-			}
+}
+""");
+			writer.writeAttribute("uri", String.format("hotrod://%s:%s@%s:%s", container.getUsername(), String.valueOf(container.getPassword()), container.getHost(), container.getPort()));
+			writer.writeEndElement();
+
 			writer.writeEndElement();
 			writer.writeEndDocument();
 			writer.close();
