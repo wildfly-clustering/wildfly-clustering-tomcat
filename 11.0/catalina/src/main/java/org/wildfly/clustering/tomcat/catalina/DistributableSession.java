@@ -23,6 +23,7 @@ import org.wildfly.clustering.function.Function;
 import org.wildfly.clustering.function.UnaryOperator;
 import org.wildfly.clustering.server.util.BlockingReference;
 import org.wildfly.clustering.server.util.Reference;
+import org.wildfly.clustering.session.ImmutableSession;
 import org.wildfly.clustering.session.Session;
 import org.wildfly.clustering.session.SessionManager;
 import org.wildfly.clustering.session.SessionMetaData;
@@ -130,7 +131,7 @@ public class DistributableSession implements CatalinaSession {
 
 	@Override
 	public boolean isValid() {
-		return this.reference.getReader().map(DistributableHttpSession.VALID.thenBox()).get();
+		return this.reference.getReader().map(ImmutableSession.VALID.thenBox()).get();
 	}
 
 	@Override
@@ -171,23 +172,23 @@ public class DistributableSession implements CatalinaSession {
 
 	@Override
 	public Object getNote(String name) {
-		return this.notesReader.map(DistributableHttpSession.GET_ATTRIBUTE.composeUnary(Function.identity(), Function.of(name))).get();
+		return this.notesReader.map(ImmutableSession.GET_ATTRIBUTE.composeUnary(Function.identity(), Function.of(name))).get();
 	}
 
 	@Override
 	public Iterator<String> getNoteNames() {
-		return this.notesReader.map(DistributableHttpSession.ATTRIBUTE_NAMES).get().iterator();
+		return this.notesReader.map(ImmutableSession.ATTRIBUTE_NAMES).get().iterator();
 	}
 
 	@Override
 	public void removeNote(String name) {
-		this.notesReader.map(DistributableHttpSession.REMOVE_ATTRIBUTE.composeUnary(Function.identity(), Function.of(name))).get();
+		this.notesReader.map(Session.REMOVE_ATTRIBUTE.composeUnary(Function.identity(), Function.of(name))).get();
 	}
 
 	@Override
 	public void setNote(String name, Object value) {
 		if (value != null) {
-			this.notesReader.map(DistributableHttpSession.SET_ATTRIBUTE.composeUnary(Function.identity(), Function.of(Map.entry(name, value)))).get();
+			this.notesReader.map(Session.SET_ATTRIBUTE.composeUnary(Function.identity(), Function.of(Map.entry(name, value)))).get();
 		} else {
 			this.removeNote(name);
 		}

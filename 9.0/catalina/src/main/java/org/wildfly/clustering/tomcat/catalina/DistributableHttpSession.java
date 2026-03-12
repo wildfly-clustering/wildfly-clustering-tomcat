@@ -5,11 +5,9 @@
 package org.wildfly.clustering.tomcat.catalina;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -19,14 +17,13 @@ import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionEvent;
 
 import org.apache.catalina.Globals;
-import org.wildfly.clustering.function.BiConsumer;
-import org.wildfly.clustering.function.BiFunction;
 import org.wildfly.clustering.function.Consumer;
 import org.wildfly.clustering.function.Function;
-import org.wildfly.clustering.function.Predicate;
 import org.wildfly.clustering.function.Supplier;
 import org.wildfly.clustering.function.UnaryOperator;
 import org.wildfly.clustering.server.util.Reference;
+import org.wildfly.clustering.session.ImmutableSession;
+import org.wildfly.clustering.session.ImmutableSessionMetaData;
 import org.wildfly.clustering.session.Session;
 import org.wildfly.clustering.session.SessionMetaData;
 
@@ -35,23 +32,9 @@ import org.wildfly.clustering.session.SessionMetaData;
  * @author Paul Ferraro
  */
 public class DistributableHttpSession extends AbstractHttpSession {
-	static final Function<Session<CatalinaSessionContext>, String> IDENTIFIER = Session::getId;
-	static final Predicate<Session<CatalinaSessionContext>> VALID = Session::isValid;
-	static final UnaryOperator<Session<CatalinaSessionContext>> REQUIRE_VALID = UnaryOperator.when(VALID, UnaryOperator.identity(), UnaryOperator.of(Consumer.<Session<CatalinaSessionContext>>of().thenThrow(IllegalStateException::new), Supplier.of(null)));
+	static final UnaryOperator<Session<CatalinaSessionContext>> REQUIRE_VALID = UnaryOperator.when(ImmutableSession.VALID, UnaryOperator.identity(), UnaryOperator.of(Consumer.<Session<CatalinaSessionContext>>of().thenThrow(IllegalStateException::new), Supplier.of(null)));
 	static final Function<Session<CatalinaSessionContext>, CatalinaSessionContext> CONTEXT = REQUIRE_VALID.thenApply(Session::getContext);
 	static final Function<Session<CatalinaSessionContext>, Map<String, Object>> NOTES = CONTEXT.thenApply(CatalinaSessionContext::getNotes);
-	static final BiFunction<Map<String, Object>, String, Object> GET_ATTRIBUTE = Map::get;
-	static final BiFunction<Map<String, Object>, Map.Entry<String, Object>, Object> SET_ATTRIBUTE = (map, entry) -> map.put(entry.getKey(), entry.getValue());
-	static final BiFunction<Map<String, Object>, String, Object> REMOVE_ATTRIBUTE = Map::remove;
-	private static final Function<Set<String>, Set<String>> COPY_SET = Set::copyOf;
-	static final Function<Map<String, Object>, Set<String>> ATTRIBUTE_NAMES = Function.of(Map::keySet, COPY_SET);
-	private static final Function<Session<CatalinaSessionContext>, SessionMetaData> METADATA = REQUIRE_VALID.thenApply(Session::getMetaData);
-	private static final Function<Session<CatalinaSessionContext>, Map<String, Object>> ATTRIBUTES = REQUIRE_VALID.thenApply(Session::getAttributes);
-	private static final Function<SessionMetaData, Instant> CREATION_TIME = SessionMetaData::getCreationTime;
-	private static final Function<SessionMetaData, Optional<Instant>> LAST_ACCESS_TIME = SessionMetaData::getLastAccessStartTime;
-	private static final Function<SessionMetaData, Map.Entry<Instant, Optional<Instant>>> CREATION_LAST_ACCESS_TIME = Function.entry(CREATION_TIME, LAST_ACCESS_TIME);
-	private static final Function<SessionMetaData, Optional<Duration>> MAX_IDLE = SessionMetaData::getMaxIdle;
-	private static final BiConsumer<SessionMetaData, Duration> SET_MAX_IDLE = SessionMetaData::setMaxIdle;
 	private static final Set<String> EXCLUDED_ATTRIBUTES = Set.of(Globals.GSS_CREDENTIAL_ATTR, org.apache.catalina.valves.CrawlerSessionManagerValve.class.getName());
 
 	private final CatalinaManager manager;
@@ -70,15 +53,15 @@ public class DistributableHttpSession extends AbstractHttpSession {
 	public DistributableHttpSession(CatalinaManager manager, Reference<Session<CatalinaSessionContext>> reference, AtomicReference<Runnable> invalidateTask) {
 		this.manager = manager;
 		this.sessionReader = reference.getReader();
-		this.sessionMetaDataReader = this.sessionReader.map(METADATA);
-		this.sessionAttributesReader = this.sessionReader.map(ATTRIBUTES);
+		this.sessionMetaDataReader = this.sessionReader.map(Session.METADATA);
+		this.sessionAttributesReader = this.sessionReader.map(Session.ATTRIBUTES);
 		this.sessionNotesReader = this.sessionReader.map(NOTES);
 		this.invalidateTask = invalidateTask;
 	}
 
 	@Override
 	public String getId() {
-		return this.sessionReader.map(IDENTIFIER).get();
+		return this.sessionReader.map(ImmutableSession.IDENTIFIER).get();
 	}
 
 	@Override
@@ -88,29 +71,28 @@ public class DistributableHttpSession extends AbstractHttpSession {
 
 	@Override
 	public boolean isNew() {
-		return this.sessionMetaDataReader.map(LAST_ACCESS_TIME).get().isEmpty();
+		return this.sessionMetaDataReader.map(ImmutableSessionMetaData.LAST_ACCESS_START_TIME).get().isEmpty();
 	}
 
 	@Override
 	public long getCreationTime() {
-		return this.sessionMetaDataReader.map(CREATION_TIME).get().toEpochMilli();
+		return this.sessionMetaDataReader.map(ImmutableSessionMetaData.CREATION_TIME).get().toEpochMilli();
 	}
 
 	@Override
 	public long getLastAccessedTime() {
-		Map.Entry<Instant, Optional<Instant>> entry = this.sessionMetaDataReader.map(CREATION_LAST_ACCESS_TIME).get();
-		return entry.getValue().orElse(entry.getKey()).toEpochMilli();
+		return this.sessionMetaDataReader.map(ImmutableSessionMetaData.LAST_ACCESS_TIME).get().toEpochMilli();
 	}
 
 	@Override
 	public int getMaxInactiveInterval() {
-		return (int) this.sessionMetaDataReader.map(MAX_IDLE).get().orElse(Duration.ZERO).getSeconds();
+		return (int) this.sessionMetaDataReader.map(ImmutableSessionMetaData.MAX_IDLE).get().orElse(Duration.ZERO).getSeconds();
 	}
 
 	@Override
 	public void setMaxInactiveInterval(int interval) {
 		Duration maxIdle = interval > 0 ? Duration.ofSeconds(interval) : Duration.ZERO;
-		this.sessionMetaDataReader.read(SET_MAX_IDLE.composeUnary(Function.identity(), Function.of(maxIdle)));
+		this.sessionMetaDataReader.read(SessionMetaData.MAX_IDLE.composeUnary(Function.identity(), Function.of(maxIdle)));
 	}
 
 	@Override
@@ -133,7 +115,7 @@ public class DistributableHttpSession extends AbstractHttpSession {
 
 	@Override
 	public Enumeration<String> getAttributeNames() {
-		return Collections.enumeration(this.sessionAttributesReader.map(ATTRIBUTE_NAMES).get());
+		return Collections.enumeration(this.sessionAttributesReader.map(ImmutableSession.ATTRIBUTE_NAMES).get());
 	}
 
 	private Reference.Reader<Map<String, Object>> getAttributeReader(String name) {
@@ -143,7 +125,7 @@ public class DistributableHttpSession extends AbstractHttpSession {
 	@Override
 	public Object getAttribute(String name) {
 		Reference.Reader<Map<String, Object>> reader = this.getAttributeReader(name);
-		return reader.map(GET_ATTRIBUTE.composeUnary(Function.identity(), Function.of(name))).get();
+		return reader.map(ImmutableSession.GET_ATTRIBUTE.composeUnary(Function.identity(), Function.of(name))).get();
 	}
 
 	@Override
@@ -162,7 +144,7 @@ public class DistributableHttpSession extends AbstractHttpSession {
 	@Override
 	public void removeAttribute(String name) {
 		Reference.Reader<Map<String, Object>> reader = this.getAttributeReader(name);
-		Object value = reader.map(REMOVE_ATTRIBUTE.composeUnary(Function.identity(), Function.of(name))).get();
+		Object value = reader.map(Session.REMOVE_ATTRIBUTE.composeUnary(Function.identity(), Function.of(name))).get();
 		if ((reader == this.sessionAttributesReader) && (value != null)) {
 			this.notifySessionAttributeListeners(name, value, null);
 		}
