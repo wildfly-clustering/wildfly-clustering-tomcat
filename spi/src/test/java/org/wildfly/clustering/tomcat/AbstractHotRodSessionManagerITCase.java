@@ -68,7 +68,6 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 
 	@Override
 	public WebArchive createArchive(SessionManagementTesterConfiguration configuration) {
-		InfinispanServerContainer container = INFINISPAN.getContainer();
 		XMLOutputFactory factory = XMLOutputFactory.newFactory();
 		StringWriter stringWriter = new StringWriter();
 		try {
@@ -102,7 +101,7 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 	}
 }
 """);
-			writer.writeAttribute("uri", String.format("hotrod://%s:%s@%s:%s", container.getUsername(), String.valueOf(container.getPassword()), container.getHost(), container.getPort()));
+			writer.writeAttribute("uri", INFINISPAN.getContainer().get().toString(true));
 			writer.writeEndElement();
 
 			writer.writeEndElement();
