@@ -8,6 +8,7 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import javax.xml.stream.XMLOutputFactory;
@@ -32,7 +33,7 @@ public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSes
 
 	private final Class<?> managerClass;
 
-	private SessionManagementParameters parameters;
+	private final AtomicReference<SessionManagementParameters> parameters = new AtomicReference<>();
 
 	protected AbstractInfinispanSessionManagerITCase(Class<?> managerClass, Class<?> endpointClass) {
 		super(new SessionManagementTesterConfiguration() {
@@ -48,7 +49,7 @@ public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSes
 	@ArgumentsSource(InfinispanSessionManagerArgumentsProvider.class)
 	@RunAsClient
 	public void test(SessionManagementParameters parameters) {
-		this.parameters = parameters;
+		this.parameters.set(parameters);
 		this.run();
 	}
 
@@ -63,8 +64,8 @@ public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSes
 
 			writer.writeStartElement("Manager");
 			writer.writeAttribute("className", this.managerClass.getName());
-			writer.writeAttribute("granularity", this.parameters.getSessionPersistenceGranularity().toString());
-			writer.writeAttribute("marshaller", this.parameters.getSessionMarshallerFactory().toString());
+			writer.writeAttribute("granularity", this.parameters.get().getSessionPersistenceGranularity().toString());
+			writer.writeAttribute("marshaller", this.parameters.get().getSessionMarshallerFactory().toString());
 			writer.writeEndElement();
 
 			writer.writeEndElement();

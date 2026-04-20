@@ -8,6 +8,9 @@ import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.ServletContext;
 
@@ -20,8 +23,12 @@ import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.configuration.NearCacheMode;
 import org.infinispan.client.hotrod.configuration.RemoteCacheConfigurationBuilder;
 import org.infinispan.client.hotrod.configuration.TransactionMode;
+import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.client.hotrod.impl.HotRodURI;
+import org.infinispan.client.hotrod.impl.async.DefaultAsyncExecutorFactory;
+import org.infinispan.client.hotrod.transaction.lookup.RemoteTransactionManagerLookup;
 import org.infinispan.commons.dataconversion.MediaType;
+import org.infinispan.commons.executors.ExecutorFactory;
 import org.infinispan.commons.marshall.Marshaller;
 import org.wildfly.clustering.cache.infinispan.marshalling.MediaTypes;
 import org.wildfly.clustering.cache.infinispan.marshalling.UserMarshaller;
@@ -47,12 +54,10 @@ public class HotRodManager extends AbstractManager {
 
 	private volatile String templateName;
 
-	private volatile String configuration =
-"""
+	private volatile String configuration = """
 {
 	"distributed-cache" : {
 		"mode" : "SYNC",
-		"statistics" : "true",
 		"encoding" : {
 			"key" : {
 				"media-type" : "application/octet-stream"
@@ -61,8 +66,11 @@ public class HotRodManager extends AbstractManager {
 				"media-type" : "application/octet-stream"
 			}
 		},
+		"locking" : {
+			"isolation" : "REPEATABLE_READ"
+		},
 		"transaction" : {
-			"mode" : "BATCH",
+			"mode" : "NON_XA",
 			"locking" : "PESSIMISTIC"
 		}
 	}
@@ -90,7 +98,7 @@ public class HotRodManager extends AbstractManager {
 	 * @param value a property value
 	 */
 	public void setProperty(String name, String value) {
-		this.properties.setProperty("infinispan.client.hotrod." + name, value);
+		this.properties.setProperty(ConfigurationProperties.ICH + name, value);
 	}
 
 	/**
@@ -113,12 +121,31 @@ public class HotRodManager extends AbstractManager {
 	protected Map.Entry<SessionManagerFactory<ServletContext, CatalinaSessionContext>, UnaryOperator<String>> createSessionManagerFactory(SessionManagerFactoryConfiguration<CatalinaSessionContext> config, String localRoute, Consumer<Runnable> stopTasks) {
 		ClassLoader containerLoader = HotRodSessionManagerFactory.class.getClassLoader();
 		Marshaller marshaller = new UserMarshaller(MediaTypes.WILDFLY_PROTOSTREAM, new ProtoStreamByteBufferMarshaller(SerializationContextBuilder.newInstance(ClassLoaderMarshaller.of(containerLoader)).load(containerLoader).build()));
+		ThreadPoolExecutor executor = new DefaultAsyncExecutorFactory().getExecutor(this.properties);
 		Configuration configuration = Optional.ofNullable(this.uri).map(HotRodURI::create).map(HotRodURI::toConfigurationBuilder).orElseGet(ConfigurationBuilder::new)
 				.withProperties(this.properties)
+				.asyncExecutorFactory().factory(new ExecutorFactory() {
+					@Override
+					public ExecutorService getExecutor(Properties properties) {
+						return executor;
+					}
+				})
 				.marshaller(marshaller)
 				.build();
+		stopTasks.accept(() -> {
+			try {
+				executor.awaitTermination(configuration.transactionTimeout(), TimeUnit.MILLISECONDS);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		});
 
-		Consumer<RemoteCacheConfigurationBuilder> configurator = builder -> builder.forceReturnValues(false).nearCacheMode(config.getSizeThreshold().isPresent() ? NearCacheMode.INVALIDATED : NearCacheMode.DISABLED).transactionMode(TransactionMode.NONE);
+		Consumer<RemoteCacheConfigurationBuilder> configurator = builder -> builder.forceReturnValues(false)
+				.marshaller(marshaller)
+				.nearCacheMode(NearCacheMode.DISABLED)
+				.transactionMode(TransactionMode.NON_XA)
+				.transactionManagerLookup(RemoteTransactionManagerLookup.getInstance())
+				;
 		configuration.addRemoteCache(config.getDeploymentName(), configurator.andThen((this.templateName != null) ? builder -> builder.templateName(this.templateName) : builder -> builder.configuration(this.configuration)));
 
 		@SuppressWarnings("resource")

@@ -6,10 +6,9 @@ package org.wildfly.clustering.tomcat;
 
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.EnumSet;
 import java.util.Map;
-import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import javax.xml.stream.XMLOutputFactory;
@@ -41,18 +40,13 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 
 	private final Class<?> managerClass;
 
-	private SessionManagementParameters parameters;
+	private final AtomicReference<SessionManagementParameters> parameters = new AtomicReference<>();
 
 	protected AbstractHotRodSessionManagerITCase(Class<?> managerClass, Class<?> endpointClass) {
 		super(new SessionManagementTesterConfiguration() {
 			@Override
 			public Class<?> getEndpointClass() {
 				return endpointClass;
-			}
-
-			@Override
-			public Optional<Duration> getFailoverGracePeriod() {
-				return Optional.of(Duration.ofSeconds(2));
 			}
 		}, WebArchive.class);
 		this.managerClass = managerClass;
@@ -62,7 +56,7 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 	@ArgumentsSource(HotRodSessionManagerArgumentsProvider.class)
 	@RunAsClient
 	public void test(SessionManagementParameters parameters) {
-		this.parameters = parameters;
+		this.parameters.set(parameters);
 		this.run();
 	}
 
@@ -77,10 +71,9 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 
 			writer.writeStartElement("Manager");
 			writer.writeAttribute("className", this.managerClass.getName());
-			writer.writeAttribute("granularity", this.parameters.getSessionPersistenceGranularity().toString());
-			writer.writeAttribute("marshaller", this.parameters.getSessionMarshallerFactory().toString());
-			writer.writeAttribute("configuration",
-"""
+			writer.writeAttribute("granularity", this.parameters.get().getSessionPersistenceGranularity().toString());
+			writer.writeAttribute("marshaller", this.parameters.get().getSessionMarshallerFactory().toString());
+			writer.writeAttribute("configuration", """
 {
 	"local-cache" : {
 		"encoding" : {
@@ -93,6 +86,9 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 		},
 		"expiration" : {
 			"interval" : 1000
+		},
+		"locking" : {
+			"isolation" : "REPEATABLE_READ"
 		},
 		"transaction" : {
 			"mode" : "NON_XA",
