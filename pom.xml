@@ -101,8 +101,8 @@
 			</dependency>
 			<dependency>
 				<groupId>org.jboss.arquillian.container</groupId>
-				<artifactId>arquillian-tomcat-managed-8</artifactId>
-				<version>1.1.0.Final</version>
+				<artifactId>arquillian-tomcat-managed-10</artifactId>
+				<version>1.2.4.Final</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
