@@ -65,10 +65,19 @@ public interface CatalinaManager extends Manager, Lifecycle, DistributedManager 
 	}
 
 	@Override
-	void start();
+	default void start() {
+		this.getSessionManager().start();
+	}
 
 	@Override
-	void stop();
+	default void stop() {
+		this.getSessionManager().stop();
+	}
+
+	@Override
+	default LifecycleState getState() {
+		return this.getSessionManager().isStarted() ? LifecycleState.STARTED : LifecycleState.STOPPED;
+	}
 
 	// We don't care about any of the methods below
 
@@ -207,11 +216,6 @@ public interface CatalinaManager extends Manager, Lifecycle, DistributedManager 
 
 	@Override
 	default void removeLifecycleListener(LifecycleListener listener) {
-	}
-
-	@Override
-	default LifecycleState getState() {
-		return null;
 	}
 
 	@Override

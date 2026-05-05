@@ -83,7 +83,7 @@ public class DistributableManager implements CatalinaManager {
 
 	@Override
 	public void start() {
-		this.manager.start();
+		CatalinaManager.super.start();
 		long stamp = this.lifecycleStamp.getAndSet(0L);
 		if (StampedLock.isWriteLockStamp(stamp)) {
 			this.lifecycleLock.unlockWrite(stamp);
@@ -97,7 +97,7 @@ public class DistributableManager implements CatalinaManager {
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
-		this.manager.stop();
+		CatalinaManager.super.stop();
 	}
 
 	@Override
