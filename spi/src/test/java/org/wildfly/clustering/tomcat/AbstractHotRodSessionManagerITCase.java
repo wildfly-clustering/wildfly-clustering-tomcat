@@ -74,29 +74,7 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 			writer.writeAttribute("granularity", this.parameters.get().getSessionPersistenceGranularity().toString());
 			writer.writeAttribute("marshaller", this.parameters.get().getSessionMarshallerFactory().toString());
 			writer.writeAttribute("configuration", """
-{
-	"local-cache" : {
-		"encoding" : {
-			"key" : {
-				"media-type" : "application/octet-stream"
-			},
-			"value" : {
-				"media-type" : "application/octet-stream"
-			}
-		},
-		"expiration" : {
-			"interval" : 1000
-		},
-		"locking" : {
-			"isolation" : "REPEATABLE_READ"
-		},
-		"transaction" : {
-			"mode" : "NON_XA",
-			"locking" : "PESSIMISTIC"
-		}
-	}
-}
-""");
+{ "local-cache" : { "encoding" : { "key" : { "media-type" : "application/octet-stream" }, "value" : { "media-type" : "application/octet-stream" }}, "expiration" : { "interval" : 1000 }, "locking" : { "isolation" : "REPEATABLE_READ" }, "transaction" : { "mode" : "NON_XA", "locking" : "PESSIMISTIC" }}}""");
 			writer.writeAttribute("uri", INFINISPAN.getContainer().get().toString(true));
 			writer.writeEndElement();
 
