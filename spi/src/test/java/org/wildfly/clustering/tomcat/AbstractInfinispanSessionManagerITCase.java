@@ -6,10 +6,6 @@ package org.wildfly.clustering.tomcat;
 
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.EnumSet;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -18,10 +14,7 @@ import javax.xml.stream.XMLStreamWriter;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.ArgumentsProvider;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.wildfly.clustering.session.container.AbstractSessionManagerITCase;
 import org.wildfly.clustering.session.container.SessionManagementTesterConfiguration;
@@ -29,11 +22,9 @@ import org.wildfly.clustering.session.container.SessionManagementTesterConfigura
 /**
  * @author Paul Ferraro
  */
-public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSessionManagerITCase<WebArchive> {
+public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSessionManagerITCase<SessionManagementArguments, WebArchive> {
 
 	private final Class<?> managerClass;
-
-	private final AtomicReference<SessionManagementParameters> parameters = new AtomicReference<>();
 
 	protected AbstractInfinispanSessionManagerITCase(Class<?> managerClass, Class<?> endpointClass) {
 		super(new SessionManagementTesterConfiguration() {
@@ -46,15 +37,15 @@ public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSes
 	}
 
 	@ParameterizedTest
-	@ArgumentsSource(InfinispanSessionManagerArgumentsProvider.class)
+	@ArgumentsSource(SessionManagementArgumentsProvider.class)
 	@RunAsClient
-	public void test(SessionManagementParameters parameters) {
-		this.parameters.set(parameters);
-		this.run();
+	@Override
+	public void accept(SessionManagementArguments parameters) {
+		super.accept(parameters);
 	}
 
 	@Override
-	public WebArchive createArchive(SessionManagementTesterConfiguration configuration) {
+	public WebArchive createArchive(SessionManagementArguments arguments) {
 		XMLOutputFactory factory = XMLOutputFactory.newFactory();
 		StringWriter stringWriter = new StringWriter();
 		try {
@@ -64,8 +55,8 @@ public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSes
 
 			writer.writeStartElement("Manager");
 			writer.writeAttribute("className", this.managerClass.getName());
-			writer.writeAttribute("granularity", this.parameters.get().getSessionPersistenceGranularity().toString());
-			writer.writeAttribute("marshaller", this.parameters.get().getSessionMarshallerFactory().toString());
+			writer.writeAttribute("granularity", arguments.getSessionPersistenceGranularity().toString());
+			writer.writeAttribute("marshaller", arguments.getSessionMarshallerFactory().toString());
 			writer.writeEndElement();
 
 			writer.writeEndElement();
@@ -74,36 +65,8 @@ public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSes
 		} catch (XMLStreamException e) {
 			throw new IllegalStateException(e);
 		}
-		return super.createArchive(configuration)
+		return super.createArchive(arguments)
 				.addAsWebInfResource("infinispan.xml", "classes/infinispan.xml")
 				.addAsManifestResource(new StringAsset(stringWriter.toString()), "context.xml");
-	}
-
-	public static class InfinispanSessionManagerArgumentsProvider implements ArgumentsProvider {
-		@Override
-		public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
-			Stream.Builder<Arguments> builder = Stream.builder();
-			for (SessionPersistenceGranularity strategy : EnumSet.allOf(SessionPersistenceGranularity.class)) {
-				for (SessionMarshallerFactory marshaller : EnumSet.allOf(SessionMarshallerFactory.class)) {
-					builder.add(Arguments.of(new SessionManagementParameters() {
-						@Override
-						public SessionPersistenceGranularity getSessionPersistenceGranularity() {
-							return strategy;
-						}
-
-						@Override
-						public SessionMarshallerFactory getSessionMarshallerFactory() {
-							return marshaller;
-						}
-
-						@Override
-						public String toString() {
-							return Map.of(SessionPersistenceGranularity.class.getSimpleName(), strategy, SessionMarshallerFactory.class.getSimpleName(), marshaller).toString();
-						}
-					}));
-				}
-			}
-			return builder.build();
-		}
 	}
 }
