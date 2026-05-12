@@ -26,13 +26,13 @@ import org.infinispan.client.hotrod.configuration.TransactionMode;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.client.hotrod.impl.HotRodURI;
 import org.infinispan.client.hotrod.impl.async.DefaultAsyncExecutorFactory;
-import org.infinispan.client.hotrod.transaction.lookup.RemoteTransactionManagerLookup;
 import org.infinispan.commons.dataconversion.MediaType;
 import org.infinispan.commons.executors.ExecutorFactory;
 import org.infinispan.commons.marshall.Marshaller;
 import org.wildfly.clustering.cache.infinispan.marshalling.MediaTypes;
 import org.wildfly.clustering.cache.infinispan.marshalling.UserMarshaller;
 import org.wildfly.clustering.cache.infinispan.remote.RemoteCacheConfiguration;
+import org.wildfly.clustering.cache.infinispan.remote.transaction.RemoteTransactionManagerLookup;
 import org.wildfly.clustering.function.Consumer;
 import org.wildfly.clustering.function.UnaryOperator;
 import org.wildfly.clustering.marshalling.protostream.ClassLoaderMarshaller;
@@ -144,7 +144,7 @@ public class HotRodManager extends AbstractManager {
 				.marshaller(marshaller)
 				.nearCacheMode(NearCacheMode.DISABLED)
 				.transactionMode(TransactionMode.NON_XA)
-				.transactionManagerLookup(RemoteTransactionManagerLookup.getInstance())
+				.transactionManagerLookup(RemoteTransactionManagerLookup.INSTANCE)
 				;
 		configuration.addRemoteCache(config.getDeploymentName(), configurator.andThen((this.templateName != null) ? builder -> builder.templateName(this.templateName) : builder -> builder.configuration(this.configuration)));
 
