@@ -16,9 +16,6 @@ updates:
           - version-update:semver-major
           - version-update:semver-minor
       - dependency-name: org.apache.tomcat:tomcat-catalina
-        update-types:
-          - version-update:semver-major
-          - version-update:semver-minor
       - dependency-name: org.infinispan:infinispan-bom
         update-types:
           - version-update:semver-major
@@ -27,3 +24,33 @@ updates:
         update-types:
           - version-update:semver-major
           - version-update:semver-minor
+  - package-ecosystem: maven
+    directory: '/11.0'
+    labels:
+      - dependencies
+    schedule:
+      interval: daily
+    ignore:
+      - dependency-name: org.apache.tomcat:tomcat-catalina
+        versions:
+          - "[11,12)"
+  - package-ecosystem: maven
+    directory: '/10.1'
+    labels:
+      - dependencies
+    schedule:
+      interval: daily
+    ignore:
+      - dependency-name: org.apache.tomcat:tomcat-catalina
+        versions:
+          - "[10,11)"
+  - package-ecosystem: maven
+    directory: '/9.0'
+    labels:
+      - dependencies
+    schedule:
+      interval: daily
+    ignore:
+      - dependency-name: org.apache.tomcat:tomcat-catalina
+        versions:
+          - "[9,10)"
