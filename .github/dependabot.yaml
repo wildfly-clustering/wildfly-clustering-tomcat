@@ -33,7 +33,7 @@ updates:
     ignore:
       - dependency-name: org.apache.tomcat:tomcat-catalina
         versions:
-          - "[11,12)"
+          - "[12,)"
   - package-ecosystem: maven
     directory: '/10.1'
     labels:
@@ -43,7 +43,7 @@ updates:
     ignore:
       - dependency-name: org.apache.tomcat:tomcat-catalina
         versions:
-          - "[10,11)"
+          - "[11,)"
   - package-ecosystem: maven
     directory: '/9.0'
     labels:
@@ -53,4 +53,4 @@ updates:
     ignore:
       - dependency-name: org.apache.tomcat:tomcat-catalina
         versions:
-          - "[9,10)"
+          - "[10,)"
