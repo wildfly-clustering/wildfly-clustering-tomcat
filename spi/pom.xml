@@ -17,6 +17,10 @@
 
 	<name>${project.repository.name}: SPI</name>
 
+	<properties>
+		<project.module.name>org.wildfly.clustering.tomcat.spi</project.module.name>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.kohsuke.metainf-services</groupId>

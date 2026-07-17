@@ -18,6 +18,10 @@
 
 	<name>${project.tomcat}: Catalina</name>
 
+	<properties>
+		<project.module.name>org.wildfly.clustering.tomcat.catalina</project.module.name>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.tomcat</groupId>

@@ -35,12 +35,10 @@ import org.wildfly.clustering.cache.infinispan.remote.RemoteCacheConfiguration;
 import org.wildfly.clustering.cache.infinispan.remote.transaction.RemoteTransactionManagerLookup;
 import org.wildfly.clustering.function.Consumer;
 import org.wildfly.clustering.function.UnaryOperator;
-import org.wildfly.clustering.marshalling.protostream.ClassLoaderMarshaller;
-import org.wildfly.clustering.marshalling.protostream.ProtoStreamByteBufferMarshaller;
-import org.wildfly.clustering.marshalling.protostream.SerializationContextBuilder;
 import org.wildfly.clustering.session.SessionManagerFactory;
 import org.wildfly.clustering.session.SessionManagerFactoryConfiguration;
 import org.wildfly.clustering.session.infinispan.remote.HotRodSessionManagerFactory;
+import org.wildfly.clustering.tomcat.SessionMarshallerFactory;
 import org.wildfly.clustering.tomcat.catalina.AbstractManager;
 import org.wildfly.clustering.tomcat.catalina.CatalinaSessionContext;
 
@@ -120,7 +118,7 @@ public class HotRodManager extends AbstractManager {
 	@Override
 	protected Map.Entry<SessionManagerFactory<ServletContext, CatalinaSessionContext>, UnaryOperator<String>> createSessionManagerFactory(SessionManagerFactoryConfiguration<CatalinaSessionContext> config, String localRoute, Consumer<Runnable> stopTasks) {
 		ClassLoader containerLoader = HotRodSessionManagerFactory.class.getClassLoader();
-		Marshaller marshaller = new UserMarshaller(MediaTypes.WILDFLY_PROTOSTREAM, new ProtoStreamByteBufferMarshaller(SerializationContextBuilder.newInstance(ClassLoaderMarshaller.of(containerLoader)).load(containerLoader).build()));
+		Marshaller marshaller = new UserMarshaller(MediaTypes.WILDFLY_PROTOSTREAM, SessionMarshallerFactory.PROTOSTREAM.apply(UnaryOperator.of(null), containerLoader));
 		ThreadPoolExecutor executor = new DefaultAsyncExecutorFactory().getExecutor(this.properties);
 		Configuration configuration = Optional.ofNullable(this.uri).map(HotRodURI::create).map(HotRodURI::toConfigurationBuilder).orElseGet(ConfigurationBuilder::new)
 				.withProperties(this.properties)
