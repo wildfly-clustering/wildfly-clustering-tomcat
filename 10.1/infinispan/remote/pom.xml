@@ -17,6 +17,10 @@
 
 	<name>${project.tomcat.infinispan}: Remote</name>
 
+	<properties>
+		<project.module.name>org.wildfly.clustering.tomcat.infinispan.remote</project.module.name>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.tomcat</groupId>

@@ -6,17 +6,20 @@ package org.wildfly.clustering.tomcat;
 
 import java.io.ObjectInputFilter;
 import java.util.Optional;
-import java.util.function.BiFunction;
-import java.util.function.UnaryOperator;
 
+import org.jboss.marshalling.MarshallingConfiguration;
 import org.jboss.marshalling.SimpleClassResolver;
+import org.jboss.marshalling.UnmarshallingObjectInputFilter;
+import org.wildfly.clustering.function.BiFunction;
+import org.wildfly.clustering.function.UnaryOperator;
 import org.wildfly.clustering.marshalling.ByteBufferMarshaller;
 import org.wildfly.clustering.marshalling.java.JavaByteBufferMarshaller;
 import org.wildfly.clustering.marshalling.jboss.JBossByteBufferMarshaller;
 import org.wildfly.clustering.marshalling.jboss.MarshallingConfigurationBuilder;
-import org.wildfly.clustering.marshalling.protostream.ClassLoaderMarshaller;
+import org.wildfly.clustering.marshalling.protostream.ClassLoaderResolver;
+import org.wildfly.clustering.marshalling.protostream.ImmutableSerializationContext;
 import org.wildfly.clustering.marshalling.protostream.ProtoStreamByteBufferMarshaller;
-import org.wildfly.clustering.marshalling.protostream.SerializationContextBuilder;
+import org.wildfly.clustering.marshalling.protostream.ProtoStreamConfiguration;
 
 /**
  * Enumeration of supported session attribute marshaller factories.
@@ -27,22 +30,32 @@ public enum SessionMarshallerFactory implements BiFunction<UnaryOperator<String>
 	JAVA() {
 		@Override
 		public ByteBufferMarshaller apply(UnaryOperator<String> properties, ClassLoader loader) {
-			ObjectInputFilter filter = Optional.ofNullable(properties.apply("jdk.serialFilter")).map(ObjectInputFilter.Config::createFilter).orElse(null);
-			return new JavaByteBufferMarshaller(loader, filter);
+			return new JavaByteBufferMarshaller(loader, this.inputFilter(properties));
 		}
 	},
 	/** Creates a marshaller using JBoss Marshalling */
 	JBOSS() {
 		@Override
 		public ByteBufferMarshaller apply(UnaryOperator<String> properties, ClassLoader loader) {
-			return new JBossByteBufferMarshaller(MarshallingConfigurationBuilder.newInstance(new SimpleClassResolver(loader)).load(loader).build(), loader);
+			MarshallingConfiguration configuration = MarshallingConfigurationBuilder.newInstance(new SimpleClassResolver(loader)).load(loader).build();
+			this.serialFilter(properties).map(UnmarshallingObjectInputFilter.Factory::createFilter).ifPresent(configuration::setUnmarshallingFilter);
+			return new JBossByteBufferMarshaller(configuration, loader);
 		}
 	},
 	/** Creates a marshaller using ProtoStream */
 	PROTOSTREAM() {
 		@Override
 		public ByteBufferMarshaller apply(UnaryOperator<String> properties, ClassLoader loader) {
-			return new ProtoStreamByteBufferMarshaller(SerializationContextBuilder.newInstance(ClassLoaderMarshaller.of(loader)).load(loader).build());
+			return new ProtoStreamByteBufferMarshaller(ImmutableSerializationContext.Builder.with(ProtoStreamConfiguration.Builder.with(ClassLoaderResolver.of(loader)).withObjectInputFilter(this.inputFilter(properties)).build()).build());
 		}
 	},
+	;
+
+	ObjectInputFilter inputFilter(UnaryOperator<String> properties) {
+		return this.serialFilter(properties).map(ObjectInputFilter.Config::createFilter).orElse(ObjectInputFilter.Config.getSerialFilter());
+	}
+
+	Optional<String> serialFilter(UnaryOperator<String> properties) {
+		return Optional.ofNullable(properties.apply("jdk.serialFilter"));
+	}
 }

@@ -66,9 +66,6 @@ import org.wildfly.clustering.function.Function;
 import org.wildfly.clustering.function.Predicate;
 import org.wildfly.clustering.function.UnaryOperator;
 import org.wildfly.clustering.marshalling.ByteBufferMarshaller;
-import org.wildfly.clustering.marshalling.protostream.ClassLoaderMarshaller;
-import org.wildfly.clustering.marshalling.protostream.ProtoStreamByteBufferMarshaller;
-import org.wildfly.clustering.marshalling.protostream.SerializationContextBuilder;
 import org.wildfly.clustering.server.group.GroupCommandDispatcherFactory;
 import org.wildfly.clustering.server.infinispan.CacheContainerGroupMember;
 import org.wildfly.clustering.server.infinispan.affinity.UnaryGroupMemberAffinity;
@@ -84,6 +81,7 @@ import org.wildfly.clustering.session.SessionManagerFactoryConfiguration;
 import org.wildfly.clustering.session.cache.affinity.UnarySessionAffinity;
 import org.wildfly.clustering.session.infinispan.embedded.InfinispanSessionManagerFactory;
 import org.wildfly.clustering.session.infinispan.embedded.metadata.SessionMetaDataKey;
+import org.wildfly.clustering.tomcat.SessionMarshallerFactory;
 import org.wildfly.clustering.tomcat.catalina.AbstractManager;
 import org.wildfly.clustering.tomcat.catalina.CatalinaSessionContext;
 
@@ -196,7 +194,7 @@ public class InfinispanManager extends AbstractManager {
 
 				@Override
 				public Function<ClassLoader, ByteBufferMarshaller> getMarshallerFactory() {
-					return loader -> new ProtoStreamByteBufferMarshaller(SerializationContextBuilder.newInstance(ClassLoaderMarshaller.of(loader)).load(loader).build());
+					return SessionMarshallerFactory.PROTOSTREAM.composeUnary(Function.of(UnaryOperator.of(null)), Function.identity());
 				}
 
 				@Override
@@ -223,7 +221,7 @@ public class InfinispanManager extends AbstractManager {
 					.listenerThreadPool().threadPoolFactory(executors.get(KnownComponentNames.ASYNC_NOTIFICATION_EXECUTOR)).threadFactory(new DefaultBlockingThreadFactory(ListenerInvocation.class))
 					.nonBlockingThreadPool().threadPoolFactory(executors.get(KnownComponentNames.NON_BLOCKING_EXECUTOR)).threadFactory(new DefaultNonBlockingThreadFactory(NonBlockingManager.class))
 					.serialization()
-						.marshaller(new UserMarshaller(MediaTypes.WILDFLY_PROTOSTREAM, new ProtoStreamByteBufferMarshaller(SerializationContextBuilder.newInstance(ClassLoaderMarshaller.of(loader)).load(loader).build())))
+						.marshaller(new UserMarshaller(MediaTypes.WILDFLY_PROTOSTREAM, SessionMarshallerFactory.PROTOSTREAM.apply(UnaryOperator.of(null), loader)))
 						// Register dummy serialization context initializer, to bypass service loading in org.infinispan.marshall.protostream.impl.SerializationContextRegistryImpl
 						// Otherwise marshaller auto-detection will not work
 						.addContextInitializer(new SerializationContextInitializer() {
