@@ -17,29 +17,20 @@ import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
-import org.wildfly.clustering.cache.ContainerProvider;
-import org.wildfly.clustering.cache.infinispan.remote.InfinispanServerContainer;
-import org.wildfly.clustering.cache.infinispan.remote.InfinispanServerExtension;
-import org.wildfly.clustering.session.container.AbstractSessionManagerITCase;
-import org.wildfly.clustering.session.container.SessionManagementTesterConfiguration;
+import org.wildfly.clustering.container.infinispan.InfinispanServerExtension;
 
 /**
  * @author Paul Ferraro
  */
-public abstract class AbstractHotRodSessionManagerITCase extends AbstractSessionManagerITCase<SessionManagementArguments, WebArchive> {
+public abstract class AbstractHotRodSessionManagerITCase extends AbstractSessionManagerITCase {
 
 	@RegisterExtension
-	static final ContainerProvider<InfinispanServerContainer> INFINISPAN = new InfinispanServerExtension();
+	private final InfinispanServerExtension extension = new InfinispanServerExtension();
 
 	private final Class<?> managerClass;
 
 	protected AbstractHotRodSessionManagerITCase(Class<?> managerClass, Class<?> endpointClass) {
-		super(new SessionManagementTesterConfiguration() {
-			@Override
-			public Class<?> getEndpointClass() {
-				return endpointClass;
-			}
-		}, WebArchive.class);
+		super(endpointClass);
 		this.managerClass = managerClass;
 	}
 
@@ -66,7 +57,7 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 			writer.writeAttribute("marshaller", arguments.getSessionMarshallerFactory().toString());
 			writer.writeAttribute("configuration", """
 { "local-cache" : { "encoding" : { "key" : { "media-type" : "application/octet-stream" }, "value" : { "media-type" : "application/octet-stream" }}, "expiration" : { "interval" : 1000 }, "locking" : { "isolation" : "REPEATABLE_READ" }, "transaction" : { "mode" : "NON_XA", "locking" : "PESSIMISTIC" }}}""");
-			writer.writeAttribute("uri", INFINISPAN.getContainer().get().toString(true));
+			writer.writeAttribute("uri", this.extension.getURI().toString(true));
 			writer.writeEndElement();
 
 			writer.writeEndElement();

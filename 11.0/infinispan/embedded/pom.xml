@@ -41,59 +41,6 @@
 			<groupId>org.wildfly.clustering</groupId>
 			<artifactId>wildfly-clustering-session-infinispan-embedded</artifactId>
 		</dependency>
-
-		<dependency>
-			<groupId>${project.groupId}</groupId>
-			<artifactId>wildfly-clustering-tomcat-spi</artifactId>
-			<classifier>tests</classifier>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.wildfly.clustering</groupId>
-			<artifactId>wildfly-clustering-cache-infinispan-embedded</artifactId>
-			<classifier>tests</classifier>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.wildfly.clustering</groupId>
-			<artifactId>wildfly-clustering-cache-spi</artifactId>
-			<classifier>tests</classifier>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.wildfly.clustering</groupId>
-			<artifactId>wildfly-clustering-session-container-servlet-6.1</artifactId>
-			<classifier>tests</classifier>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.wildfly.clustering</groupId>
-			<artifactId>wildfly-clustering-session-spi</artifactId>
-			<classifier>tests</classifier>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.assertj</groupId>
-			<artifactId>assertj-core</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.jboss.arquillian.container</groupId>
-			<artifactId>arquillian-tomcat-managed-10</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.jboss.arquillian.junit5</groupId>
-			<artifactId>arquillian-junit5-container</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.junit.platform</groupId>
-			<artifactId>junit-platform-suite-api</artifactId>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 
 	<build>
@@ -102,62 +49,15 @@
 				<directory>src/test/resources</directory>
 				<filtering>true</filtering>
 				<includes>
-					<include>arquillian.xml</include>
-				</includes>
-			</testResource>
-			<testResource>
-				<directory>src/test/resources/tomcat</directory>
-				<targetPath>${catalina.home}/conf</targetPath>
-				<filtering>true</filtering>
-				<includes>
 					<include>*.xml</include>
-					<include>*.properties</include>
 				</includes>
 			</testResource>
 		</testResources>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-clean-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>clean-tomcat-webapps</id>
-						<phase>pre-integration-test</phase>
-						<goals>
-							<goal>clean</goal>
-						</goals>
-						<configuration>
-							<excludeDefaultDirectories>true</excludeDefaultDirectories>
-							<filesets>
-								<fileset>
-									<directory>${catalina.home}/webapps</directory>
-									<includes>
-										<include>ROOT/**</include>
-										<include>docs/**</include>
-										<include>examples/**</include>
-									</includes>
-								</fileset>
-							</filesets>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
 				<executions>
-					<execution>
-						<id>unpack-tomcat</id>
-						<phase>generate-test-resources</phase>
-						<goals>
-							<goal>unpack</goal>
-						</goals>
-						<configuration>
-							<artifact>org.apache.tomcat:tomcat:${version.org.apache.tomcat}:zip</artifact>
-							<outputDirectory>${project.build.directory}</outputDirectory>
-							<overWriteReleases>true</overWriteReleases>
-						</configuration>
-					</execution>
 					<execution>
 						<id>configure-tomcat</id>
 						<phase>pre-integration-test</phase>
@@ -166,123 +66,12 @@
 							<goal>copy-dependencies</goal>
 						</goals>
 						<configuration>
-							<outputDirectory>${catalina.home}/lib/</outputDirectory>
+							<artifact>${project.groupId}:${project.artifactId}:${project.version}</artifact>
 							<includeScope>runtime</includeScope>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-resources-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>copy-tomcat-1</id>
-						<phase>pre-integration-test</phase>
-						<goals>
-							<goal>copy-resources</goal>
-						</goals>
-						<configuration>
-							<outputDirectory>${project.build.directory}/tomcat-1</outputDirectory>
-							<resources>
-								<resource>
-									<directory>${catalina.home}</directory>
-								</resource>
-							</resources>
-						</configuration>
-					</execution>
-					<execution>
-						<id>copy-tomcat-2</id>
-						<phase>pre-integration-test</phase>
-						<goals>
-							<goal>copy-resources</goal>
-						</goals>
-						<configuration>
-							<outputDirectory>${project.build.directory}/tomcat-2</outputDirectory>
-							<resources>
-								<resource>
-									<directory>${catalina.home}</directory>
-								</resource>
-							</resources>
-						</configuration>
-					</execution>
-					<execution>
-						<id>copy-tomcat-3</id>
-						<phase>pre-integration-test</phase>
-						<goals>
-							<goal>copy-resources</goal>
-						</goals>
-						<configuration>
-							<outputDirectory>${project.build.directory}/tomcat-3</outputDirectory>
-							<resources>
-								<resource>
-									<directory>${catalina.home}</directory>
-								</resource>
-							</resources>
 						</configuration>
 					</execution>
 				</executions>
 			</plugin>
 		</plugins>
 	</build>
-
-	<profiles>
-		<profile>
-			<id>custom-tomcat</id>
-			<activation>
-				<property>
-					<name>catalina.home.override</name>
-				</property>
-			</activation>
-			<properties>
-				<catalina.home>${project.build.directory}/tomcat-custom</catalina.home>
-			</properties>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-dependency-plugin</artifactId>
-						<executions>
-							<!-- Disable unpacking execution -->
-							<execution>
-								<id>unpack-tomcat</id>
-								<phase>generate-test-resources</phase>
-								<goals>
-									<goal>unpack</goal>
-								</goals>
-								<configuration>
-									<skip>true</skip>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-resources-plugin</artifactId>
-						<executions>
-							<!-- Copy over tomcat distribution from custom path -->
-							<execution>
-								<id>copy-custom-tomcat</id>
-								<phase>generate-test-resources</phase>
-								<goals>
-									<goal>copy-resources</goal>
-								</goals>
-								<configuration>
-									<outputDirectory>${catalina.home}</outputDirectory>
-									<includeEmptyDirs>true</includeEmptyDirs>
-									<resources>
-										<resource>
-											<directory>${catalina.home.override}</directory>
-											<filtering>false</filtering>
-										</resource>
-									</resources>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
-
 </project>
