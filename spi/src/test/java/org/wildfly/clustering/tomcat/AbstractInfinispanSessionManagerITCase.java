@@ -16,23 +16,16 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
-import org.wildfly.clustering.session.container.AbstractSessionManagerITCase;
-import org.wildfly.clustering.session.container.SessionManagementTesterConfiguration;
 
 /**
  * @author Paul Ferraro
  */
-public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSessionManagerITCase<SessionManagementArguments, WebArchive> {
+public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSessionManagerITCase {
 
 	private final Class<?> managerClass;
 
 	protected AbstractInfinispanSessionManagerITCase(Class<?> managerClass, Class<?> endpointClass) {
-		super(new SessionManagementTesterConfiguration() {
-			@Override
-			public Class<?> getEndpointClass() {
-				return endpointClass;
-			}
-		}, WebArchive.class);
+		super(endpointClass);
 		this.managerClass = managerClass;
 	}
 
@@ -67,6 +60,7 @@ public abstract class AbstractInfinispanSessionManagerITCase extends AbstractSes
 		}
 		return super.createArchive(arguments)
 				.addAsWebInfResource("infinispan.xml", "classes/infinispan.xml")
-				.addAsManifestResource(new StringAsset(stringWriter.toString()), "context.xml");
+				.addAsManifestResource(new StringAsset(stringWriter.toString()), "context.xml")
+				;
 	}
 }
