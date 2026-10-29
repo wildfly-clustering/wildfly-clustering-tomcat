@@ -20,9 +20,8 @@
 	<properties>
 		<project.tomcat>${project.repository.name} 10.1</project.tomcat>
 
-		<version.org.apache.tomcat>10.1.59</version.org.apache.tomcat>
-
-		<catalina.home>${project.build.directory}/apache-tomcat-${version.org.apache.tomcat}</catalina.home>
+		<tomcat.container.image>tomcat:10.1</tomcat.container.image>
+		<tomcat.container.parameters>${java.runtime.parameters} -Dhttp.port=$HTTP_PORT -Djvm.route=$JVM_ROUTE -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false</tomcat.container.parameters>
 	</properties>
 
 	<modules>
@@ -35,7 +34,7 @@
 			<dependency>
 				<groupId>org.apache.tomcat</groupId>
 				<artifactId>tomcat-catalina</artifactId>
-				<version>${version.org.apache.tomcat}</version>
+				<version>10.1.61</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
