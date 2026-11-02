@@ -21,7 +21,6 @@
 		<project.tomcat>${project.repository.name} 11.0</project.tomcat>
 
 		<tomcat.container.image>tomcat:11.0</tomcat.container.image>
-		<tomcat.container.parameters>${java.runtime.parameters} -Dhttp.port=$HTTP_PORT -Djvm.route=$JVM_ROUTE -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false</tomcat.container.parameters>
 	</properties>
 
 	<modules>

@@ -18,6 +18,10 @@
 
 	<name>${project.repository.name}: Modules</name>
 
+	<properties>
+		<tomcat.container.parameters>${java.runtime.parameters} -Dorg.apache.tomcat.util.digester.PROPERTY_SOURCE=org.apache.tomcat.util.digester.EnvironmentPropertySource -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false</tomcat.container.parameters>
+	</properties>
+
 	<dependencyManagement>
 		<dependencies>
 			<!-- BOM dependencies -->

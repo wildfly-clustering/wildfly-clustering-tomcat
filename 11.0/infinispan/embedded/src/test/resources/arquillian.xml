@@ -10,6 +10,7 @@
 		<property name="oci:start-message-pattern">.*\QServer startup in \E.*</property>
 		<property name="ref:HTTP_PORT">bindHttpPort</property>
 		<property name="ref:JMX_PORT">jmxPort</property>
+		<property name="ref:SHUTDOWN_PORT">shutdownPort</property>
 		<property name="ref:JVM_ROUTE"/>
 		<property name="env:JAVA_OPTS">${tomcat.container.parameters}</property>
 		<property name="file:${project.basedir}/../../catalina/src/test/resources">/usr/local/tomcat</property>
@@ -20,18 +21,21 @@
 			<configuration>
 				<property name="bindHttpPort">8080</property>
 				<property name="jmxPort">8089</property>
+				<property name="shutdownPort">9089</property>
 			</configuration>
 		</container>
 		<container qualifier="server-2" mode="manual">
 			<configuration>
 				<property name="bindHttpPort">8180</property>
 				<property name="jmxPort">8189</property>
+				<property name="shutdownPort">9189</property>
 			</configuration>
 		</container>
 		<container qualifier="server-3" mode="manual">
 			<configuration>
 				<property name="bindHttpPort">8280</property>
 				<property name="jmxPort">8289</property>
+				<property name="shutdownPort">9289</property>
 			</configuration>
 		</container>
 	</group>
