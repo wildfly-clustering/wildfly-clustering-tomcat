@@ -246,7 +246,7 @@ public class InfinispanManager extends AbstractManager {
 			ConfigurationBuilder builder = new ConfigurationBuilder().read(template).template(false);
 			builder.encoding().mediaType(MediaType.APPLICATION_OBJECT_TYPE);
 
-			if (template.invocationBatching().enabled()) {
+			if (template.transaction().mode().isTransactional()) {
 				builder.transaction().transactionManagerLookup(EmbeddedTransactionManager::getInstance);
 			}
 
