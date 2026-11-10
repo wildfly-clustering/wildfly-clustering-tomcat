@@ -6,6 +6,8 @@
 package org.wildfly.clustering.tomcat;
 
 import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.jupiter.api.AfterAll;
+import org.wildfly.clustering.arquillian.DeploymentContainer;
 import org.wildfly.clustering.session.container.SessionManagementTesterConfiguration;
 
 /**
@@ -21,5 +23,12 @@ public abstract class AbstractSessionManagerITCase extends org.wildfly.clusterin
 				return endpointClass;
 			}
 		}, WebArchive.class);
+	}
+
+	@AfterAll
+	@Override
+	protected void destroy() {
+		this.getDeploymentContainers().stream().filter(DeploymentContainer::isStarted).forEach(DeploymentContainer::stop);
+		super.destroy();
 	}
 }

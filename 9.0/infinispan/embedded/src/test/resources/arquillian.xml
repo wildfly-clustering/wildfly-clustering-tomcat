@@ -19,23 +19,23 @@
 	<group qualifier="tomcat" default="true">
 		<container qualifier="server-1" mode="manual">
 			<configuration>
-				<property name="bindHttpPort">8680</property>
-				<property name="jmxPort">8689</property>
-				<property name="shutdownPort">9689</property>
+				<property name="bindHttpPort">8080</property>
+				<property name="jmxPort">8089</property>
+				<property name="shutdownPort">9089</property>
 			</configuration>
 		</container>
 		<container qualifier="server-2" mode="manual">
 			<configuration>
-				<property name="bindHttpPort">8780</property>
-				<property name="jmxPort">8789</property>
-				<property name="shutdownPort">9789</property>
+				<property name="bindHttpPort">8180</property>
+				<property name="jmxPort">8189</property>
+				<property name="shutdownPort">9189</property>
 			</configuration>
 		</container>
 		<container qualifier="server-3" mode="manual">
 			<configuration>
-				<property name="bindHttpPort">8880</property>
-				<property name="jmxPort">8889</property>
-				<property name="shutdownPort">9889</property>
+				<property name="bindHttpPort">8280</property>
+				<property name="jmxPort">8289</property>
+				<property name="shutdownPort">9289</property>
 			</configuration>
 		</container>
 	</group>
