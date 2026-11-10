@@ -25,7 +25,7 @@ import org.wildfly.clustering.container.infinispan.InfinispanServerExtension;
 public abstract class AbstractHotRodSessionManagerITCase extends AbstractSessionManagerITCase {
 
 	@RegisterExtension
-	private final InfinispanServerExtension extension = new InfinispanServerExtension();
+	private static final InfinispanServerExtension EXTENSION = new InfinispanServerExtension();
 
 	private final Class<?> managerClass;
 
@@ -57,7 +57,7 @@ public abstract class AbstractHotRodSessionManagerITCase extends AbstractSession
 			writer.writeAttribute("marshaller", arguments.getSessionMarshallerFactory().toString());
 			writer.writeAttribute("configuration", """
 { "local-cache" : { "encoding" : { "key" : { "media-type" : "application/octet-stream" }, "value" : { "media-type" : "application/octet-stream" }}, "expiration" : { "interval" : 1000 }, "locking" : { "isolation" : "REPEATABLE_READ" }, "transaction" : { "mode" : "NON_XA", "locking" : "PESSIMISTIC" }}}""");
-			writer.writeAttribute("uri", this.extension.getURI().toString(true));
+			writer.writeAttribute("uri", EXTENSION.getLocation().toString(true));
 			writer.writeEndElement();
 
 			writer.writeEndElement();
