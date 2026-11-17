@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
 	Copyright The WildFly Authors
 	SPDX-License-Identifier: Apache-2.0
@@ -6,7 +6,7 @@
 <arquillian xmlns="http://jboss.org/schema/arquillian" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jboss.org/schema/arquillian http://jboss.org/schema/arquillian/arquillian_1_0.xsd">
 	<extension qualifier="OCI">
 		<property name="oci:image">${tomcat.container.image}</property>
-		<property name="oci:network-mode">host</property>
+		<property name="oci:expose">bindHttpPort jmxPort shutdownPort</property>
 		<property name="oci:start-message-pattern">.*\QServer startup in \E.*</property>
 		<property name="ref:HTTP_PORT">bindHttpPort</property>
 		<property name="ref:JMX_PORT">jmxPort</property>
